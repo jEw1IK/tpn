@@ -1,1 +1,560 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Парентеральное питание</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --text:#14181f; --muted:#6b7280; --line:#e3e6ea;
+  --accent:#2f7ad6; --accent-soft:#eaf2fc;
+  --ok:#1c7c50; --ok-soft:#e6f4ec;
+  --warn:#9a6300; --warn-soft:#fdf3e0;
+  --danger:#b3261e; --danger-soft:#fdecea;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15181d; --card:#1e232b; --text:#e8eaed; --muted:#9aa3af; --line:#2c333d;
+    --accent:#63a6f0; --accent-soft:#1d2c3d;
+    --ok:#5fd39b; --ok-soft:#163024;
+    --warn:#e2b464; --warn-soft:#332818;
+    --danger:#f2877f; --danger-soft:#3a1d1b;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:12px 12px 130px;
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg); color:var(--text);
+  -webkit-text-size-adjust:100%;
+}
+h1{font-size:19px; margin:4px 0 14px}
+h2{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 10px}
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:12px}
+.row{display:flex; gap:10px; align-items:flex-end; margin-bottom:10px}
+.row:last-child{margin-bottom:0}
+.f{flex:1; min-width:0}
+label{display:block; font-size:12px; color:var(--muted); margin-bottom:4px}
+input,select{
+  width:100%; padding:9px 10px; font-size:16px; color:var(--text);
+  background:var(--bg); border:1px solid var(--line); border-radius:9px; outline:none;
+  -moz-appearance:textfield;
+}
+input:focus,select:focus{border-color:var(--accent)}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.hint{font-size:11px; color:var(--muted); margin-top:3px}
 
+.seg{display:flex; gap:6px}
+.seg button{
+  flex:1; padding:9px 6px; font-size:13px; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--muted);
+  border:1px solid var(--line); border-radius:9px;
+}
+.seg button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600}
+
+table{width:100%; border-collapse:collapse; font-size:14px}
+th,td{padding:7px 0; text-align:right; border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600}
+tr:last-child td{border-bottom:none}
+tfoot td{font-weight:700; border-top:2px solid var(--line); border-bottom:none; padding-top:9px}
+.num{font-variant-numeric:tabular-nums}
+td.sub{color:var(--muted); font-size:12px; padding-top:0; border-bottom:none}
+
+.kv{display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px}
+.kv:last-child{border-bottom:none}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font-variant-numeric:tabular-nums; font-weight:600; text-align:right}
+
+.msg{padding:9px 11px; border-radius:10px; font-size:13px; margin-top:8px; border:1px solid transparent}
+.msg.danger{background:var(--danger-soft); color:var(--danger); border-color:currentColor}
+.msg.warn{background:var(--warn-soft); color:var(--warn); border-color:currentColor}
+.msg.ok{background:var(--ok-soft); color:var(--ok); border-color:currentColor}
+
+.bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:10;
+  display:flex; gap:2px; padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  background:var(--card); border-top:1px solid var(--line);
+}
+.bar div{flex:1; text-align:center; min-width:0}
+.bar b{display:block; font-size:17px; font-variant-numeric:tabular-nums}
+.bar small{display:block; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+.bar .flag-warn b{color:var(--warn)}
+.bar .flag-danger b{color:var(--danger)}
+
+.disclaimer{font-size:11px; color:var(--muted); line-height:1.5; padding:0 4px}
+details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px 0}
+.mix{font-size:13px; margin-top:8px; padding:9px 11px; background:var(--accent-soft); border-radius:10px; color:var(--text)}
+.mix b{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<h1>Парентеральное питание новорождённого</h1>
+
+<div class="card">
+  <h2>Пациент</h2>
+  <div class="row">
+    <div class="f">
+      <label for="weight">Масса тела, кг</label>
+      <input id="weight" type="number" inputmode="decimal" step="0.01" min="0.3" max="10" value="1.20">
+    </div>
+    <div class="f">
+      <label for="ga">ГВ, нед</label>
+      <input id="ga" type="number" inputmode="numeric" step="1" min="22" max="44" value="30">
+    </div>
+    <div class="f">
+      <label for="dol">Сутки жизни</label>
+      <input id="dol" type="number" inputmode="numeric" step="1" min="0" max="90" value="3">
+    </div>
+  </div>
+  <div class="row">
+    <div class="f">
+      <label>Венозный доступ</label>
+      <div class="seg" id="access">
+        <button type="button" data-v="central" aria-pressed="true">Центральный</button>
+        <button type="button" data-v="peripheral" aria-pressed="false">Периферический</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Объём жидкости</h2>
+  <div class="row">
+    <div class="f">
+      <label for="fluid">Общий объём, мл/кг/сут</label>
+      <input id="fluid" type="number" inputmode="decimal" step="5" min="0" max="250" value="150">
+      <div class="hint" id="fluidHint"></div>
+    </div>
+    <div class="f">
+      <label for="enteral">Энтерально, мл/кг/сут</label>
+      <input id="enteral" type="number" inputmode="decimal" step="1" min="0" max="250" value="20">
+    </div>
+  </div>
+  <div class="row">
+    <div class="f">
+      <label for="other">Прочее в/в (препараты, линии), мл/кг/сут</label>
+      <input id="other" type="number" inputmode="decimal" step="1" min="0" max="150" value="0">
+      <div class="hint">Антибиотики, инотропы, промывки — вычитается из объёма ПП</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Аминокислоты</h2>
+  <div class="row">
+    <div class="f">
+      <label for="aaDose">Доза, г/кг/сут</label>
+      <input id="aaDose" type="number" inputmode="decimal" step="0.1" min="0" max="6" value="3.0">
+    </div>
+    <div class="f">
+      <label for="aaConc">Раствор</label>
+      <select id="aaConc">
+        <option value="10">10 % (100 г/л)</option>
+        <option value="6">6 % (60 г/л)</option>
+        <option value="5">5 % (50 г/л)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Жировая эмульсия</h2>
+  <div class="row">
+    <div class="f">
+      <label for="lipDose">Доза, г/кг/сут</label>
+      <input id="lipDose" type="number" inputmode="decimal" step="0.1" min="0" max="6" value="2.0">
+    </div>
+    <div class="f">
+      <label for="lipConc">Концентрация</label>
+      <select id="lipConc">
+        <option value="20">20 % (2,0 ккал/мл)</option>
+        <option value="10">10 % (1,1 ккал/мл)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Глюкоза</h2>
+  <div class="row">
+    <div class="f">
+      <label>Задать через</label>
+      <div class="seg" id="gluMode">
+        <button type="button" data-v="gir" aria-pressed="true">Скорость (GIR)</button>
+        <button type="button" data-v="conc" aria-pressed="false">Концентрацию</button>
+      </div>
+    </div>
+  </div>
+  <div class="row" id="girRow">
+    <div class="f">
+      <label for="gir">GIR, мг/кг/мин</label>
+      <input id="gir" type="number" inputmode="decimal" step="0.5" min="0" max="20" value="6.0">
+      <div class="hint">Стартово 4–6, поддержание 6–8 мг/кг/мин</div>
+    </div>
+  </div>
+  <div class="row" id="concRow" hidden>
+    <div class="f">
+      <label for="gluConc">Концентрация в растворе ПП, %</label>
+      <input id="gluConc" type="number" inputmode="decimal" step="0.5" min="0" max="50" value="10">
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Электролиты</h2>
+  <div class="row">
+    <div class="f">
+      <label for="naDose">Na, ммоль/кг/сут</label>
+      <input id="naDose" type="number" inputmode="decimal" step="0.5" min="0" max="10" value="2">
+    </div>
+    <div class="f">
+      <label for="naSol">Препарат</label>
+      <select id="naSol">
+        <option value="1.71">NaCl 10 % (1,71 ммоль/мл)</option>
+        <option value="0.154">NaCl 0,9 % (0,154 ммоль/мл)</option>
+      </select>
+    </div>
+  </div>
+  <div class="row">
+    <div class="f">
+      <label for="kDose">K, ммоль/кг/сут</label>
+      <input id="kDose" type="number" inputmode="decimal" step="0.5" min="0" max="10" value="1.5">
+    </div>
+    <div class="f">
+      <label for="kSol">Препарат</label>
+      <select id="kSol">
+        <option value="1.0">KCl 7,5 % (1,0 ммоль/мл)</option>
+        <option value="0.53">KCl 4 % (0,53 ммоль/мл)</option>
+      </select>
+    </div>
+  </div>
+  <div class="row">
+    <div class="f">
+      <label for="caDose">Ca, ммоль/кг/сут</label>
+      <input id="caDose" type="number" inputmode="decimal" step="0.1" min="0" max="5" value="1.0">
+    </div>
+    <div class="f">
+      <label for="caSol">Препарат</label>
+      <select id="caSol">
+        <option value="0.22">Ca глюконат 10 % (0,22 ммоль/мл)</option>
+        <option value="0.68">Ca хлорид 10 % (0,68 ммоль/мл)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Расчёт на сутки</h2>
+  <table>
+    <thead>
+      <tr><th>Компонент</th><th>мл/сут</th><th>мл/ч</th></tr>
+    </thead>
+    <tbody id="volumes"></tbody>
+    <tfoot>
+      <tr><td>Итого ПП</td><td class="num" id="totalMl">—</td><td class="num" id="totalRate">—</td></tr>
+    </tfoot>
+  </table>
+  <div id="mixBox"></div>
+</div>
+
+<div class="card">
+  <h2>Энергия и нагрузки</h2>
+  <div id="energy"></div>
+</div>
+
+<div class="card" id="checksCard">
+  <h2>Проверки</h2>
+  <div id="checks"></div>
+</div>
+
+<details class="card">
+  <summary>Пороговые значения, которые использует калькулятор</summary>
+  <div class="hint" style="margin-top:10px; line-height:1.6" id="thresholds"></div>
+</details>
+
+<p class="disclaimer">
+  Инструмент помогает считать арифметику назначения и не заменяет клиническое решение.
+  Пороги заданы по общепринятым диапазонам (ESPGHAN/ESPEN/ESPR 2018, РАСПМ) — сверяйте
+  с протоколом отделения. Финальные дозы и совместимость растворов проверяет врач.
+</p>
+
+<div class="bar">
+  <div id="barKcal"><b>—</b><small>ккал/кг</small></div>
+  <div id="barGir"><b>—</b><small>GIR</small></div>
+  <div id="barGlu"><b>—</b><small>глюкоза</small></div>
+  <div id="barOsm"><b>—</b><small>мосм/л</small></div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- Пороговые значения (правьте под протокол отделения) ---------- */
+const LIMITS = {
+  gir:        { min: 4,   max: 12,  hardMax: 14 },   // мг/кг/мин
+  aa:         { min: 1.5, max: 4.0 },                // г/кг/сут
+  lipid:      { max: 4.0 },                          // г/кг/сут
+  kcalPerKg:  { min: 90,  max: 120 },                // ккал/кг/сут (полное ПП)
+  gluPeriph:  12.5,                                  // % глюкозы в периферию
+  osmPeriph:  900,                                   // мосм/л в периферию
+  npcPerN:    { min: 100, max: 200 }                 // небелковые ккал на 1 г азота
+};
+
+/* ---------- Энергетические коэффициенты ---------- */
+const KCAL_AA = 4.0;          // ккал/г аминокислот
+const KCAL_GLU = 3.4;         // ккал/г глюкозы (моногидрат)
+const KCAL_ML_LIPID = { 20: 2.0, 10: 1.1 };  // ккал/мл эмульсии
+const N_PER_PROTEIN = 6.25;   // г белка на 1 г азота
+
+/* Осмолярный вклад, мосм на единицу */
+const OSM = { gluPerGram: 5.55, aaPerGram: 10, na: 2, k: 2, ca: 3 };
+
+const $ = id => document.getElementById(id);
+const val = id => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : 0; };
+const fmt = (v, d = 1) => Number.isFinite(v) ? v.toFixed(d).replace('.', ',') : '—';
+
+let access = 'central';
+let gluMode = 'gir';
+
+/* ---------- Сегментированные переключатели ---------- */
+function initSeg(containerId, onChange){
+  const box = $(containerId);
+  box.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    [...box.querySelectorAll('button')].forEach(b =>
+      b.setAttribute('aria-pressed', String(b === btn)));
+    onChange(btn.dataset.v);
+  });
+}
+initSeg('access', v => { access = v; calc(); });
+initSeg('gluMode', v => {
+  gluMode = v;
+  $('girRow').hidden  = (v !== 'gir');
+  $('concRow').hidden = (v !== 'conc');
+  calc();
+});
+
+/* ---------- Ориентир по объёму жидкости ---------- */
+function fluidHint(ga, dol){
+  const preterm = ga < 37;
+  let range;
+  if (dol <= 0)      range = preterm ? '70–90'   : '60–80';
+  else if (dol === 1) range = preterm ? '90–110' : '70–90';
+  else if (dol === 2) range = preterm ? '110–130': '80–100';
+  else if (dol === 3) range = preterm ? '130–150': '100–120';
+  else if (dol <= 6)  range = preterm ? '140–160': '120–150';
+  else                range = '140–170';
+  return `Ориентир для ${preterm ? 'недоношенного' : 'доношенного'} на ${dol} сут: ${range} мл/кг/сут`;
+}
+
+/* ---------- Подбор смеси из двух исходных растворов глюкозы ---------- */
+function glucoseMix(volume, targetPct){
+  const stocks = [[5, 40], [10, 40], [5, 20], [10, 20]];
+  for (const [low, high] of stocks){
+    if (targetPct >= low && targetPct <= high){
+      const vHigh = volume * (targetPct - low) / (high - low);
+      return { low, high, vLow: volume - vHigh, vHigh };
+    }
+  }
+  return null;
+}
+
+/* ---------- Основной расчёт ---------- */
+function calc(){
+  const weight  = val('weight');
+  const ga      = val('ga');
+  const dol     = val('dol');
+  $('fluidHint').textContent = fluidHint(ga, dol);
+
+  if (weight <= 0){ return; }
+
+  const totalMl   = val('fluid')   * weight;
+  const enteralMl = val('enteral') * weight;
+  const otherMl   = val('other')   * weight;
+  const pnBudget  = totalMl - enteralMl - otherMl;   // объём, доступный для ПП
+
+  /* Аминокислоты */
+  const aaDose = val('aaDose'), aaConc = val('aaConc');
+  const aaG  = aaDose * weight;
+  const aaMl = aaConc > 0 ? aaG / (aaConc / 100) : 0;
+
+  /* Липиды */
+  const lipDose = val('lipDose'), lipConc = val('lipConc');
+  const lipG  = lipDose * weight;
+  const lipMl = lipConc > 0 ? lipG / (lipConc / 100) : 0;
+  const lipKcal = lipMl * (KCAL_ML_LIPID[lipConc] ?? 2.0);
+
+  /* Электролиты */
+  const naMmol = val('naDose') * weight, naMl = naMmol / val('naSol');
+  const kMmol  = val('kDose')  * weight, kMl  = kMmol  / val('kSol');
+  const caMmol = val('caDose') * weight, caMl = caMmol / val('caSol');
+  const elecMl = naMl + kMl + caMl;
+
+  /* Глюкоза занимает остаток объёма (липиды идут отдельной линией,
+     но входят в общий суточный объём) */
+  const aqueousMl = pnBudget - aaMl - lipMl - elecMl;
+
+  let gluG, gir, gluPct;
+  if (gluMode === 'gir'){
+    gir    = val('gir');
+    gluG   = gir * weight * 1.44;                       // г/сут
+    gluPct = aqueousMl > 0 ? gluG / aqueousMl * 100 : NaN;
+  } else {
+    gluPct = val('gluConc');
+    gluG   = aqueousMl > 0 ? aqueousMl * gluPct / 100 : 0;
+    gir    = weight > 0 ? gluG / (weight * 1.44) : 0;
+  }
+
+  const usedMl = aaMl + lipMl + elecMl + Math.max(aqueousMl, 0);
+
+  /* ---- Таблица объёмов ---- */
+  const rows = [
+    ['Аминокислоты ' + fmt(aaConc, 0) + ' %', aaMl, `${fmt(aaG, 1)} г/сут`],
+    ['Жировая эмульсия ' + fmt(lipConc, 0) + ' %', lipMl, `${fmt(lipG, 1)} г/сут`],
+    ['Глюкоза (водная часть)', Math.max(aqueousMl, 0), `${fmt(gluG, 1)} г/сут, ${fmt(gluPct, 1)} %`],
+    ['NaCl', naMl, `${fmt(naMmol, 1)} ммоль/сут`],
+    ['KCl', kMl, `${fmt(kMmol, 1)} ммоль/сут`],
+    ['Кальций', caMl, `${fmt(caMmol, 2)} ммоль/сут`],
+  ];
+  $('volumes').innerHTML = rows.map(([name, ml, sub]) => `
+    <tr><td>${name}</td><td class="num">${fmt(ml, 1)}</td><td class="num">${fmt(ml / 24, 2)}</td></tr>
+    <tr><td class="sub" colspan="3">${sub}</td></tr>`).join('');
+  $('totalMl').textContent   = fmt(usedMl, 1);
+  $('totalRate').textContent = fmt(usedMl / 24, 2);
+
+  /* ---- Подбор исходных растворов глюкозы ---- */
+  const mix = (aqueousMl > 0 && Number.isFinite(gluPct)) ? glucoseMix(aqueousMl, gluPct) : null;
+  $('mixBox').innerHTML = mix
+    ? `<div class="mix">Чтобы получить <b>${fmt(aqueousMl, 0)} мл</b> раствора
+       <b>${fmt(gluPct, 1)} %</b>: глюкоза ${mix.low} % — <b>${fmt(mix.vLow, 1)} мл</b>
+       + глюкоза ${mix.high} % — <b>${fmt(mix.vHigh, 1)} мл</b>
+       <span class="hint">(объём аминокислот и электролитов уже учтён отдельно)</span></div>`
+    : '';
+
+  /* ---- Энергия ---- */
+  const aaKcal  = aaG * KCAL_AA;
+  const gluKcal = gluG * KCAL_GLU;
+  const totalKcal = aaKcal + lipKcal + gluKcal;
+  const kcalKg  = weight > 0 ? totalKcal / weight : 0;
+  const nitrogen = aaG / N_PER_PROTEIN;
+  const npcPerN = nitrogen > 0 ? (lipKcal + gluKcal) / nitrogen : 0;
+
+  const osm = aqueousMl > 0
+    ? (gluG * OSM.gluPerGram + aaG * OSM.aaPerGram +
+       naMmol * OSM.na + kMmol * OSM.k + caMmol * OSM.ca)
+      / ((aqueousMl + aaMl + elecMl) / 1000)
+    : NaN;
+
+  $('energy').innerHTML = [
+    ['Белок', `${fmt(aaKcal, 0)} ккал · ${fmt(aaDose, 1)} г/кг/сут`],
+    ['Жиры', `${fmt(lipKcal, 0)} ккал · ${fmt(lipDose, 1)} г/кг/сут`],
+    ['Углеводы', `${fmt(gluKcal, 0)} ккал · GIR ${fmt(gir, 1)} мг/кг/мин`],
+    ['Всего', `${fmt(totalKcal, 0)} ккал · <b>${fmt(kcalKg, 0)} ккал/кг/сут</b>`],
+    ['Небелковые ккал / г азота', `${fmt(npcPerN, 0)} : 1`],
+    ['Осмолярность (расчётная)', `${fmt(osm, 0)} мосм/л`],
+    ['Скорость инфузии', `${fmt(usedMl / 24, 2)} мл/ч`],
+  ].map(([k, v]) => `<div class="kv"><span>${k}</span><span>${v}</span></div>`).join('');
+
+  /* ---- Проверки ---- */
+  const checks = [];
+  const add = (level, text) => checks.push({ level, text });
+
+  if (aqueousMl < 0)
+    add('danger', `Объёма не хватает: компоненты превышают доступный объём на ${fmt(-aqueousMl, 1)} мл. Уменьшите дозы или увеличьте общий объём.`);
+  else if (aqueousMl < 5 && gluG > 0)
+    add('danger', 'На глюкозу почти не остаётся объёма — пересмотрите распределение.');
+
+  if (gir > LIMITS.gir.hardMax)
+    add('danger', `GIR ${fmt(gir, 1)} мг/кг/мин выше предела ${LIMITS.gir.hardMax} — риск гипергликемии и липогенеза.`);
+  else if (gir > LIMITS.gir.max)
+    add('warn', `GIR ${fmt(gir, 1)} мг/кг/мин выше обычного максимума ${LIMITS.gir.max}.`);
+  else if (gir > 0 && gir < LIMITS.gir.min)
+    add('warn', `GIR ${fmt(gir, 1)} мг/кг/мин ниже ${LIMITS.gir.min} — риск гипогликемии.`);
+
+  if (aaDose > LIMITS.aa.max)
+    add('danger', `Аминокислоты ${fmt(aaDose, 1)} г/кг/сут выше максимума ${LIMITS.aa.max}.`);
+  else if (aaDose > 0 && aaDose < LIMITS.aa.min)
+    add('warn', `Аминокислоты ${fmt(aaDose, 1)} г/кг/сут ниже минимума ${LIMITS.aa.min} — не покрывается катаболизм.`);
+
+  if (lipDose > LIMITS.lipid.max)
+    add('danger', `Жиры ${fmt(lipDose, 1)} г/кг/сут выше максимума ${LIMITS.lipid.max}.`);
+
+  if (access === 'peripheral'){
+    if (gluPct > LIMITS.gluPeriph)
+      add('danger', `Глюкоза ${fmt(gluPct, 1)} % в периферическую вену (предел ${fmt(LIMITS.gluPeriph, 1)} %) — нужен центральный доступ.`);
+    if (osm > LIMITS.osmPeriph)
+      add('danger', `Осмолярность ${fmt(osm, 0)} мосм/л выше ${LIMITS.osmPeriph} — риск флебита, нужен центральный доступ.`);
+  }
+
+  if (kcalKg > 0 && kcalKg < LIMITS.kcalPerKg.min)
+    add('warn', `${fmt(kcalKg, 0)} ккал/кг/сут — ниже целевых ${LIMITS.kcalPerKg.min}–${LIMITS.kcalPerKg.max} для полного ПП.`);
+  else if (kcalKg > LIMITS.kcalPerKg.max)
+    add('warn', `${fmt(kcalKg, 0)} ккал/кг/сут — выше целевых ${LIMITS.kcalPerKg.min}–${LIMITS.kcalPerKg.max}.`);
+
+  if (nitrogen > 0 && npcPerN < LIMITS.npcPerN.min)
+    add('warn', `Небелковых калорий ${fmt(npcPerN, 0)} на 1 г азота (норма ${LIMITS.npcPerN.min}–${LIMITS.npcPerN.max}) — белок пойдёт в энергию.`);
+
+  if (caMmol > 0 && aqueousMl > 0)
+    add('warn', 'Проверьте совместимость кальция и фосфатов в этом объёме — риск преципитации.');
+
+  if (!checks.length)
+    add('ok', 'Значения в пределах заданных диапазонов.');
+
+  const order = { danger: 0, warn: 1, ok: 2 };
+  checks.sort((a, b) => order[a.level] - order[b.level]);
+  $('checks').innerHTML = checks
+    .map(c => `<div class="msg ${c.level}">${c.text}</div>`).join('');
+
+  /* ---- Нижняя панель ---- */
+  const setBar = (id, value, level) => {
+    const el = $(id);
+    el.querySelector('b').textContent = value;
+    el.className = level ? 'flag-' + level : '';
+  };
+  setBar('barKcal', fmt(kcalKg, 0),
+    kcalKg < LIMITS.kcalPerKg.min || kcalKg > LIMITS.kcalPerKg.max ? 'warn' : null);
+  setBar('barGir', fmt(gir, 1),
+    gir > LIMITS.gir.hardMax ? 'danger' : (gir > LIMITS.gir.max || gir < LIMITS.gir.min ? 'warn' : null));
+  setBar('barGlu', Number.isFinite(gluPct) ? fmt(gluPct, 1) + '%' : '—',
+    access === 'peripheral' && gluPct > LIMITS.gluPeriph ? 'danger' : null);
+  setBar('barOsm', fmt(osm, 0),
+    access === 'peripheral' && osm > LIMITS.osmPeriph ? 'danger' : null);
+}
+
+/* ---------- Справка по порогам ---------- */
+$('thresholds').innerHTML = `
+  GIR: ${LIMITS.gir.min}–${LIMITS.gir.max} мг/кг/мин (жёсткий предел ${LIMITS.gir.hardMax})<br>
+  Аминокислоты: ${fmt(LIMITS.aa.min, 1)}–${fmt(LIMITS.aa.max, 1)} г/кг/сут<br>
+  Жиры: до ${fmt(LIMITS.lipid.max, 1)} г/кг/сут<br>
+  Энергия: ${LIMITS.kcalPerKg.min}–${LIMITS.kcalPerKg.max} ккал/кг/сут<br>
+  Глюкоза в периферию: до ${fmt(LIMITS.gluPeriph, 1)} %<br>
+  Осмолярность в периферию: до ${LIMITS.osmPeriph} мосм/л<br>
+  Небелковые ккал / г азота: ${LIMITS.npcPerN.min}–${LIMITS.npcPerN.max}<br><br>
+  Коэффициенты: белок ${KCAL_AA} ккал/г · глюкоза ${KCAL_GLU} ккал/г ·
+  эмульсия 20 % — 2,0 ккал/мл, 10 % — 1,1 ккал/мл.<br>
+  Изменить пороги можно в блоке <code>LIMITS</code> в начале скрипта.`;
+
+/* ---------- Интеграция с Telegram ---------- */
+const tg = window.Telegram?.WebApp;
+if (tg){
+  tg.ready();
+  tg.expand();
+  const p = tg.themeParams || {};
+  const set = (name, v) => v && document.documentElement.style.setProperty(name, v);
+  set('--bg',   p.secondary_bg_color);
+  set('--card', p.bg_color);
+  set('--text', p.text_color);
+  set('--muted', p.hint_color);
+  set('--accent', p.link_color);
+}
+
+document.addEventListener('input', calc);
+document.addEventListener('change', calc);
+calc();
+</script>
+</body>
+</html>
