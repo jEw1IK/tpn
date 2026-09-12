@@ -1,0 +1,36 @@
+# Шаблон systemd-юнита. Поправь User, WorkingDirectory и ExecStart под себя.
+#   sudo cp postneo-bot.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now postneo-bot
+
+[Unit]
+Description=PostNeo Telegram bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=postneo
+Group=postneo
+
+# Каталог, в котором лежит и код бота, и подкаталог cheatsheets/.
+# Именно отсюда Python найдёт пакет cheatsheets — не меняй, не поправив PYTHONPATH.
+WorkingDirectory=/opt/postneo
+Environment=PYTHONUNBUFFERED=1
+Environment=BILI_WEBAPP_URL=https://jew1ik.github.io/tpn/bili/
+EnvironmentFile=-/opt/postneo/.env
+
+ExecStart=/opt/postneo/.venv/bin/python -m bot
+
+Restart=always
+RestartSec=5
+
+# Минимальная изоляция. Кэш file_id пишется внутрь каталога бота,
+# поэтому ReadWritePaths обязателен при ProtectSystem=strict.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/postneo
+
+[Install]
+WantedBy=multi-user.target

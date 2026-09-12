@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Билирубин: пороги и расчёты</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="thresholds.js"></script>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --text:#14181f; --muted:#6b7280; --line:#e3e6ea;
+  --accent:#2f7ad6; --accent-soft:#eaf2fc;
+  --ok:#1c7c50; --ok-soft:#e6f4ec;
+  --warn:#9a6300; --warn-soft:#fdf3e0;
+  --danger:#b3261e; --danger-soft:#fdecea;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15181d; --card:#1e232b; --text:#e8eaed; --muted:#9aa3af; --line:#2c333d;
+    --accent:#63a6f0; --accent-soft:#1d2c3d;
+    --ok:#5fd39b; --ok-soft:#163024;
+    --warn:#e2b464; --warn-soft:#332818;
+    --danger:#f2877f; --danger-soft:#3a1d1b;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:12px 12px 130px;
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg); color:var(--text);
+  -webkit-text-size-adjust:100%;
+}
+h1{font-size:19px; margin:4px 0 14px}
+h2{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 10px}
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:12px}
+.row{display:flex; gap:10px; align-items:flex-end; margin-bottom:10px}
+.row:last-child{margin-bottom:0}
+.f{flex:1; min-width:0}
+label{display:block; font-size:12px; color:var(--muted); margin-bottom:4px}
+input,select{
+  width:100%; padding:9px 10px; font-size:16px; color:var(--text);
+  background:var(--bg); border:1px solid var(--line); border-radius:9px; outline:none;
+  -moz-appearance:textfield;
+}
+input:focus,select:focus{border-color:var(--accent)}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.hint{font-size:11px; color:var(--muted); margin-top:3px}
+
+.seg{display:flex; gap:6px}
+.seg button{
+  flex:1; padding:9px 6px; font-size:13px; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--muted);
+  border:1px solid var(--line); border-radius:9px;
+}
+.seg button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600}
+
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.chips button{
+  padding:7px 11px; font-size:13px; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--muted);
+  border:1px solid var(--line); border-radius:999px;
+}
+.chips button[aria-pressed="true"]{background:var(--danger-soft); border-color:var(--danger); color:var(--danger); font-weight:600}
+
+.kv{display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px}
+.kv:last-child{border-bottom:none}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font-variant-numeric:tabular-nums; font-weight:600; text-align:right}
+.kv.big span:last-child{font-size:17px}
+.kv.total span{font-weight:700}
+
+.msg{padding:9px 11px; border-radius:10px; font-size:13px; margin-top:8px; border:1px solid transparent}
+.msg.danger{background:var(--danger-soft); color:var(--danger); border-color:currentColor}
+.msg.warn{background:var(--warn-soft); color:var(--warn); border-color:currentColor}
+.msg.ok{background:var(--ok-soft); color:var(--ok); border-color:currentColor}
+.msg.info{background:var(--accent-soft); color:var(--accent); border-color:currentColor}
+.msg b{display:block; margin-bottom:2px}
+
+table{width:100%; border-collapse:collapse; font-size:14px}
+th,td{padding:7px 0; text-align:right; border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600}
+tr:last-child td{border-bottom:none}
+tr.hit td{color:var(--accent); font-weight:700}
+.num{font-variant-numeric:tabular-nums}
+
+svg.nomo{width:100%; height:auto; display:block; margin-top:4px}
+svg.nomo text{font-size:8px; fill:var(--muted)}
+
+.bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:10;
+  display:flex; gap:2px; padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  background:var(--card); border-top:1px solid var(--line);
+}
+.bar div{flex:1; text-align:center; min-width:0}
+.bar b{display:block; font-size:17px; font-variant-numeric:tabular-nums}
+.bar small{display:block; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+.bar .flag-warn b{color:var(--warn)}
+.bar .flag-danger b{color:var(--danger)}
+.bar .flag-ok b{color:var(--ok)}
+
+.disclaimer{font-size:11px; color:var(--muted); line-height:1.5; padding:0 4px}
+details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px 0}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<h1>Билирубин: пороги и расчёты</h1>
+
+<div class="card">
+  <h2>Шкала порогов</h2>
+  <div class="seg" id="scale">
+    <button type="button" data-v="kr_rf" aria-pressed="true">КР МЗ РФ</button>
+    <button type="button" data-v="aap" aria-pressed="false">AAP 2004</button>
+  </div>
+  <div class="hint" id="scaleHint"></div>
+</div>
+
+<div class="card">
+  <h2>Пациент</h2>
+  <div class="row">
+    <div class="f">
+      <label for="gaw">ГВ/СВ, нед</label>
+      <input id="gaw" type="number" inputmode="numeric" step="1" min="22" max="44" value="38">
+    </div>
+    <div class="f">
+      <label for="gad">ГВ, дни</label>
+      <input id="gad" type="number" inputmode="numeric" step="1" min="0" max="6" value="0">
+    </div>
+    <div class="f">
+      <label for="hours">Возраст, ч</label>
+      <input id="hours" type="number" inputmode="numeric" step="1" min="0" max="336" value="48">
+    </div>
+    <div class="f">
+      <label for="weight">Масса, г</label>
+      <input id="weight" type="number" inputmode="numeric" step="10" min="300" max="7000" value="3200">
+    </div>
+  </div>
+  <details>
+    <summary>Посчитать часы по дате рождения</summary>
+    <div class="row" style="margin-top:8px">
+      <div class="f">
+        <label for="born">Дата и время рождения</label>
+        <input id="born" type="datetime-local">
+      </div>
+    </div>
+    <div class="hint">Часы жизни подставятся автоматически и будут пересчитываться при вводе.</div>
+  </details>
+</div>
+
+<div class="card">
+  <h2>Факторы риска</h2>
+  <div class="chips" id="risks"></div>
+  <div class="hint" id="riskHint"></div>
+  <div id="riskNote"></div>
+</div>
+
+<div class="card">
+  <h2>Билирубин</h2>
+  <div class="row">
+    <div class="f">
+      <label for="bili">Общий билирубин</label>
+      <input id="bili" type="number" inputmode="decimal" step="1" min="0" max="900" value="250">
+      <div class="hint" id="biliConv"></div>
+    </div>
+    <div class="f">
+      <label>Единицы</label>
+      <div class="seg" id="unit">
+        <button type="button" data-v="umol" aria-pressed="true">мкмоль/л</button>
+        <button type="button" data-v="mgdl" aria-pressed="false">мг/дл</button>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="f">
+      <label for="alb">Альбумин, г/л <span style="opacity:.6">— необязательно</span></label>
+      <input id="alb" type="number" inputmode="decimal" step="1" min="0" max="60" value="">
+      <div class="hint">Для расчёта отношения билирубин / альбумин</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Пороги</h2>
+  <div id="verdict"></div>
+  <div id="thresholds" style="margin-top:10px"></div>
+  <svg class="nomo" id="nomo" viewBox="0 0 320 190" preserveAspectRatio="xMidYMid meet"
+       role="img" aria-label="Номограмма порогов фототерапии и ОЗПК"></svg>
+  <div class="hint" id="nomoNote"></div>
+</div>
+
+<div class="card">
+  <h2>Почасовой прирост</h2>
+  <div class="row">
+    <div class="f">
+      <label for="prev">Предыдущий билирубин</label>
+      <input id="prev" type="number" inputmode="decimal" step="1" min="0" max="900" value="">
+      <div class="hint" id="prevUnit"></div>
+    </div>
+    <div class="f">
+      <label for="dt">Прошло часов</label>
+      <input id="dt" type="number" inputmode="decimal" step="0.5" min="0.5" max="72" value="6">
+    </div>
+  </div>
+  <div id="rise"></div>
+</div>
+
+<div class="card">
+  <h2>Объём ОЗПК</h2>
+  <div id="exchange"></div>
+</div>
+
+<div class="card">
+  <h2>Трансфузия эритроцитной взвеси</h2>
+  <div class="row">
+    <div class="f">
+      <label for="hb">Hb фактический, г/л</label>
+      <input id="hb" type="number" inputmode="numeric" step="1" min="20" max="250" value="95">
+    </div>
+    <div class="f">
+      <label for="hbt">Hb целевой, г/л</label>
+      <input id="hbt" type="number" inputmode="numeric" step="1" min="60" max="250" value="120">
+    </div>
+  </div>
+  <div class="row">
+    <div class="f">
+      <label>Респираторная поддержка</label>
+      <div class="seg" id="resp">
+        <button type="button" data-v="ventilated" aria-pressed="false">ИВЛ / FiO₂ &gt; 0,35</button>
+        <button type="button" data-v="support" aria-pressed="false">CPAP</button>
+        <button type="button" data-v="none" aria-pressed="true">Нет</button>
+      </div>
+    </div>
+  </div>
+  <div id="transfusion"></div>
+</div>
+
+<div class="card">
+  <h2>Памятка</h2>
+  <p class="disclaimer" id="about"></p>
+</div>
+
+<div class="bar">
+  <div id="barPt"><b>—</b><small>Порог ФТ</small></div>
+  <div id="barEx"><b>—</b><small>Порог ОЗПК</small></div>
+  <div id="barGap"><b>—</b><small>Запас до ОЗПК</small></div>
+</div>
+
+<script>
+"use strict";
+const D = window.BILI_DATA;
+const $ = id => document.getElementById(id);
+const F = D.mgdl_factor;
+
+/* ---------- состояние сегментов и чипов ---------- */
+function segValue(id){
+  const el = $(id).querySelector('[aria-pressed="true"]');
+  return el ? el.dataset.v : null;
+}
+function wireSeg(id){
+  $(id).addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    for (const x of $(id).querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
+    calc();
+  });
+}
+['resp', 'scale'].forEach(wireSeg);
+
+/* Переключение единиц пересчитывает уже введённые значения: физическая
+   величина должна остаться той же, иначе 250 мкмоль/л молча превратятся
+   в 250 мг/дл. */
+$('unit').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b || b.getAttribute('aria-pressed') === 'true') return;
+  const toMgdl = b.dataset.v === 'mgdl';
+  for (const x of $('unit').querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
+  for (const id of ['bili', 'prev']){
+    const v = parseFloat($(id).value);
+    if (!Number.isFinite(v)) continue;
+    const conv = toMgdl ? v / F : v * F;
+    $(id).value = toMgdl ? conv.toFixed(1) : Math.round(conv);
+  }
+  $('bili').step = toMgdl ? '0.1' : '1';
+  $('prev').step = toMgdl ? '0.1' : '1';
+  calc();
+});
+
+const risksBox = $('risks');
+risksBox.innerHTML = D.risk_factors
+  .map(f => `<button type="button" data-id="${f.id}" aria-pressed="false">${f.short}</button>`)
+  .join('');
+risksBox.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+  calc();
+});
+function activeRisks(){
+  return [...risksBox.querySelectorAll('[aria-pressed="true"]')].map(b => b.dataset.id);
+}
+
+/* ---------- утилиты ---------- */
+const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : null; };
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const fmt = v => Math.round(v).toLocaleString('ru-RU');
+const fmt1 = v => v.toFixed(1).replace('.', ',');
+
+/* Ввод и вывод идут в выбранных единицах, вся арифметика — в мкмоль/л. */
+const isMgdl = () => segValue('unit') === 'mgdl';
+const toUmol = v => v === null ? null : (isMgdl() ? v * F : v);
+const biliNum = v => isMgdl() ? fmt1(v / F) : fmt(v);
+const unitLabel = () => isMgdl() ? 'мг/дл' : 'мкмоль/л';
+const showBili = v => biliNum(v) + ' ' + unitLabel();
+
+/* ---------- пороги ---------- */
+const SC = D.scales;
+const MAXH = 168;
+const scaleId = () => segValue('scale');
+
+function interp(series, hours, h){
+  h = clamp(h, hours[0], hours[hours.length - 1]);
+  for (let i = 1; i < hours.length; i++){
+    if (h <= hours[i]){
+      const t = (h - hours[i - 1]) / (hours[i] - hours[i - 1]);
+      return series[i - 1] + t * (series[i] - series[i - 1]);
+    }
+  }
+  return series[series.length - 1];
+}
+
+function hourBandIndex(hours, bands){
+  for (let i = 0; i < bands.length; i++)
+    if (bands[i].max === null || hours < bands[i].max) return i;
+  return bands.length - 1;
+}
+
+function gaBand(ga, bands){
+  for (const b of bands) if (b.ga_max === null || ga < b.ga_max) return b;
+  return bands[bands.length - 1];
+}
+
+function riskGroupId(ga, hasRisk){
+  if (ga >= 38) return hasRisk ? 'med' : 'low';
+  return hasRisk ? 'high' : 'med';
+}
+
+function thresholds(ga, hours, hasRisk, sid){
+  const cfg = SC[sid];
+
+  if (cfg.kind === 'steps'){
+    const band = gaBand(ga, cfg.ga_bands);
+    const i = hourBandIndex(hours, cfg.hour_bands);
+    const pt = band.phototherapy[i], inten = band.intensive[i], ex = band.exchange[i];
+    /* КР: интенсивная ФТ показана и когда до порога ОЗПК осталось менее 50 мкмоль/л.
+       Ограничиваем снизу порогом обычной ФТ: в интервале «менее 24 часов» ex - 50
+       оказывается ниже него, и лестница перевернулась бы. */
+    const m = cfg.intensive_within_of_exchange || 0;
+    return {
+      kind: 'steps', scale: sid, cfg, band, hourIndex: i,
+      hourLabel: cfg.hour_bands[i].label,
+      pt, intensive: inten,
+      intensiveEff: m ? Math.max(pt, Math.min(inten, ex - m)) : inten,
+      ex, margin: m,
+      consilium: ga < (cfg.consilium_below_ga || 0)
+    };
+  }
+
+  const gid = riskGroupId(ga, hasRisk);
+  const group = cfg.risk_groups.find(g => g.id === gid);
+  return {
+    kind: 'curve', scale: sid, cfg, group,
+    pt: interp(cfg.phototherapy[gid], cfg.hours, hours),
+    ex: interp(cfg.exchange[gid], cfg.hours, hours),
+    intensive: null, intensiveEff: null, consilium: false
+  };
+}
+
+/* ---------- номограмма ---------- */
+function drawNomogram(t, hours, bili){
+  const W = 320, H = 190, L = 30, R = 8, T = 10, B = 26;
+  const x0 = L, x1 = W - R, y0 = T, y1 = H - B;
+  const maxY = 460;
+  const px = h => x0 + (clamp(h, 0, MAXH) / MAXH) * (x1 - x0);
+  const py = v => y1 - (clamp(v, 0, maxY) / maxY) * (y1 - y0);
+
+  const parts = [`<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="none" stroke="var(--line)" stroke-width="0.7"/>`];
+  for (let v = 100; v <= 400; v += 100){
+    parts.push(`<line x1="${x0}" y1="${py(v)}" x2="${x1}" y2="${py(v)}" stroke="var(--line)" stroke-width="0.5"/>`);
+    parts.push(`<text x="${x0 - 4}" y="${py(v) + 3}" text-anchor="end">${v}</text>`);
+  }
+  for (let h = 0; h <= MAXH; h += 24){
+    parts.push(`<line x1="${px(h)}" y1="${y0}" x2="${px(h)}" y2="${y1}" stroke="var(--line)" stroke-width="0.4"/>`);
+    if (h % 48 === 0) parts.push(`<text x="${px(h)}" y="${y1 + 12}" text-anchor="middle">${h} ч</text>`);
+  }
+
+  const line = (pts, color) =>
+    `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.7" stroke-linejoin="round"/>`;
+
+  const legend = [];
+  if (t.kind === 'steps'){
+    /* Ступенчатая таблица: значение держится на всём интервале, поэтому рисуем
+       именно ступени, а не сглаженную кривую. */
+    const stepPts = key => {
+      const pts = [];
+      let xa = 0;
+      t.cfg.hour_bands.forEach((hb, i) => {
+        const xb = hb.max === null ? MAXH : hb.max;
+        pts.push(`${px(xa)},${py(t.band[key][i])}`, `${px(xb)},${py(t.band[key][i])}`);
+        xa = xb;
+      });
+      return pts.join(' ');
+    };
+    parts.push(line(stepPts('exchange'), 'var(--danger)'));
+    parts.push(line(stepPts('intensive'), 'var(--warn)'));
+    parts.push(line(stepPts('phototherapy'), 'var(--ok)'));
+    legend.push(['ОЗПК', 'var(--danger)'], ['интенсивная ФТ', 'var(--warn)'], ['стандартная ФТ', 'var(--ok)']);
+  } else {
+    const pts = key => t.cfg.hours.map((h, i) =>
+      `${px(h)},${py(t.cfg[key][t.group.id][i])}`).join(' ');
+    parts.push(line(pts('exchange'), 'var(--danger)'));
+    parts.push(line(pts('phototherapy'), 'var(--warn)'));
+    legend.push(['ОЗПК', 'var(--danger)'], ['фототерапия', 'var(--warn)']);
+  }
+
+  if (bili !== null){
+    parts.push(`<line x1="${px(hours)}" y1="${y0}" x2="${px(hours)}" y2="${y1}" stroke="var(--accent)" stroke-width="0.8" stroke-dasharray="2 2"/>`);
+    parts.push(`<circle cx="${px(hours)}" cy="${py(bili)}" r="4" fill="var(--accent)" stroke="var(--card)" stroke-width="1.5"/>`);
+  }
+  legend.forEach(([label, color], i) =>
+    parts.push(`<text x="${x1 - 2}" y="${y0 + 8 + i * 9}" text-anchor="end" fill="${color}">${label}</text>`));
+
+  $('nomo').innerHTML = parts.join('');
+}
+
+/* ---------- основной расчёт ---------- */
+function calc(){
+  const born = $('born').value;
+  if (born){
+    const h = (Date.now() - new Date(born).getTime()) / 3600000;
+    if (Number.isFinite(h) && h >= 0) $('hours').value = Math.floor(h);
+  }
+
+  const sid = scaleId();
+  const cfg = SC[sid];
+  const ga = clamp((num('gaw') ?? 38) + (num('gad') ?? 0) / 7, 22, 44);
+  const hours = clamp(num('hours') ?? 0, 0, 336);
+  const kg = (num('weight') ?? 0) / 1000;
+  const risks = activeRisks();
+  const hasRisk = risks.length > 0;
+  const bili = toUmol(num('bili'));
+  const steps = cfg.kind === 'steps';
+
+  const t = thresholds(ga, hours, hasRisk, sid);
+
+  $('scaleHint').textContent = steps
+    ? 'Ступенчатые таблицы клинических рекомендаций МЗ РФ (критерии Kobe 2017). '
+      + 'Значение действует на весь возрастной интервал, промежуточные не интерполируются.'
+    : 'Непрерывные номограммы AAP 2004, только для ГВ ≥ 35 нед, с интерполяцией по часам. '
+      + 'Справочная альтернатива: при разночтении следуйте КР.';
+
+  $('biliConv').textContent = bili === null ? ''
+    : (isMgdl() ? `= ${fmt(bili)} мкмоль/л` : `= ${fmt1(bili / F)} мг/дл`);
+  $('prevUnit').textContent = isMgdl() ? 'в мг/дл' : 'в мкмоль/л';
+
+  /* --- факторы риска --- */
+  const riskNames = risks.map(id => D.risk_factors.find(f => f.id === id).short).join(', ');
+  if (steps){
+    $('riskHint').textContent = hasRisk ? `Отмечено: ${riskNames}.` : 'Ничего не отмечено.';
+    $('riskNote').innerHTML = '<div class="msg info"><b>В шкале КР пороги от факторов риска не зависят</b>'
+      + 'Таблицы задаются только гестационным (скорригированным) возрастом и часами жизни. '
+      + 'Клинически факторы риска, конечно, важны — и они меняют пороги в шкале AAP.</div>';
+  } else {
+    $('riskNote').innerHTML = '';
+    $('riskHint').textContent =
+      `Группа риска: ${t.group.label.toLowerCase()} — ${t.group.desc}.`
+      + (hasRisk ? ` Отмечено: ${riskNames}.` : ' Факторы риска не отмечены.');
+  }
+
+  /* --- таблица порогов --- */
+  const rows = [];
+  if (steps){
+    rows.push(['ГВ / СВ', t.band.label]);
+    rows.push(['Возрастной интервал', t.hourLabel]);
+    rows.push(['Стандартная фототерапия', showBili(t.pt)]);
+    rows.push(['Интенсивная фототерапия', showBili(t.intensive)]);
+    if (t.intensiveEff < t.intensive)
+      rows.push([`Правило «запас &lt; ${t.margin}» даёт`, showBili(t.intensiveEff)]);
+    rows.push(['Порог ОЗПК', showBili(t.ex)]);
+  } else {
+    rows.push(['Группа риска', t.group.label]);
+    rows.push(['Возраст', `${fmt(hours)} ч`]);
+    rows.push(['Порог фототерапии', showBili(t.pt)]);
+    rows.push(['Порог ОЗПК', showBili(t.ex)]);
+  }
+  if (bili !== null){
+    rows.push(['До порога ФТ', (bili >= t.pt ? '+' : '') + showBili(Math.abs(t.pt - bili))]);
+    rows.push(['До порога ОЗПК', (bili >= t.ex ? '+' : '') + showBili(Math.abs(t.ex - bili))]);
+  }
+  $('thresholds').innerHTML = rows
+    .map(([k, v], i) => `<div class="kv${i >= rows.length - 2 ? ' big' : ''}"><span>${k}</span><span>${v}</span></div>`)
+    .join('');
+
+  /* --- вердикт --- */
+  const msgs = [];
+  if (bili === null){
+    msgs.push(['info', 'Введите билирубин', 'Пороги рассчитаны, осталось ввести значение.']);
+  } else if (bili >= t.ex){
+    msgs.push(['danger', 'Порог ОЗПК достигнут',
+      'Интенсивная фототерапия, ВВИГ при изоиммунном гемолизе, заказ компонентов, готовность к ОЗПК.'
+      + (t.consilium ? ' ГВ менее 32 недель — решение принимает консилиум врачей.' : '')]);
+  } else if (t.intensiveEff !== null && bili >= t.intensiveEff){
+    const byMargin = t.intensiveEff < t.intensive;
+    msgs.push(['danger', 'Показана интенсивная фототерапия',
+      (byMargin
+        ? `До порога ОЗПК осталось ${showBili(t.ex - bili)} — менее 50 мкмоль/л, это самостоятельное показание.`
+        : `Табличный порог интенсивной ФТ ${showBili(t.intensive)} превышен.`)
+      + ' Несколько источников света, максимум открытой кожи. Контроль через 2–4 ч.']);
+  } else if (t.intensiveEff === null && bili >= t.ex - 35){
+    msgs.push(['danger', 'Вплотную к порогу ОЗПК',
+      `До порога ${showBili(t.ex - bili)}. Интенсивная ФТ, кровь заказать заранее, контроль через 2–4 ч.`]);
+  } else if (bili >= t.pt){
+    msgs.push(['warn', steps ? 'Показана стандартная фототерапия' : 'Показана фототерапия',
+      `Порог превышен на ${showBili(bili - t.pt)}. Контроль билирубина через 4–6 ч.`]);
+  } else if (bili >= t.pt - 35){
+    msgs.push(['info', 'Близко к порогу фототерапии',
+      `До порога ${showBili(t.pt - bili)}. Контроль через 6–12 ч.`]);
+  } else {
+    msgs.push(['ok', 'Ниже порога фототерапии',
+      `Запас до ФТ ${showBili(t.pt - bili)}. Плановый контроль.`]);
+  }
+
+  if (hours < 24){
+    msgs.push(['warn', 'Первые сутки жизни',
+      'Любая видимая желтуха в первые 24 часа — патологическая. Билирубин срочно и в динамике.']);
+  }
+  if (!steps && ga < 35){
+    msgs.push(['danger', 'AAP не применима при ГВ &lt; 35 недель',
+      'Кривые AAP рассчитаны только на ГВ ≥ 35 нед. Для недоношенного переключитесь на шкалу КР МЗ РФ.']);
+  }
+  if (t.consilium){
+    msgs.push(['warn', 'Гестационный возраст менее 32 недель',
+      'Учитывая высокий риск осложнений ОЗПК у глубоко недоношенных, окончательное решение '
+      + 'о проведении операции принимает консилиум врачей.']);
+  }
+  if (steps && ga < 35){
+    msgs.push(['info', 'Возраст берётся по ГВ/СВ',
+      'У недоношенного по мере роста скорригированный возраст переводит его в следующую строку таблицы — '
+      + 'пересчитывайте строку, а не только часы жизни.']);
+  }
+
+  const alb = num('alb');
+  if (alb && bili !== null && alb > 0){
+    const ratio = bili / alb;
+    const limit = ga >= 38 ? (hasRisk ? D.ba_ratio.term_risk : D.ba_ratio.term_healthy)
+                : ga >= 35 ? D.ba_ratio.term_risk
+                : D.ba_ratio.preterm;
+    msgs.push([ratio >= limit ? 'danger' : 'ok', `Билирубин / альбумин = ${fmt1(ratio)}`,
+      ratio >= limit
+        ? `Порог ${fmt1(limit)} превышен — дополнительный аргумент в пользу ОЗПК.`
+        : `Ниже порога ${fmt1(limit)} для этой категории.`]);
+  }
+  $('verdict').innerHTML = msgs
+    .map(([tone, head, text]) => `<div class="msg ${tone}"><b>${head}</b>${text}</div>`).join('');
+
+  drawNomogram(t, hours, bili);
+  $('nomoNote').textContent = steps
+    ? 'Ступени по интервалам возраста для строки ' + t.band.label + '. Точка — текущее значение.'
+    : 'Непрерывные кривые для выбранной группы риска. Точка — текущее значение.';
+
+  /* --- почасовой прирост --- */
+  const prev = toUmol(num('prev'));
+  const dt = num('dt');
+  if (prev !== null && bili !== null && dt && dt > 0){
+    const rise = (bili - prev) / dt;
+    if (rise < 0){
+      $('rise').innerHTML = `<div class="msg ok"><b>Билирубин снижается</b>`
+        + `${showBili(Math.abs(bili - prev))} за ${fmt1(dt)} ч. Терапия работает, контроль по графику.</div>`;
+    } else {
+      const band = D.hourly_rise.find(b => b.max === null || rise < b.max);
+      const hoursToEx = rise > 0 ? (t.ex - bili) / rise : null;
+      let extra = '';
+      if (hoursToEx !== null && hoursToEx > 0 && hoursToEx < 48)
+        extra = ` При таком темпе порог ОЗПК будет достигнут примерно через ${fmt1(hoursToEx)} ч.`;
+      $('rise').innerHTML =
+        `<div class="kv big"><span>Прирост</span><span>${fmt1(rise)} мкмоль/л/ч</span></div>`
+        + `<div class="msg ${band.tone}"><b>${band.title}</b>${band.action}.${extra}</div>`;
+    }
+  } else {
+    $('rise').innerHTML = '<div class="hint">Введите предыдущее значение и интервал — '
+      + 'посчитаю прирост и время до порога ОЗПК.</div>';
+  }
+
+  /* --- объём ОЗПК --- */
+  const ev = D.exchange_volume;
+  if (kg > 0){
+    const total = ev.bcc_ml_per_kg * ev.volumes_bcc * kg;
+    const preterm = ga < 37;
+    const cyc = preterm ? ev.cycle_ml_per_kg_preterm : ev.cycle_ml_per_kg_term;
+    $('exchange').innerHTML =
+      `<div class="kv big"><span>Общий объём — ${ev.volumes_bcc} ОЦК</span><span>${fmt(total)} мл</span></div>`
+      + `<div class="kv"><span>Эритроцитная взвесь — 2/3</span><span>${fmt(total * ev.rbc_fraction)} мл</span></div>`
+      + `<div class="kv"><span>СЗП — 1/3</span><span>${fmt(total * ev.ffp_fraction)} мл</span></div>`
+      + `<div class="kv"><span>Одно замещение (${preterm ? 'недоношенный' : 'доношенный'})</span>`
+      + `<span>${fmt(cyc[0] * kg)}–${fmt(cyc[1] * kg)} мл</span></div>`
+      + `<div class="kv"><span>Скорость одного замещения</span>`
+      + `<span>${ev.replacement_rate_ml_per_min[0]}–${ev.replacement_rate_ml_per_min[1]} мл/мин</span></div>`
+      + `<div class="kv"><span>Кальция глюконат 10 % на каждые ${ev.calcium_per_ml_replaced} мл</span>`
+      + `<span>${fmt1(ev.calcium_ml_per_kg * kg)} мл</span></div>`
+      + `<div class="kv"><span>Длительность</span><span>2–3 ч</span></div>`
+      + `<div class="msg info"><b>Частичное ОЗПК при отёчной форме</b>`
+      + `${fmt(ev.partial_ml_per_kg[0] * kg)}–${fmt(ev.partial_ml_per_kg[1] * kg)} мл `
+      + `эритроцитов O(I) Rh−, дробно, с изоволемическим выведением.</div>`
+      + `<div class="msg ok"><b>Критерий эффективности</b>${ev.success_criterion[0].toUpperCase()}`
+      + `${ev.success_criterion.slice(1)}.</div>`
+      + `<div class="hint">${ev.syringe_ratio[0].toUpperCase()}${ev.syringe_ratio.slice(1)}. `
+      + `Кальций вводится только между шприцами с эритроцитами, разведённый в 5 мл 5 % декстрозы. `
+      + `Ht готовой смеси 0,45–0,50, компоненты подогреть до `
+      + `${ev.warm_to_c[0]}–${ev.warm_to_c[1]} °C.</div>`;
+  } else {
+    $('exchange').innerHTML = '<div class="hint">Введите массу тела.</div>';
+  }
+
+  /* --- трансфузия --- */
+  const tr = D.transfusion;
+  const hb = num('hb'), hbt = num('hbt');
+  const weekIndex = hours < 168 ? 0 : hours < 336 ? 1 : 2;
+  const respKey = segValue('resp');
+  const [thrHb, thrHt] = tr.thresholds[weekIndex][respKey];
+
+  let html = '<table><thead><tr><th>Возраст</th><th>ИВЛ</th><th>CPAP</th><th>Без поддержки</th></tr></thead><tbody>';
+  tr.thresholds.forEach((rw, i) => {
+    html += `<tr class="${i === weekIndex ? 'hit' : ''}"><td>${rw.week}</td>`
+      + `<td class="num">${rw.ventilated[0]}</td><td class="num">${rw.support[0]}</td>`
+      + `<td class="num">${rw.none[0]}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  html += `<div class="kv" style="margin-top:8px"><span>Порог для этого ребёнка</span>`
+    + `<span>Hb &lt; ${thrHb} г/л (Ht &lt; ${String(thrHt.toFixed(2)).replace('.', ',')})</span></div>`;
+
+  if (hb !== null){
+    html += hb < thrHb
+      ? `<div class="msg warn"><b>Ниже порога</b>Показана трансфузия эритроцитной взвеси `
+        + `${tr.dose_ml_per_kg[0]}–${tr.dose_ml_per_kg[1]} мл/кг.</div>`
+      : `<div class="msg ok"><b>Выше порога</b>Плановая трансфузия не показана. При симптомной анемии — `
+        + `тахикардия &gt; 180, апноэ, прибавка &lt; 10 г/кг/сут — переливают и при более высоком Hb.</div>`;
+    if (hbt !== null && hbt > hb && kg > 0){
+      const vol = (hbt - hb) * kg * tr.bcc_ml_per_kg / tr.rbc_hb_g_l;
+      html += `<div class="kv big"><span>Объём до Hb ${fmt(hbt)} г/л</span><span>${fmt(vol)} мл</span></div>`
+        + `<div class="kv"><span>Это</span><span>${fmt1(vol / kg)} мл/кг</span></div>`
+        + `<div class="kv"><span>Скорость 5 мл/кг/ч</span><span>за ${fmt1(vol / (5 * kg))} ч</span></div>`
+        + `<div class="hint">Рабочее правило: 10 мл/кг поднимают Hb примерно на 20 г/л. `
+        + `Вся доза — не дольше 4 ч.</div>`;
+    }
+  }
+  $('transfusion').innerHTML = html;
+
+  /* --- нижняя панель --- */
+  const setBar = (id, value, tone) => {
+    const el = $(id);
+    el.querySelector('b').textContent = value;
+    el.className = tone ? 'flag-' + tone : '';
+  };
+  $('barPt').querySelector('small').textContent = steps ? 'Станд. ФТ' : 'Порог ФТ';
+  setBar('barPt', biliNum(t.pt), 'warn');
+  setBar('barEx', biliNum(t.ex), 'danger');
+  if (bili === null){
+    setBar('barGap', '—', null);
+  } else {
+    const gap = t.ex - bili;
+    setBar('barGap', (gap <= 0 ? '+' : '') + biliNum(Math.abs(gap)),
+           gap <= 0 ? 'danger' : gap < 50 ? 'warn' : 'ok');
+  }
+  $('barGap').querySelector('small').textContent = 'Запас, ' + unitLabel();
+}
+
+$('about').innerHTML =
+  `<b>Шкала «КР МЗ РФ»</b> — ступенчатые таблицы приложения А3.3 клинических рекомендаций ` +
+  `«Гипербилирубинемия недоношенных» (ID 917_1) и «Неонатальная желтуха» (ID 916_1), ` +
+  `критерии «New 2017 revised Kobe University treatment criteria». Строка выбирается по ` +
+  `гестационному, а у недоношенного по скорригированному возрасту; значение действует на весь ` +
+  `возрастной интервал и <b>не интерполируется</b>. Интенсивная фототерапия показана также при ` +
+  `запасе менее 50 мкмоль/л до порога ОЗПК.<br><br>` +
+  `<b>Шкала «AAP 2004»</b> — непрерывные номограммы, только для ГВ ≥ 35 нед, с интерполяцией по ` +
+  `часам и группами риска. Приведена справочно: при разночтении следуйте КР.<br><br>` +
+  `Оценивается <b>общий</b> билирубин, прямую фракцию не вычитать. Пересчёт мг/дл × ` +
+  `${String(F).replace('.', ',')}. Данные версии ${D.version} — те же, из которых собрана ` +
+  `<a href="../cheatsheets/pdf/gbn.pdf">PDF-шпаргалка по ГБН</a>, так что разойтись они не могут.<br><br>` +
+  `Инструмент для быстрой сверки у постели пациента. Не заменяет действующие ` +
+  `клинические рекомендации и назначение врача.`;
+
+/* ---------- интеграция с Telegram ---------- */
+const tg = window.Telegram?.WebApp;
+if (tg){
+  tg.ready();
+  tg.expand();
+  const p = tg.themeParams || {};
+  const set = (name, v) => v && document.documentElement.style.setProperty(name, v);
+  set('--bg',   p.secondary_bg_color);
+  set('--card', p.bg_color);
+  set('--text', p.text_color);
+  set('--muted', p.hint_color);
+  set('--accent', p.link_color);
+}
+
+document.addEventListener('input', calc);
+document.addEventListener('change', calc);
+calc();
+</script>
+</body>
+</html>
