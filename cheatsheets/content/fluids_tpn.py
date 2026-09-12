@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Инфузионная терапия и парентеральное питание."""
+from content import _data as D
 from neocheat.blocks import Callout, Formula, H, KV, Note, OL, P, Sheet, Table, UL
 
 SHEET = Sheet(
@@ -155,9 +156,10 @@ SHEET = Sheet(
              "калькулятор мини-приложения в этом же боте — он считает объёмы, GIR, "
              "осмолярность и калораж по введённым параметрам."),
     ],
-    sources=[
-        "ESPGHAN/ESPEN/ESPR/CSPEN Guidelines on Pediatric Parenteral Nutrition — актуальный пересмотр.",
-        "Клинические рекомендации и методические письма МЗ РФ по парентеральному питанию новорождённых.",
-        "Клинические рекомендации МЗ РФ по энтеральному вскармливанию недоношенных детей.",
-    ],
+    sources=D.kr_sources("924_1", "959_1") + [
+        "ESPGHAN / ESPEN / ESPR / CSPEN Guidelines on Pediatric Parenteral Nutrition — "
+        "актуальный пересмотр.",
+        "Отдельных клинических рекомендаций МЗ РФ по парентеральному питанию новорождённых в "
+        "рубрикаторе нет; дозы приведены по ESPGHAN и методическим письмам.",
+    ]
 )

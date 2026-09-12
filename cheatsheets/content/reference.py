@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Референсные значения и типовые размеры."""
+from content import _data as D
 from neocheat.blocks import Callout, Formula, H, KV, Note, OL, P, Sheet, Table, UL
 
 SHEET = Sheet(
@@ -182,9 +183,10 @@ SHEET = Sheet(
             "почти каждый показатель зависит и от того, и от другого.",
         ),
     ],
-    sources=[
-        "Клинические рекомендации МЗ РФ по неонатологии (профильные нозологии).",
-        "Nelson Textbook of Pediatrics; Avery's Diseases of the Newborn — референсные интервалы неонатального периода.",
-        "Neofax; Harriet Lane Handbook — размеры оборудования и формулы.",
-    ],
+    sources=D.kr_sources("924_1", "917_1", "661_2", "909_1", "906_1") + [
+        "Nelson Textbook of Pediatrics; Avery's Diseases of the Newborn — референсные интервалы "
+        "неонатального периода.",
+        "Neofax; Harriet Lane Handbook — размеры оборудования и расчётные формулы.",
+        "Референсные интервалы отличаются между лабораториями — сверяйтесь со своей.",
+    ]
 )

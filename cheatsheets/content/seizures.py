@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Судороги новорождённых."""
+from content import _data as D
 from neocheat.blocks import Callout, Formula, H, KV, Note, OL, P, Sheet, Table, UL
 
 SHEET = Sheet(
@@ -125,9 +126,9 @@ SHEET = Sheet(
             "Обязательное наблюдение невролога, контроль МРТ и оценка развития в 3, 6, 12, 18–24 мес.",
         ),
     ],
-    sources=[
-        "Клинические рекомендации МЗ РФ по судорогам и эпилептическим синдромам периода новорождённости.",
-        "ILAE Classification of Neonatal Seizures; ILAE/WHO Guidelines on Neonatal Seizures.",
-        "Практические протоколы аЭЭГ-мониторинга в ОРИТН.",
-    ],
+    sources=D.kr_sources("908_1", "948_1") + [
+        "Отдельных клинических рекомендаций МЗ РФ по судорогам периода новорождённости в "
+        "рубрикаторе нет; схемы приведены по международным руководствам.",
+        "ILAE Classification of Neonatal Seizures; WHO/ILAE Guidelines on Neonatal Seizures.",
+    ]
 )

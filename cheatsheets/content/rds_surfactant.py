@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """РДС новорождённых и сурфактантная терапия."""
+from content import _data as D
 from neocheat.blocks import Callout, H, KV, Note, OL, P, Sheet, Table, UL
 
 SHEET = Sheet(
@@ -135,10 +136,10 @@ SHEET = Sheet(
             "гипоплазия лёгких, дефицит сурфактантного белка, пневмоторакс, неправильное положение ЭТТ.",
         ),
     ],
-    sources=[
-        "Клинические рекомендации МЗ РФ «Респираторный дистресс-синдром новорождённого».",
-        "European Consensus Guidelines on the Management of RDS — актуальный пересмотр.",
-        "Инструкции по медицинскому применению конкретных препаратов сурфактанта "
-        "(дозы сверять с инструкцией производителя).",
-    ],
+    sources=D.kr_sources("340_2", "951_1", "377_2") + [
+        "European Consensus Guidelines on the Management of Respiratory Distress Syndrome — "
+        "актуальный пересмотр.",
+        "Инструкции по медицинскому применению препаратов сурфактанта — дозы сверять с "
+        "инструкцией производителя.",
+    ]
 )

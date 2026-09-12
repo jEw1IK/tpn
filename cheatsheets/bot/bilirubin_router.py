@@ -27,7 +27,9 @@ from aiogram.types import (
 
 from ..bilirubin import (
     DATA,
+    DEFAULT_SCALE,
     RISK_FACTORS,
+    SCALES,
     exchange_volumes,
     hourly_rise_band,
     parse_risks,
@@ -52,7 +54,9 @@ USAGE = (
     "<code>/bili 38 60 250</code>\n"
     "<code>/bili 36 24 190 гбн</code>\n"
     "<code>/bili 30 48 180 гбн сепсис</code>\n\n"
-    "Факторы риска: гбн, г6фд, асфиксия, сепсис, ацидоз, летаргия, альбумин."
+    "Факторы риска: гбн, г6фд, асфиксия, сепсис, ацидоз, летаргия, альбумин.\n"
+    "По умолчанию считаю по таблицам КР МЗ РФ; допиши <code>aap</code>, "
+    "чтобы получить кривые AAP 2004."
 )
 
 
@@ -67,28 +71,41 @@ def _keyboard(chat_type: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[button]])
 
 
-def _format(ga: float, hours: float, bili: float, risk_ids: list[str]) -> str:
-    t = thresholds(ga, hours, bool(risk_ids))
+def _format(ga: float, hours: float, bili: float, risk_ids: list[str],
+            scale: str = DEFAULT_SCALE) -> str:
+    t = thresholds(ga, hours, bool(risk_ids), scale=scale)
     tone, head, detail = status(bili, t)
+    steps = t.intensive is not None
 
     ga_txt = f"{ga:g}".replace(".", ",")
     risks_txt = ", ".join(RISK_FACTORS[i]["short"] for i in risk_ids) if risk_ids else "не указаны"
 
     lines = [
-        "<b>Билирубин: пороги</b>",
+        f"<b>Билирубин: пороги ({SCALES[scale]['short']})</b>",
         "",
-        f"Пациент: ГВ {ga_txt} нед, {r(hours)} ч жизни",
-        f"Факторы риска: {risks_txt}",
+        f"Пациент: ГВ/СВ {ga_txt} нед, {r(hours)} ч жизни",
     ]
-    if t.mode == "term":
-        lines.append(f"Группа риска: <b>{t.group_label.lower()}</b> — {t.group_desc}")
+    if steps:
+        lines.append(f"Строка таблицы: <b>{t.band_label}</b>, интервал {t.hour_label}")
+        lines += [
+            "",
+            f"Стандартная фототерапия: <b>{r(t.phototherapy)}</b> мкмоль/л",
+            f"Интенсивная фототерапия: <b>{r(t.intensive)}</b> мкмоль/л",
+        ]
+        if t.intensive_effective < t.intensive:
+            lines.append(f"…но по правилу «запас &lt; 50 до ОЗПК»: "
+                         f"<b>{r(t.intensive_effective)}</b> мкмоль/л")
+        lines.append(f"ОЗПК: <b>{r(t.exchange)}</b> мкмоль/л")
     else:
-        lines.append(f"Недоношенный {t.group_label} — {t.group_desc}")
+        lines.append(f"Факторы риска: {risks_txt}")
+        lines.append(f"Группа риска: <b>{t.band_label.lower()}</b> — {t.band_desc}")
+        lines += [
+            "",
+            f"Порог фототерапии: <b>{r(t.phototherapy)}</b> мкмоль/л",
+            f"Порог ОЗПК: <b>{r(t.exchange)}</b> мкмоль/л",
+        ]
 
     lines += [
-        "",
-        f"Порог фототерапии: <b>{r(t.phototherapy)}</b> мкмоль/л",
-        f"Порог ОЗПК: <b>{r(t.exchange)}</b> мкмоль/л",
         f"Текущий билирубин: <b>{r(bili)}</b> мкмоль/л",
         "",
         f"{TONE_ICON[tone]} <b>{head}</b>",
@@ -96,11 +113,15 @@ def _format(ga: float, hours: float, bili: float, risk_ids: list[str]) -> str:
     ]
 
     if hours < 24:
-        lines += ["", "⚠️ Первые сутки: любая видимая желтуха патологическая, "
-                      "кривые в этом интервале наименее надёжны — решать клинически."]
-    if t.mode == "term" and not risk_ids and ga < 38:
-        lines += ["", "ℹ️ При 35–37⁶ нед любой фактор риска переводит в высокий риск "
-                      "и заметно снижает пороги — проверь, точно ли их нет."]
+        lines += ["", "⚠️ Первые сутки: любая видимая желтуха патологическая — решать клинически."]
+    if t.consilium:
+        lines += ["", "⚠️ ГВ менее 32 недель: решение об ОЗПК принимает консилиум врачей."]
+    if steps and ga < 35:
+        lines += ["", "ℹ️ Строка выбирается по <b>скорригированному</b> возрасту: "
+                      "по мере роста ребёнок переходит в следующую строку."]
+    if not steps and ga < 35:
+        lines += ["", "⚠️ Кривые AAP применимы только при ГВ ≥ 35 нед. "
+                      "Для недоношенного смотри шкалу КР МЗ РФ."]
     return "\n".join(lines)
 
 
@@ -139,9 +160,19 @@ async def cmd_bili(message: Message, command: CommandObject) -> None:
         await message.answer("Билирубин должен быть от 1 до 900 мкмоль/л.")
         return
 
-    unknown = [w for w in words if not parse_risks([w])]
-    risk_ids = parse_risks(words)
-    text = _format(ga, hours, bili, risk_ids)
+    scale = DEFAULT_SCALE
+    rest = []
+    for w in words:
+        if w.lower() in ("aap", "аап"):
+            scale = "aap"
+        elif w.lower() in ("кр", "kr", "рф"):
+            scale = "kr_rf"
+        else:
+            rest.append(w)
+
+    unknown = [w for w in rest if not parse_risks([w])]
+    risk_ids = parse_risks(rest)
+    text = _format(ga, hours, bili, risk_ids, scale)
     if unknown:
         text += "\n\n<i>Не понял и пропустил: " + ", ".join(unknown) + "</i>"
 
@@ -171,18 +202,28 @@ async def cmd_ozpk(message: Message, command: CommandObject) -> None:
         await message.answer("Масса тела должна быть от 300 г до 8 кг.")
         return
 
-    v = exchange_volumes(kg)
+    preterm = len(args) > 1 and args[1].lower().startswith(("нед", "прем", "pre"))
+    v = exchange_volumes(kg, preterm=preterm)
     ev = DATA["exchange_volume"]
+    rate = ev["replacement_rate_ml_per_min"]
     await message.answer(
-        f"<b>ОЗПК при массе {str(round(kg, 2)).replace('.', ',')} кг</b>\n\n"
+        f"<b>ОЗПК при массе {str(round(kg, 2)).replace('.', ',')} кг</b>\n"
+        f"<i>{'недоношенный' if preterm else 'доношенный'} — влияет на объём одного замещения; "
+        f"допиши «нед», чтобы посчитать как недоношенному</i>\n\n"
         f"Общий объём ({ev['volumes_bcc']} ОЦК): <b>{r(v['total'])} мл</b>\n"
         f"Эритроцитная взвесь (2/3): <b>{r(v['rbc'])} мл</b>\n"
         f"СЗП (1/3): <b>{r(v['ffp'])} мл</b>\n\n"
-        f"За цикл: {r(min(5 * kg, 20))} мл · вся процедура 2–3 ч\n"
-        f"Кальция глюконат 10 %: 1–2 мл на каждые 100 мл\n\n"
+        f"Одно замещение: <b>{r(v['cycle'][0])}–{r(v['cycle'][1])} мл</b>, "
+        f"скорость {rate[0]}–{rate[1]} мл/мин\n"
+        f"Кальция глюконат 10 %: <b>{str(round(v['calcium'], 1)).replace('.', ',')} мл</b> на каждые "
+        f"{ev['calcium_per_ml_replaced']} мл замещающей среды, в 5 мл 5 % декстрозы, "
+        f"только между шприцами с эритроцитами\n"
+        f"Вся процедура 2–3 ч\n\n"
         f"Частичное ОЗПК при отёчной форме: {r(v['partial'][0])}–{r(v['partial'][1])} мл "
         f"эритроцитов O(I) Rh−\n\n"
-        f"<i>Ht смеси 0,45–0,50. Эритроциты не старше 3 суток, облучённые, "
-        f"лейкоредуцированные, подогретые до 36–37 °C.</i>",
+        f"Критерий эффективности: {ev['success_criterion']}.\n\n"
+        f"<i>{ev['syringe_ratio'].capitalize()}. Ht смеси 0,45–0,50. Эритроциты не старше "
+        f"3 суток, облучённые, лейкоредуцированные, подогретые до "
+        f"{ev['warm_to_c'][0]}–{ev['warm_to_c'][1]} °C.</i>",
         parse_mode=ParseMode.HTML,
     )

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Открытый артериальный проток."""
+from content import _data as D
 from neocheat.blocks import Callout, Formula, H, KV, Note, OL, P, Sheet, Table, UL
 
 SHEET = Sheet(
@@ -125,9 +126,10 @@ SHEET = Sheet(
             ("Кислород", "Не форсировать: гипероксия закрывает проток и усиливает лёгочный кровоток"),
         ),
     ],
-    sources=[
-        "Клинические рекомендации МЗ РФ «Открытый артериальный проток у недоношенных детей».",
-        "Cochrane Reviews: Ibuprofen for the treatment of PDA; Paracetamol for PDA in preterm infants.",
-        "Инструкции по применению препаратов ибупрофена и парацетамола для в/в введения.",
-    ],
+    sources=D.kr_sources("43_2", "377_2") + [
+        "Cochrane Reviews: Ibuprofen for the treatment of PDA; Paracetamol for PDA in preterm "
+        "infants.",
+        "Инструкции по применению препаратов ибупрофена и парацетамола для внутривенного "
+        "введения.",
+    ]
 )

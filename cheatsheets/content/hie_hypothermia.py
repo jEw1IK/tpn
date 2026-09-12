@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """ГИЭ и терапевтическая гипотермия."""
+from content import _data as D
 from neocheat.blocks import Callout, Formula, H, KV, Note, OL, P, Sheet, Table, UL
 
 SHEET = Sheet(
@@ -130,10 +131,10 @@ SHEET = Sheet(
             "Не строить прогноз по первым суткам аЭЭГ: восстановление паттерна к 24–48 ч меняет прогноз.",
         ),
     ],
-    sources=[
-        "Клинические рекомендации МЗ РФ по терапевтической гипотермии при церебральной ишемии новорождённых.",
+    sources=D.kr_sources("908_1") + [
         "Методическое письмо МЗ РФ по терапевтической гипотермии у новорождённых.",
-        "TOBY, CoolCap, NICHD Whole-Body Hypothermia Trials; Cochrane Review of Therapeutic Hypothermia for HIE.",
+        "TOBY, CoolCap и NICHD Whole-Body Hypothermia Trials; Cochrane Review of Therapeutic "
+        "Hypothermia for Neonatal HIE.",
         "Sarnat H.B., Sarnat M.S. Neonatal encephalopathy following fetal distress, 1976.",
-    ],
+    ]
 )

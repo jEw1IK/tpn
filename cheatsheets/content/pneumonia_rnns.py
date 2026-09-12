@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Врождённая пневмония и ранний неонатальный сепсис."""
+from content import _data as D
 from neocheat.blocks import Callout, Formula, H, KV, Note, OL, P, Sheet, Table, UL
 
 SHEET = Sheet(
@@ -168,10 +169,10 @@ SHEET = Sheet(
             "Не «прикрывать» антибиотиками сомнения: либо есть основание лечить, либо есть основание отменить.",
         ),
     ],
-    sources=[
-        "Клинические рекомендации МЗ РФ «Врождённая пневмония».",
-        "Клинические рекомендации МЗ РФ по неонатальному сепсису; методические рекомендации РАСПМ.",
-        "AAP Committee on Fetus and Newborn — Management of Neonates at Risk for Early-Onset Sepsis.",
-        "Neofax / Red Book — дозы и интервалы по постконцептуальному возрасту.",
-    ],
+    sources=D.kr_sources("905_1", "912_1", "978_1", "944_1", "776_1") + [
+        "AAP Committee on Fetus and Newborn — Management of Neonates at Risk for Early-Onset "
+        "Sepsis.",
+        "Neofax и Red Book — дозы и интервалы по постконцептуальному возрасту; перед "
+        "назначением сверять с инструкцией к препарату и формуляром отделения.",
+    ]
 )

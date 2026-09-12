@@ -23,26 +23,24 @@ def load(name: str) -> dict:
 
 
 BILI = load("bilirubin")
+KR = load("guidelines")["guidelines"]
+
+
+def kr_sources(*ids: str) -> list:
+    """Строки для раздела «Источники» по ID из рубрикатора КР МЗ РФ."""
+    out = []
+    for cid in ids:
+        g = KR.get(cid)
+        if g is None:
+            raise KeyError(f"Нет КР с ID {cid} в data/guidelines.json")
+        out.append(
+            f"Клинические рекомендации МЗ РФ «{g['name']}» — ID {g['id']}, "
+            f"размещены {g['date']}. {g['url']}"
+        )
+    return out
 
 # Часы, которые показываем в PDF (в JSON опорных точек больше — они нужны
 # калькулятору для интерполяции).
-PDF_HOURS = [24, 48, 72, 96, 120]
-
-
-def _at(series: list, hour: int) -> int:
-    return series[BILI["term"]["hours"].index(hour)]
-
-
-def risk_groups_table() -> Table:
-    return Table(
-        caption="Группы риска",
-        head=None,
-        widths=[1, 4],
-        zebra=False,
-        rows=[[f"<b>{g['label']}</b>", g["desc"]] for g in BILI["term"]["risk_groups"]],
-    )
-
-
 def risk_factors_sentence() -> str:
     # Строчной делаем только первую букву каждого пункта: сплошной .lower()
     # испортил бы аббревиатуры (ГБН, Г6ФД, FiO₂).
@@ -54,47 +52,96 @@ def risk_factors_sentence() -> str:
     )
 
 
-def _threshold_table(kind: str, caption: str, tones: dict) -> Table:
-    term = BILI["term"]
-    head = ["Риск"] + [f"{h} ч" if h != PDF_HOURS[-1] else f"≥ {h} ч" for h in PDF_HOURS]
-    rows = []
-    for group in term["risk_groups"]:
-        series = term[kind][group["id"]]
-        prefix = tones.get(group["id"], "")
-        rows.append([group["label"]] + [f"{prefix}{_at(series, h)}" for h in PDF_HOURS])
+KR_SCALE = BILI["scales"]["kr_rf"]
+AAP = BILI["scales"]["aap"]
+
+
+def _validate_bilirubin() -> None:
+    """Проверяет согласованность таблиц порогов при каждой сборке.
+
+    Опечатка в одной цифре data/bilirubin.json иначе тихо уедет и в PDF,
+    и в калькулятор, и в бота — поэтому падаем сразу.
+    """
+    n = len(KR_SCALE["hour_bands"])
+    for band in KR_SCALE["ga_bands"]:
+        for key in ("phototherapy", "intensive", "exchange"):
+            got = len(band[key])
+            if got != n:
+                raise ValueError(
+                    f"{band['label']}, {key}: {got} значений вместо {n}"
+                )
+        for i in range(n):
+            pt, inten, ex = (band[k][i] for k in ("phototherapy", "intensive", "exchange"))
+            if not pt < inten < ex:
+                raise ValueError(
+                    f"{band['label']}, {KR_SCALE['hour_bands'][i]['label']}: нарушена "
+                    f"лестница порогов — станд. ФТ {pt}, интенс. ФТ {inten}, ОЗПК {ex}"
+                )
+        for key in ("phototherapy", "intensive", "exchange"):
+            row = band[key]
+            if any(row[i] > row[i + 1] for i in range(n - 1)):
+                raise ValueError(
+                    f"{band['label']}, {key}: порог убывает с возрастом — {row}"
+                )
+
+    for gid in (g["id"] for g in AAP["risk_groups"]):
+        for key in ("phototherapy", "exchange"):
+            if len(AAP[key][gid]) != len(AAP["hours"]):
+                raise ValueError(f"AAP {key}/{gid}: длина ряда не совпадает с hours")
+        if any(p >= e for p, e in zip(AAP["phototherapy"][gid], AAP["exchange"][gid])):
+            raise ValueError(f"AAP {gid}: порог ФТ не ниже порога ОЗПК")
+
+
+_validate_bilirubin()
+
+
+def _kr_table(level_id: str, caption: str, tone: str = "") -> Table:
+    """Ступенчатая таблица КР МЗ РФ: строки — ГВ/СВ, колонки — интервалы часов."""
+    head = ["ГВ / СВ"] + [f"{hb['short']} ч" for hb in KR_SCALE["hour_bands"]]
+    rows = [
+        [f"<b>{b['label']}</b>"] + [f"{tone}{v}" for v in b[level_id]]
+        for b in KR_SCALE["ga_bands"]
+    ]
     return Table(
         caption=caption,
         head=head,
-        widths=[1.2] + [1] * len(PDF_HOURS),
-        align="l" + "c" * len(PDF_HOURS),
+        widths=[1.5] + [1] * len(KR_SCALE["hour_bands"]),
+        align="l" + "c" * len(KR_SCALE["hour_bands"]),
         rows=rows,
+        font_size=7.8,
     )
 
 
-def phototherapy_table() -> Table:
-    return _threshold_table("phototherapy", "Порог начала фототерапии", {})
+def kr_phototherapy_table() -> Table:
+    return _kr_table("phototherapy", "Стандартная фототерапия")
 
 
-def exchange_table() -> Table:
-    return _threshold_table(
-        "exchange",
-        "Порог ОЗПК (на фоне уже проводимой интенсивной ФТ)",
-        {"low": "! ", "med": "! ", "high": "!! "},
-    )
+def kr_intensive_table() -> Table:
+    return _kr_table("intensive", "Интенсивная фототерапия", tone="! ")
 
 
-def preterm_table() -> Table:
-    rows = []
-    for i, band in enumerate(BILI["preterm"]["bands"]):
-        pt = band["phototherapy"]
-        ex = band["exchange"]
-        tone = "!! " if i < 2 else "! "
-        rows.append([band["label"], f"{pt[0]}–{pt[1]}", f"{tone}{ex[0]}–{ex[1]}"])
+def kr_exchange_table() -> Table:
+    return _kr_table("exchange", "Операция заменного переливания крови", tone="!! ")
+
+
+def aap_table(kind: str, caption: str, tone: str = "") -> Table:
+    """Справочные кривые AAP 2004 в опорных точках (в РФ приоритет у КР)."""
+    hours = [24, 48, 72, 96, 120]
+    idx = [AAP["hours"].index(h) for h in hours]
+    head = ["Группа риска"] + [f"{h} ч" if h != hours[-1] else f"≥ {h} ч" for h in hours]
+    rows = [
+        [g["label"]] + [f"{tone}{AAP[kind][g['id']][i]}" for i in idx]
+        for g in AAP["risk_groups"]
+    ]
+    return Table(caption=caption, head=head, widths=[1.4] + [1] * len(hours),
+                 align="l" + "c" * len(hours), rows=rows)
+
+
+def aap_risk_groups_table() -> Table:
     return Table(
-        head=["Гестационный возраст", "Фототерапия", "ОЗПК"],
-        widths=[1.6, 1.4, 1.4],
-        align="lcc",
-        rows=rows,
+        caption="Группы риска AAP",
+        head=None, widths=[1, 4], zebra=False,
+        rows=[[f"<b>{g['label']}</b>", g["desc"]] for g in AAP["risk_groups"]],
     )
 
 

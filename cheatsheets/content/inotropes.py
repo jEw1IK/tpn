@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Инотропы, вазопрессоры и расчёт разведений."""
+from content import _data as D
 from neocheat.blocks import Callout, Formula, H, KV, Note, OL, P, Sheet, Table, UL
 
 SHEET = Sheet(
@@ -129,9 +130,8 @@ SHEET = Sheet(
             "аспирировать, обколоть зону фентоламином.",
         ),
     ],
-    sources=[
-        "Клинические рекомендации и методические письма МЗ РФ по неонатальной гемодинамике и шоку.",
-        "European Consensus / Neonatal Haemodynamics — targeted neonatal echocardiography guidelines.",
+    sources=D.kr_sources("912_1", "953_1", "908_1") + [
+        "European / Neonatal Haemodynamics — targeted neonatal echocardiography guidelines.",
         "Surviving Sepsis Campaign, педиатрический раздел; инструкции по применению препаратов.",
-    ],
+    ]
 )

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Гипогликемия новорождённых."""
+from content import _data as D
 from neocheat.blocks import Callout, Formula, H, KV, Note, OL, P, Sheet, Table, UL
 
 SHEET = Sheet(
@@ -146,9 +147,12 @@ SHEET = Sheet(
             "или «ЗВУР», ищите причину параллельно с коррекцией.",
         ),
     ],
-    sources=[
-        "Клинические рекомендации МЗ РФ «Гипогликемия новорождённых».",
-        "AAP Committee on Fetus and Newborn — Postnatal Glucose Homeostasis in Late-Preterm and Term Infants.",
-        "Pediatric Endocrine Society — Recommendations for Evaluation and Management of Persistent Hypoglycemia.",
-    ],
+    sources=D.kr_sources("907_1", "924_1") + [
+        "Отдельных клинических рекомендаций МЗ РФ по неонатальной гипогликемии в рубрикаторе "
+        "нет; пороги и алгоритм приведены по международным согласительным документам.",
+        "AAP Committee on Fetus and Newborn — Postnatal Glucose Homeostasis in Late-Preterm and "
+        "Term Infants.",
+        "Pediatric Endocrine Society — Recommendations for Evaluation and Management of "
+        "Persistent Hypoglycemia in Neonates, Infants and Children.",
+    ]
 )

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Респираторная поддержка: CPAP, традиционная ИВЛ, ВЧО ИВЛ."""
+from content import _data as D
 from neocheat.blocks import Callout, Formula, H, KV, Note, OL, P, Sheet, Table, UL
 
 SHEET = Sheet(
@@ -138,9 +139,10 @@ SHEET = Sheet(
             ("После экстубации", "NIPPV или CPAP 7–8; повторная неудача — искать причину, а не «крепить» режим"),
         ),
     ],
-    sources=[
-        "Клинические рекомендации МЗ РФ по респираторной терапии новорождённых.",
-        "European Consensus Guidelines on the Management of RDS — раздел респираторной поддержки.",
-        "Практические протоколы неонатальной ИВЛ (Goldsmith, Assisted Ventilation of the Neonate).",
-    ],
+    sources=D.kr_sources("340_2", "933_1", "377_2", "951_1") + [
+        "European Consensus Guidelines on the Management of RDS — раздел респираторной "
+        "поддержки.",
+        "Goldsmith J. et al. Assisted Ventilation of the Neonate — практические протоколы ИВЛ и "
+        "ВЧО ИВЛ.",
+    ]
 )

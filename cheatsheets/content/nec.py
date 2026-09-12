@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Некротизирующий энтероколит."""
+from content import _data as D
 from neocheat.blocks import Callout, Formula, H, KV, Note, OL, P, Sheet, Table, UL
 
 SHEET = Sheet(
@@ -133,9 +134,11 @@ SHEET = Sheet(
             ],
         ),
     ],
-    sources=[
-        "Клинические рекомендации МЗ РФ «Некротизирующий энтероколит у новорождённых».",
+    sources=D.kr_sources("912_1", "978_1") + [
+        "Отдельных клинических рекомендаций МЗ РФ по некротизирующему энтероколиту в "
+        "рубрикаторе нет; стадирование и тактика приведены по международным источникам.",
         "Bell M.J. et al., 1978; Walsh M.C., Kliegman R.M., 1986 — стадирование НЭК.",
-        "Cochrane Reviews: Probiotics for prevention of NEC; Formula versus donor breast milk for feeding preterm infants.",
-    ],
+        "Cochrane Reviews: Probiotics for prevention of NEC; Formula versus donor breast milk "
+        "for feeding preterm infants.",
+    ]
 )
