@@ -24,7 +24,10 @@ sys.path.insert(0, HERE)
 from content import load_all  # noqa: E402
 from neocheat.render import render  # noqa: E402
 
+REPO_ROOT = os.path.dirname(HERE)
 PDF_DIR = os.path.join(HERE, "pdf")
+BILI_DATA = os.path.join(HERE, "data", "bilirubin.json")
+BILI_JS = os.path.join(REPO_ROOT, "bili", "thresholds.js")
 MANIFEST = os.path.join(HERE, "manifest.json")
 INDEX = os.path.join(HERE, "index.html")
 
@@ -119,6 +122,9 @@ footer{{color:var(--muted);font-size:11px;margin-top:26px;border-top:1px solid v
 </style></head><body>
 <h1>Шпаргалки неонатолога</h1>
 <p class="lead">{len(entries)} PDF · обновлено {build_date}</p>
+<ul><li><a href="../bili/">🧮 Калькулятор билирубина</a>
+<div class='s'>Пороги фототерапии и ОЗПК по ГВ и часам жизни, номограмма,
+почасовой прирост, объём ОЗПК и трансфузии.</div></li></ul>
 {"".join(rows)}
 <footer>Памятки для быстрой сверки у постели пациента. Не заменяют действующие
 клинические рекомендации и назначение врача.</footer>
@@ -126,6 +132,24 @@ footer{{color:var(--muted);font-size:11px;margin-top:26px;border-top:1px solid v
 """
     with open(INDEX, "w", encoding="utf-8") as f:
         f.write(doc)
+
+
+def write_bili_js():
+    """Отдаёт калькулятору bili/ те же данные, из которых собран PDF по ГБН.
+
+    Генерируем .js, а не читаем JSON через fetch: так страница работает
+    и открытая с диска, и без сети.
+    """
+    with open(BILI_DATA, encoding="utf-8") as f:
+        data = json.load(f)
+    os.makedirs(os.path.dirname(BILI_JS), exist_ok=True)
+    with open(BILI_JS, "w", encoding="utf-8") as f:
+        f.write("/* Файл создаётся автоматически: cheatsheets/build.py\n")
+        f.write("   Источник: cheatsheets/data/bilirubin.json — правьте его, не этот файл. */\n")
+        f.write("window.BILI_DATA = ")
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write(";\n")
+    return BILI_JS
 
 
 def main():
@@ -139,7 +163,8 @@ def main():
     if not args.only:
         write_manifest(entries, build_date)
         write_index(entries, build_date)
-        print(f"\nГотово: {len(entries)} PDF, manifest.json, index.html")
+        write_bili_js()
+        print(f"\nГотово: {len(entries)} PDF, manifest.json, index.html, bili/thresholds.js")
     else:
         print(f"\nГотово: {len(entries)} PDF (manifest не трогали)")
 
