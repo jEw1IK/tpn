@@ -36,6 +36,13 @@ cheatsheets/
 │
 ├── fonts/                ← DejaVu Sans, чтобы кириллица работала везде
 ├── pdf/                  ← готовые PDF (лежат в репозитории)
+├── deploy/               ← РАЗВЁРТЫВАНИЕ НА СЕРВЕРЕ
+│   ├── README.md         ← пошаговая инструкция
+│   ├── install.sh        ← ставит модуль в каталог бота
+│   ├── update.sh         ← обновляет и перезапускает сервис
+│   ├── postneo-bot.service
+│   └── nginx-webapp.conf
+│
 └── bot/
     ├── catalog.py           ← каталог + кэш file_id, без привязки к фреймворку
     ├── aiogram_router.py    ← роутер aiogram v3: раздача PDF
@@ -361,6 +368,25 @@ pip install aiogram
 export BOT_TOKEN=123456:AA...
 python -m cheatsheets.bot.standalone_bot
 ```
+
+---
+
+## 6.1. Развёртывание на сервере
+
+Полная инструкция — [`deploy/README.md`](deploy/README.md). Коротко:
+
+```bash
+./cheatsheets/deploy/install.sh /opt/postneo      # поставить
+./cheatsheets/deploy/update.sh  /opt/postneo postneo-bot   # обновить и перезапустить
+```
+
+`install.sh` не трогает код бота: кладёт `cheatsheets/` рядом, делает бэкап
+прежней версии, переносит кэш `file_id` и печатает две строки, которые нужно
+дописать самому. reportlab на сервере не нужен — PDF собраны заранее.
+
+**Кнопка мини-приложения работает только по HTTPS с валидным сертификатом**,
+на голый IP Telegram её не откроет. Проще всего включить GitHub Pages;
+если нужен свой домен — рядом лежит конфиг nginx.
 
 ---
 
