@@ -388,6 +388,9 @@ function setBar(value, done, total, tone){
     scale().kind === 'bidirectional' ? fmtSigned(value) : String(value);
   el.className = tone ? 'flag-' + tone : '';
   $('barDone').querySelector('b').textContent = `${done}/${total}`;
+  /* У формулы считаются не отмеченные пункты, а препараты в работе. */
+  $('barDone').querySelector('small').textContent =
+    scale().kind === 'formula' ? 'Препаратов' : 'Заполнено';
 }
 
 const fmtSigned = v => v > 0 ? '+' + v : String(v).replace('-', '−');
