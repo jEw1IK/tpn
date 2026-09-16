@@ -21,6 +21,7 @@ MODULES = [
     "hie_hypothermia",
     "inotropes",
     "fluids_tpn",
+    "scales",
     "reference",
 ]
 

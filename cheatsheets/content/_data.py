@@ -26,6 +26,7 @@ BILI = load("bilirubin")
 SURF = load("surfactants")
 ABX = load("antibiotics")
 VITALS = load("vitals")
+SCALES = load("scales")
 KR = load("guidelines")["guidelines"]
 
 
@@ -329,4 +330,69 @@ def mean_bp_table() -> Table:
         widths=[1.6] + [1.0] * len(bp["hours"]),
         align="l" + "c" * len(bp["hours"]),
         rows=[[f"<b>{b['label']}</b>"] + [str(v) for v in b["values"]] for b in bp["bands"]],
+    )
+
+
+# --------------------------------------------------------------------------
+# Шкалы оценки
+# --------------------------------------------------------------------------
+def _sign(v: int) -> str:
+    return f"+{v}" if v > 0 else str(v).replace("-", "−")
+
+
+def scale_table(scale_id: str) -> Table:
+    """Пункты шкалы: подзаголовок на пункт, под ним варианты с баллами."""
+    sc = next(s for s in SCALES["scales"] if s["id"] == scale_id)
+    rows = []
+    for i, item in enumerate(sc["items"], 1):
+        head = f"~ {i}. {item['label']}"
+        if item.get("hint"):
+            head += f" — {item['hint']}"
+        rows.append(head)
+        for o in item["options"]:
+            rows.append([f"<b>{_sign(o['score'])}</b>", o["label"]])
+    return Table(
+        head=["Балл", "Признак"],
+        widths=[0.5, 5.0],
+        align="cl",
+        font_size=8.0,
+        rows=rows,
+    )
+
+
+def scale_modifier_table(scale_id: str) -> Table:
+    sc = next(s for s in SCALES["scales"] if s["id"] == scale_id)
+    mod = sc["modifier"]
+    return Table(
+        caption=mod["label"],
+        head=["Балл", "Гестационный возраст"],
+        widths=[0.5, 5.0],
+        align="cl",
+        rows=[[f"<b>{_sign(o['score'])}</b>", o["label"]] for o in mod["options"]],
+    )
+
+
+def scale_bands_table(scale_id: str, key: str = "bands", caption: str = None) -> Table:
+    """Трактовка суммы. Диапазоны выводятся из верхних границ полос."""
+    sc = next(s for s in SCALES["scales"] if s["id"] == scale_id)
+    tones = {"ok": "+ ", "info": "~ ", "warn": "! ", "danger": "!! "}
+    # Верхняя граница открытой полосы: у ограниченной шкалы её видно из max,
+    # но у N-PASS поправка на недоношенность поднимает потолок, поэтому там «≥».
+    top = None if sc.get("modifier") else sc.get("max")
+    rows, prev = [], sc.get("min", 0) if key == "bands" else 0
+    for b in sc[key]:
+        if b["max"] is None:
+            rng = f"{prev}–{top}" if top is not None and top > prev else f"≥ {prev}"
+        elif b["max"] == prev:
+            rng = str(prev)
+        else:
+            rng = f"{prev}–{b['max']}" if prev != b["max"] else str(b["max"])
+        rows.append([f"{tones[b['tone']]}{rng}", f"<b>{b['title']}</b>", b["text"]])
+        prev = (b["max"] + 1) if b["max"] is not None else prev
+    return Table(
+        caption=caption,
+        head=["Баллы", "Трактовка", "Что делать"],
+        widths=[0.8, 1.5, 3.2],
+        align="cll",
+        rows=rows,
     )

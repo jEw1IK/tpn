@@ -1,6 +1,6 @@
 {
   "generated": "16.09.2026",
-  "count": 13,
+  "count": 14,
   "pages_base": "https://jew1ik.github.io/tpn/cheatsheets/pdf",
   "sheets": [
     {
@@ -14,7 +14,7 @@
       "file": "pdf/rodzal.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rodzal.pdf",
       "bytes": 70005,
-      "sha256": "ff333b2d918d77d8"
+      "sha256": "cd7e235470679ce1"
     },
     {
       "id": "rds_surfactant",
@@ -27,7 +27,7 @@
       "file": "pdf/rds_surfactant.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rds_surfactant.pdf",
       "bytes": 67964,
-      "sha256": "1391363eac9c4f0e"
+      "sha256": "f91ed64099df8d6b"
     },
     {
       "id": "vent",
@@ -40,7 +40,7 @@
       "file": "pdf/vent.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/vent.pdf",
       "bytes": 66103,
-      "sha256": "11ca45bc574ed40b"
+      "sha256": "b84b865fed1c55f0"
     },
     {
       "id": "gbn",
@@ -53,7 +53,7 @@
       "file": "pdf/gbn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/gbn.pdf",
       "bytes": 84846,
-      "sha256": "25f0881492becc71"
+      "sha256": "0b2ee467ee312411"
     },
     {
       "id": "pneumonia_rnns",
@@ -66,7 +66,7 @@
       "file": "pdf/pneumonia_rnns.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pneumonia_rnns.pdf",
       "bytes": 77079,
-      "sha256": "ffed01b1cad1e82e"
+      "sha256": "d983106ec21e863e"
     },
     {
       "id": "hypoglycemia",
@@ -79,7 +79,7 @@
       "file": "pdf/hypoglycemia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hypoglycemia.pdf",
       "bytes": 66230,
-      "sha256": "7a229580b2f84cb0"
+      "sha256": "38a19b0a0d12f6ff"
     },
     {
       "id": "seizures",
@@ -92,7 +92,7 @@
       "file": "pdf/seizures.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/seizures.pdf",
       "bytes": 64011,
-      "sha256": "bf6503a75d09c957"
+      "sha256": "3aa8436bc628d92e"
     },
     {
       "id": "hie_hypothermia",
@@ -105,7 +105,7 @@
       "file": "pdf/hie_hypothermia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hie_hypothermia.pdf",
       "bytes": 65034,
-      "sha256": "ac91363cea14b2b8"
+      "sha256": "6a3d6185db8d3ba0"
     },
     {
       "id": "pda",
@@ -118,7 +118,7 @@
       "file": "pdf/pda.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pda.pdf",
       "bytes": 65821,
-      "sha256": "97acc1ecfcd04afe"
+      "sha256": "80c66e4432d63177"
     },
     {
       "id": "nec",
@@ -131,7 +131,7 @@
       "file": "pdf/nec.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/nec.pdf",
       "bytes": 65136,
-      "sha256": "065ecd364cdd330e"
+      "sha256": "42893309abd89043"
     },
     {
       "id": "inotropes",
@@ -144,7 +144,7 @@
       "file": "pdf/inotropes.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/inotropes.pdf",
       "bytes": 66321,
-      "sha256": "21df6ba7d7d5eccb"
+      "sha256": "2b40c05ab5f08273"
     },
     {
       "id": "fluids_tpn",
@@ -157,7 +157,20 @@
       "file": "pdf/fluids_tpn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/fluids_tpn.pdf",
       "bytes": 67435,
-      "sha256": "8e7a9b463dd39a14"
+      "sha256": "6d1fc6c5af09c232"
+    },
+    {
+      "id": "scales",
+      "title": "Шкалы оценки новорождённого",
+      "subtitle": "nSOFA · NIPS · N-PASS — полиорганная дисфункция, боль и седация",
+      "summary": "Три шкалы целиком: nSOFA из КР по сепсису, NIPS для процедурной боли и N-PASS для боли и глубины седации.",
+      "category": "Справочники",
+      "button": "📊 Шкалы: nSOFA, боль, седация",
+      "order": 125,
+      "file": "pdf/scales.pdf",
+      "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/scales.pdf",
+      "bytes": 71274,
+      "sha256": "8254ee92cd80edfa"
     },
     {
       "id": "reference",
@@ -170,7 +183,7 @@
       "file": "pdf/reference.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/reference.pdf",
       "bytes": 71901,
-      "sha256": "bd5cadaaba260fa3"
+      "sha256": "7ccfbb53385a87ed"
     }
   ]
 }
