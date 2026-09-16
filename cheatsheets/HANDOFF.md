@@ -22,7 +22,7 @@
 | 15 шпаргалок | `cheatsheets/content/`, PDF в `cheatsheets/pdf/` | Готово |
 | Реестр 57 КР МЗ РФ | `cheatsheets/data/guidelines.json` | Готово |
 | Поиск по КР и дозам | `cheatsheets/bot/search.py`, `doses.py` | Готово |
-| Мини-приложение | `index.html` в корне: вкладки «Питание» и «Шкалы» | Готово |
+| Мини-приложения | `index.html` — питание, `scales/` — шкалы | Готово |
 | **Готовый бот** | `cheatsheets/bot/app.py` | **Готово, запускается как есть** |
 | Тесты | `cheatsheets/tests/test_bot.py` | 40 проверок, без сети |
 | Деплой | `cheatsheets/deploy/install-bot.sh` | Одна команда на сервере |
@@ -91,7 +91,7 @@
 git clone https://github.com/jEw1IK/tpn.git
 cd tpn/cheatsheets
 pip install -r requirements.txt        # reportlab, для сборки PDF
-python build.py                        # пересобрать PDF, manifest, scales-data.js
+python build.py                        # пересобрать PDF, manifest, scales/scales.js
 pip install -r requirements-bot.txt    # aiogram, для бота
 python tests/test_bot.py               # прогнать бота без сети и токена
 ```

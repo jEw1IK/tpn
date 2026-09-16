@@ -68,7 +68,8 @@ ok "модуль обновлён, PDF на месте: $PDFS"
 
 # Мини-приложения — пригодятся, если раздаёшь их своим nginx.
 rm -rf "$BOT_DIR/webapp"; mkdir -p "$BOT_DIR/webapp"
-cp -a "$STAGE/tpn/index.html" "$STAGE/tpn/scales-data.js" "$BOT_DIR/webapp/"
+cp -a "$STAGE/tpn/index.html" "$BOT_DIR/webapp/"
+cp -a "$STAGE/tpn/scales" "$BOT_DIR/webapp/scales"
 
 step "5. Правка bot.py"
 "$PY" "$BOT_DIR/cheatsheets/deploy/patch_bot.py" "$BOT_FILE" || {

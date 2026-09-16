@@ -28,7 +28,7 @@ from neocheat.render import render  # noqa: E402
 REPO_ROOT = os.path.dirname(HERE)
 PDF_DIR = os.path.join(HERE, "pdf")
 SCALES_DATA = os.path.join(HERE, "data", "scales.json")
-SCALES_JS = os.path.join(REPO_ROOT, "scales-data.js")
+SCALES_JS = os.path.join(REPO_ROOT, "scales", "scales.js")
 MANIFEST = os.path.join(HERE, "manifest.json")
 INDEX = os.path.join(HERE, "index.html")
 
@@ -139,7 +139,7 @@ footer{{color:var(--muted);font-size:11px;margin-top:26px;border-top:1px solid v
 </style></head><body>
 <h1>Шпаргалки неонатолога</h1>
 <p class="lead">{len(entries)} PDF · обновлено {build_date}</p>
-<ul><li><a href="../#scales">📊 Шкалы: nSOFA, NIPS, N-PASS</a>
+<ul><li><a href="../scales/">📊 Шкалы: nSOFA, NIPS, N-PASS</a>
 <div class='s'>Полиорганная дисфункция, боль и глубина седации —
 с подсчётом суммы и трактовкой.</div></li></ul>
 {"".join(rows)}
@@ -177,7 +177,7 @@ def main():
         write_manifest(entries, build_date)
         write_index(entries, build_date)
         write_scales_js()
-        print(f"\nГотово: {len(entries)} PDF, manifest.json, index.html, scales-data.js")
+        print(f"\nГотово: {len(entries)} PDF, manifest.json, index.html, scales/scales.js")
     else:
         print(f"\nГотово: {len(entries)} PDF (manifest не трогали)")
 

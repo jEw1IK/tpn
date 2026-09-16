@@ -6,11 +6,11 @@
     from cheatsheets.bot.scales_router import scales_router
     dp.include_router(scales_router)
 
-Одна команда — /scales. Открывает мини-приложение сразу на вкладке «Шкалы»:
-nSOFA, NIPS и N-PASS с подсчётом суммы и трактовкой. Шкалы живут во второй
-вкладке того же приложения, что и калькулятор парентерального питания,
-поэтому адрес заканчивается на #scales. Считать шкалу текстом в чате
-смысла нет: пунктов много, их удобнее отмечать пальцем.
+Одна команда — /scales. Открывает отдельное мини-приложение: nSOFA, NIPS
+и N-PASS с подсчётом суммы и трактовкой. Питание живёт в своём приложении,
+шкалы — в своём: так каждое открывается сразу нужным экраном, без вкладок.
+Считать шкалу текстом в чате смысла нет: пунктов много, их удобнее
+отмечать пальцем.
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ from aiogram.types import (
 
 scales_router = Router(name="scales")
 
-WEBAPP_URL = os.environ.get("SCALES_WEBAPP_URL", "https://jew1ik.github.io/tpn/#scales")
+WEBAPP_URL = os.environ.get("SCALES_WEBAPP_URL", "https://jew1ik.github.io/tpn/scales/")
 
 INTRO = (
     "<b>Шкалы оценки новорождённого</b>\n\n"

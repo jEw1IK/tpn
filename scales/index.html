@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Шкалы оценки новорождённого</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="scales.js"></script>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --text:#14181f; --muted:#6b7280; --line:#e3e6ea;
+  --accent:#2f7ad6; --accent-soft:#eaf2fc;
+  --ok:#1c7c50; --ok-soft:#e6f4ec;
+  --warn:#9a6300; --warn-soft:#fdf3e0;
+  --danger:#b3261e; --danger-soft:#fdecea;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15181d; --card:#1e232b; --text:#e8eaed; --muted:#9aa3af; --line:#2c333d;
+    --accent:#63a6f0; --accent-soft:#1d2c3d;
+    --ok:#5fd39b; --ok-soft:#163024;
+    --warn:#e2b464; --warn-soft:#332818;
+    --danger:#f2877f; --danger-soft:#3a1d1b;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:12px 12px 120px;
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg); color:var(--text);
+  -webkit-text-size-adjust:100%;
+}
+h1{font-size:19px; margin:4px 0 14px}
+h2{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 10px}
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:12px}
+.hint{font-size:11px; color:var(--muted); margin-top:3px}
+
+.seg{display:flex; gap:6px}
+.seg button{
+  flex:1; padding:9px 6px; font-size:13px; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--muted);
+  border:1px solid var(--line); border-radius:9px;
+}
+.seg button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600}
+
+.item{margin-bottom:14px}
+.item:last-child{margin-bottom:0}
+.item > .q{font-size:14px; font-weight:600; margin-bottom:2px}
+.item > .qh{font-size:11px; color:var(--muted); margin-bottom:6px}
+.opts{display:flex; flex-direction:column; gap:5px}
+.opts button{
+  display:flex; align-items:flex-start; gap:9px; width:100%; text-align:left;
+  padding:8px 10px; font-size:13px; line-height:1.35; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--text);
+  border:1px solid var(--line); border-radius:10px;
+}
+.opts button .sc{
+  flex:none; min-width:26px; text-align:center; font-weight:700;
+  font-variant-numeric:tabular-nums; color:var(--muted);
+}
+.opts button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent)}
+.opts button[aria-pressed="true"] .sc{color:var(--accent)}
+.opts button[aria-pressed="true"] .tx{font-weight:600}
+
+.msg{padding:9px 11px; border-radius:10px; font-size:13px; margin-top:8px; border:1px solid transparent}
+.msg.danger{background:var(--danger-soft); color:var(--danger); border-color:currentColor}
+.msg.warn{background:var(--warn-soft); color:var(--warn); border-color:currentColor}
+.msg.ok{background:var(--ok-soft); color:var(--ok); border-color:currentColor}
+.msg.info{background:var(--accent-soft); color:var(--accent); border-color:currentColor}
+.msg b{display:block; margin-bottom:2px}
+
+.kv{display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px}
+.kv:last-child{border-bottom:none}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font-variant-numeric:tabular-nums; font-weight:600; text-align:right}
+
+.reset{
+  width:100%; padding:10px; font-size:14px; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--muted); border:1px solid var(--line); border-radius:10px;
+}
+.disclaimer{font-size:11px; color:var(--muted); line-height:1.5; padding:0 4px}
+a{color:var(--accent)}
+
+.bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:10;
+  display:flex; gap:2px; align-items:center;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  background:var(--card); border-top:1px solid var(--line);
+}
+.bar div{flex:1; text-align:center; min-width:0}
+.bar b{display:block; font-size:19px; font-variant-numeric:tabular-nums}
+.bar small{display:block; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+.bar .flag-warn b{color:var(--warn)}
+.bar .flag-danger b{color:var(--danger)}
+.bar .flag-ok b{color:var(--ok)}
+</style>
+</head>
+<body>
+
+<h1>Шкалы оценки новорождённого</h1>
+
+<div class="card">
+  <div class="seg" id="picker"></div>
+  <div class="hint" id="purpose"></div>
+</div>
+
+<div class="card">
+  <h2 id="scaleName">Оценка</h2>
+  <div id="items"></div>
+</div>
+
+<div class="card" id="modifierCard" hidden>
+  <h2 id="modifierLabel"></h2>
+  <div class="opts" id="modifierOpts"></div>
+  <div class="hint" id="modifierNote"></div>
+</div>
+
+<div class="card">
+  <h2>Результат</h2>
+  <div id="result"></div>
+  <div style="margin-top:10px"><button class="reset" id="reset" type="button">Сбросить</button></div>
+</div>
+
+<div class="card">
+  <h2>Как считать</h2>
+  <p class="disclaimer" id="about"></p>
+</div>
+
+<div class="bar">
+  <div id="barScore"><b>—</b><small>Балл</small></div>
+  <div id="barDone"><b>—</b><small>Заполнено</small></div>
+</div>
+
+<script>
+"use strict";
+const D = window.SCALES_DATA;
+const $ = id => document.getElementById(id);
+
+let current = D.scales[0].id;
+const answers = {};   // {scaleId: {itemIndex: score}}
+const modifiers = {}; // {scaleId: score}
+D.scales.forEach(s => { answers[s.id] = {}; });
+
+const scale = () => D.scales.find(s => s.id === current);
+
+/* ---------- переключатель шкал ---------- */
+$('picker').innerHTML = D.scales
+  .map(s => `<button type="button" data-id="${s.id}" aria-pressed="${s.id === current}">${s.name}</button>`)
+  .join('');
+$('picker').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  current = b.dataset.id;
+  for (const x of $('picker').querySelectorAll('button'))
+    x.setAttribute('aria-pressed', String(x.dataset.id === current));
+  render();
+});
+
+$('reset').addEventListener('click', () => {
+  answers[current] = {};
+  delete modifiers[current];
+  render();
+});
+
+/* ---------- отрисовка ---------- */
+function render(){
+  const s = scale();
+  $('scaleName').textContent = s.name + ' · ' + s.full;
+  $('purpose').textContent = s.purpose + '. ' + s.how;
+
+  $('items').innerHTML = s.items.map((item, i) => `
+    <div class="item">
+      <div class="q">${i + 1}. ${item.label}</div>
+      ${item.hint ? `<div class="qh">${item.hint}</div>` : ''}
+      <div class="opts" data-item="${i}">
+        ${item.options.map(o => `
+          <button type="button" data-score="${o.score}"
+                  aria-pressed="${answers[s.id][i] === o.score}">
+            <span class="sc">${o.score > 0 ? '+' + o.score : o.score}</span>
+            <span class="tx">${o.label}</span>
+          </button>`).join('')}
+      </div>
+    </div>`).join('');
+
+  for (const box of $('items').querySelectorAll('.opts')){
+    box.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const i = Number(box.dataset.item), v = Number(b.dataset.score);
+      /* Повторное нажатие снимает выбор — удобно, если ткнул мимо. */
+      if (answers[s.id][i] === v) delete answers[s.id][i];
+      else answers[s.id][i] = v;
+      render();
+    });
+  }
+
+  /* Поправка есть только у N-PASS */
+  if (s.modifier){
+    $('modifierCard').hidden = false;
+    $('modifierLabel').textContent = s.modifier.label;
+    $('modifierNote').textContent = s.modifier.note;
+    $('modifierOpts').innerHTML = s.modifier.options.map(o => `
+      <button type="button" data-score="${o.score}"
+              aria-pressed="${modifiers[s.id] === o.score}">
+        <span class="sc">${o.score > 0 ? '+' + o.score : o.score}</span>
+        <span class="tx">${o.label}</span>
+      </button>`).join('');
+    $('modifierOpts').onclick = e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const v = Number(b.dataset.score);
+      if (modifiers[s.id] === v) delete modifiers[s.id];
+      else modifiers[s.id] = v;
+      render();
+    };
+  } else {
+    $('modifierCard').hidden = true;
+  }
+
+  showResult();
+  $('about').innerHTML =
+    `<b>${s.name}</b> — ${s.full}.<br>${s.how}<br><br>` +
+    `${s.interpretation_note}<br><br>` +
+    `Источник: ${s.source}<br><br>` +
+    `Инструмент для быстрой сверки у постели пациента. Не заменяет действующие ` +
+    `клинические рекомендации и назначение врача.`;
+}
+
+function band(list, value){
+  return list.find(b => b.max === null || value <= b.max) || list[list.length - 1];
+}
+
+function showResult(){
+  const s = scale();
+  const picked = answers[s.id];
+  const done = Object.keys(picked).length;
+  const total = s.items.length;
+  const sum = Object.values(picked).reduce((a, b) => a + b, 0);
+
+  const rows = [];
+  const msgs = [];
+
+  if (done < total){
+    rows.push(['Отмечено пунктов', `${done} из ${total}`]);
+    msgs.push(['info', 'Заполнено не полностью',
+      `Осталось ${total - done} ${plural(total - done, 'пункт', 'пункта', 'пунктов')}. ` +
+      `Промежуточная сумма — ${sum}.`]);
+  }
+
+  if (s.kind === 'bidirectional'){
+    const mod = modifiers[s.id] || 0;
+    const pain = sum > 0 ? sum + mod : 0;
+    rows.push(['Сумма по пунктам', fmtSigned(sum)]);
+    if (sum > 0 && mod) rows.push(['Поправка на недоношенность', '+' + mod]);
+    if (sum > 0){
+      rows.push(['Балл боли', String(pain)]);
+      const b = band(s.bands_positive, pain);
+      msgs.push([b.tone, `${b.title} — ${pain} ${plural(pain, 'балл', 'балла', 'баллов')}`, b.text]);
+    } else if (sum < 0){
+      const sed = Math.abs(sum);
+      rows.push(['Балл седации', '−' + sed]);
+      const b = band(s.bands_negative, sed);
+      msgs.push([b.tone, `${b.title} — ${sed} ${plural(sed, 'балл', 'балла', 'баллов')}`, b.text]);
+    } else if (done === total){
+      msgs.push(['ok', 'Ноль баллов', 'Ни боли, ни седации: состояние соответствует норме для этого ребёнка.']);
+    }
+    setBar(sum > 0 ? pain : sum, done, total,
+           sum > 0 ? band(s.bands_positive, pain).tone
+                   : sum < 0 ? band(s.bands_negative, Math.abs(sum)).tone : 'ok');
+  } else {
+    rows.push(['Сумма баллов', `${sum} из ${s.max}`]);
+    const b = band(s.bands, sum);
+    if (done === total || sum > 0){
+      const head = /^\d/.test(b.title)
+        ? b.title
+        : `${b.title} — ${sum} ${plural(sum, 'балл', 'балла', 'баллов')}`;
+      msgs.push([b.tone, head, b.text]);
+    }
+    setBar(sum, done, total, b.tone);
+  }
+
+  $('result').innerHTML =
+    rows.map(([k, v]) => `<div class="kv"><span>${k}</span><span>${v}</span></div>`).join('') +
+    msgs.map(([t, h, x]) => `<div class="msg ${t}"><b>${h}</b>${x}</div>`).join('');
+}
+
+function setBar(value, done, total, tone){
+  const el = $('barScore');
+  /* Знак нужен только там, где балл бывает отрицательным. */
+  el.querySelector('b').textContent =
+    scale().kind === 'bidirectional' ? fmtSigned(value) : String(value);
+  el.className = tone ? 'flag-' + tone : '';
+  $('barDone').querySelector('b').textContent = `${done}/${total}`;
+}
+
+const fmtSigned = v => v > 0 ? '+' + v : String(v).replace('-', '−');
+
+function plural(n, one, few, many){
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b > 1 && b < 5) return few;
+  if (b === 1) return one;
+  return many;
+}
+
+/* ---------- интеграция с Telegram ---------- */
+const tg = window.Telegram?.WebApp;
+if (tg){
+  tg.ready();
+  tg.expand();
+  const p = tg.themeParams || {};
+  const set = (name, v) => v && document.documentElement.style.setProperty(name, v);
+  set('--bg',   p.secondary_bg_color);
+  set('--card', p.bg_color);
+  set('--text', p.text_color);
+  set('--muted', p.hint_color);
+  set('--accent', p.link_color);
+}
+
+render();
+</script>
+</body>
+</html>

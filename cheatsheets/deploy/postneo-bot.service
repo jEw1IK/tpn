@@ -18,7 +18,7 @@ Group=postneo
 WorkingDirectory=/opt/postneo
 Environment=PYTHONUNBUFFERED=1
 Environment=TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/
-Environment=SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/#scales
+Environment=SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/scales/
 EnvironmentFile=-/opt/postneo/.env
 
 # Готовый бот из этого репозитория:

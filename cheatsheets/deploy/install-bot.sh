@@ -59,7 +59,7 @@ else
     cat > "$ENV_FILE" <<ENV
 BOT_TOKEN=$TOKEN
 TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/
-SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/#scales
+SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/scales/
 CHEATSHEET_FILE_ID_CACHE=$TARGET/file_id_cache.json
 # Ссылка на канал — раскомментируй и впиши адрес, тогда появится /channel
 # CHANNEL_URL=https://t.me/…

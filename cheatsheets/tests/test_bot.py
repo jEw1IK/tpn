@@ -86,7 +86,8 @@ async def main() -> None:
     check(not any("илирубин" in b for b in labels), "билирубина на клавиатуре нет")
     web = [b for row in markup.keyboard for b in row if b.web_app]
     check(len(web) == 2, "две кнопки открывают мини-приложение")
-    check(any(b.web_app.url.endswith("#scales") for b in web), "одна из них — вкладка «Шкалы»")
+    check(any(b.web_app.url.rstrip("/").endswith("scales") for b in web),
+          "одна из них — приложение шкал")
 
     await send(dp, bot, text_update("/help"))
     out = bot.texts()

@@ -163,7 +163,7 @@ async def cmd_tpn(message: Message) -> None:
         "Объёмы растворов, GIR, калораж и осмолярность по массе, "
         "суткам жизни и заданной дотации. Предупреждает, если доза "
         "вышла за рекомендованный диапазон.\n\n"
-        "Вторая вкладка того же приложения — шкалы оценки.",
+        "Шкалы оценки — отдельной кнопкой: /scales.",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[[button]]),
         parse_mode=ParseMode.HTML,
     )

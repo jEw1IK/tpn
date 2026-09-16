@@ -55,7 +55,7 @@ sudo systemctl disable <старый-сервис>
 ```
 BOT_TOKEN=123456:AA…                                  обязательно
 TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/          калькулятор питания
-SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/#scales вкладка «Шкалы»
+SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/scales/  приложение шкал
 CHEATSHEET_FILE_ID_CACHE=/opt/postneo/file_id_cache.json
 CHANNEL_URL=https://t.me/…                            появится команда /channel
 ```
@@ -67,13 +67,13 @@ CHANNEL_URL=https://t.me/…                            появится ком�
 ## Про кнопку мини-приложения
 
 **Telegram открывает Web App только по HTTPS с валидным сертификатом.**
-На голый IP сертификат не выпускается, поэтому `https://89.169.32.9/#scales`
+На голый IP сертификат не выпускается, поэтому `https://89.169.32.9/scales/`
 кнопкой не заработает.
 
 | Вариант | Что нужно | Адрес |
 |---|---|---|
-| **GitHub Pages** (уже настроено) | ничего | `https://jew1ik.github.io/tpn/#scales` |
-| **Свой домен** | домен на 89.169.32.9 + Let's Encrypt | `https://домен/#scales` |
+| **GitHub Pages** (уже настроено) | ничего | `https://jew1ik.github.io/tpn/scales/` |
+| **Свой домен** | домен на 89.169.32.9 + Let's Encrypt | `https://домен/scales/` |
 
 ### Свой домен вместо Pages
 
@@ -89,7 +89,7 @@ sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d ДОМЕН
 ```
 
-Затем в `.env`: `SCALES_WEBAPP_URL=https://ДОМЕН/#scales` и
+Затем в `.env`: `SCALES_WEBAPP_URL=https://ДОМЕН/scales/` и
 `TPN_WEBAPP_URL=https://ДОМЕН/`.
 
 ---
