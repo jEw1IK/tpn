@@ -373,6 +373,25 @@ def scale_modifier_table(scale_id: str) -> Table:
     )
 
 
+def vis_table() -> Table:
+    """Препараты, коэффициенты и обычные дозы для расчёта VIS."""
+    sc = next(s for s in SCALES["scales"] if s["id"] == "vis")
+    rows = []
+    for inp in sc["inputs"]:
+        rows.append([
+            f"<b>{inp['drug']}</b>",
+            inp["unit"],
+            f"× {inp['coef']}",
+            inp.get("typical", "—"),
+        ])
+    return Table(
+        head=["Препарат", "Единицы", "Коэффициент", "Обычная доза"],
+        widths=[1.6, 1.3, 1.0, 1.4],
+        align="llcc",
+        rows=rows,
+    )
+
+
 def scale_bands_table(scale_id: str, key: str = "bands", caption: str = None) -> Table:
     """Трактовка суммы. Диапазоны выводятся из верхних границ полос."""
     sc = next(s for s in SCALES["scales"] if s["id"] == scale_id)

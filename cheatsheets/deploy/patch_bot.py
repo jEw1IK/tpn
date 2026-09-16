@@ -73,7 +73,7 @@ def note(mark: str, text: str) -> None:
 TEXT_RULES = [
     ("sub", "3. Билирубин", "3. Шкалы"),
     ("sub", "Пороги фототерапии и ОЗПК по таблицам КР МЗ РФ — прямо в чате:",
-            "nSOFA, NIPS и N-PASS — отмечаете пункты, сумма и трактовка считаются сами."),
+            "nSOFA, NIPS, N-PASS и VIS — отмечаете пункты, сумма и трактовка считаются сами."),
     ("drop", "/bili 38 48 250"),
     ("drop", "/bili 36 24 190"),
     ("drop", "/ozpk 3200"),
@@ -81,9 +81,9 @@ TEXT_RULES = [
               "Открыть: кнопка <b>📊 Шкалы</b> или <code>/scales</code>. "
               "Пороги ФТ и ОЗПК остались в шпаргалке: <code>/shpory гбн</code>.\\n\\n"),
     ("inner", "/bili — пороги билирубина",
-              "/scales — шкалы: nSOFA, NIPS, N-PASS\\n"),
+              "/scales — шкалы: nSOFA, NIPS, N-PASS, VIS\\n"),
     ("inner", "🟡 <b>Билирубин</b>",
-              "📊 <b>Шкалы</b> · nSOFA, NIPS, N-PASS: <code>/scales</code>\\n\\n"),
+              "📊 <b>Шкалы</b> · nSOFA, NIPS, N-PASS, VIS: <code>/scales</code>\\n\\n"),
     ("sub", "калькулятор билирубина (/bili, /ozpk)", "шкалы оценки (/scales)"),
 ]
 
@@ -339,7 +339,7 @@ def patch_menu(out: list) -> list:
     if not any('"scales"' in l or "'scales'" in l for l in out) and shpory_line:
         new = shpory_line.replace("shpory", "scales")
         new = re.sub(r'description\s*=\s*(["\']).*?\1',
-                     'description="Шкалы: nSOFA, NIPS, N-PASS"', new)
+                     'description="Шкалы: nSOFA, NIPS, N-PASS, VIS"', new)
         idx = out.index(shpory_line)
         out.insert(idx + 1, new)
         note("✓", f"строка {idx + 2}: в меню добавлена команда /scales")

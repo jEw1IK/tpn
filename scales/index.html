@@ -63,6 +63,18 @@ h2{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--m
 .opts button[aria-pressed="true"] .sc{color:var(--accent)}
 .opts button[aria-pressed="true"] .tx{font-weight:600}
 
+/* VIS: не варианты, а дозы — поэтому поля ввода вместо кнопок */
+.dose{display:flex; align-items:center; gap:8px; margin-top:4px}
+.dose input{
+  width:104px; padding:9px 10px; font-family:inherit; font-size:15px;
+  color:var(--text); background:var(--bg);
+  border:1px solid var(--line); border-radius:9px;
+}
+.dose input:focus{outline:none; border-color:var(--accent); background:var(--card)}
+.dose .unit{font-size:12px; color:var(--muted)}
+.dose .pts{margin-left:auto; font-size:13px; font-weight:600; color:var(--muted)}
+.dose .pts.on{color:var(--accent)}
+
 .msg{padding:9px 11px; border-radius:10px; font-size:13px; margin-top:8px; border:1px solid transparent}
 .msg.danger{background:var(--danger-soft); color:var(--danger); border-color:currentColor}
 .msg.warn{background:var(--warn-soft); color:var(--warn); border-color:currentColor}
@@ -140,7 +152,8 @@ const $ = id => document.getElementById(id);
 let current = D.scales[0].id;
 const answers = {};   // {scaleId: {itemIndex: score}}
 const modifiers = {}; // {scaleId: score}
-D.scales.forEach(s => { answers[s.id] = {}; });
+const doses = {};     // {scaleId: {inputIndex: доза}} — для шкал-формул вроде VIS
+D.scales.forEach(s => { answers[s.id] = {}; doses[s.id] = {}; });
 
 const scale = () => D.scales.find(s => s.id === current);
 
@@ -159,6 +172,7 @@ $('picker').addEventListener('click', e => {
 
 $('reset').addEventListener('click', () => {
   answers[current] = {};
+  doses[current] = {};
   delete modifiers[current];
   render();
 });
@@ -168,6 +182,14 @@ function render(){
   const s = scale();
   $('scaleName').textContent = s.name + ' · ' + s.full;
   $('purpose').textContent = s.purpose + '. ' + s.how;
+
+  if (s.kind === 'formula'){
+    renderDoses(s);
+    $('modifierCard').hidden = true;
+    showResult();
+    renderAbout(s);
+    return;
+  }
 
   $('items').innerHTML = s.items.map((item, i) => `
     <div class="item">
@@ -219,6 +241,10 @@ function render(){
   }
 
   showResult();
+  renderAbout(s);
+}
+
+function renderAbout(s){
   $('about').innerHTML =
     `<b>${s.name}</b> — ${s.full}.<br>${s.how}<br><br>` +
     `${s.interpretation_note}<br><br>` +
@@ -227,12 +253,41 @@ function render(){
     `клинические рекомендации и назначение врача.`;
 }
 
+/* ---------- шкала-формула: дозы вместо вариантов ---------- */
+function renderDoses(s){
+  $('items').innerHTML = s.inputs.map((inp, i) => `
+    <div class="item">
+      <div class="q">${i + 1}. ${inp.drug}</div>
+      <div class="qh">коэффициент ×${inp.coef}${inp.typical ? ' · обычная доза ' + inp.typical : ''}</div>
+      ${inp.hint ? `<div class="qh">${inp.hint}</div>` : ''}
+      <div class="dose">
+        <input type="text" inputmode="decimal" enterkeyhint="done"
+               data-input="${i}" value="${doses[s.id][i] ?? ''}" placeholder="0">
+        <span class="unit">${inp.unit}</span>
+        <span class="pts" data-pts="${i}">—</span>
+      </div>
+    </div>`).join('');
+
+  for (const el of $('items').querySelectorAll('input[data-input]')){
+    el.addEventListener('input', () => {
+      const i = Number(el.dataset.input);
+      /* Запятая как десятичный разделитель: на русской клавиатуре она под рукой. */
+      const v = parseFloat(String(el.value).replace(',', '.'));
+      if (Number.isFinite(v) && v > 0) doses[s.id][i] = v;
+      else delete doses[s.id][i];
+      /* Пересчитываем только результат: перерисовка увела бы фокус из поля. */
+      showResult();
+    });
+  }
+}
+
 function band(list, value){
   return list.find(b => b.max === null || value <= b.max) || list[list.length - 1];
 }
 
 function showResult(){
   const s = scale();
+  if (s.kind === 'formula'){ showFormula(s); return; }
   const picked = answers[s.id];
   const done = Object.keys(picked).length;
   const total = s.items.length;
@@ -280,9 +335,50 @@ function showResult(){
     setBar(sum, done, total, b.tone);
   }
 
+  paint(rows, msgs);
+}
+
+function paint(rows, msgs){
   $('result').innerHTML =
     rows.map(([k, v]) => `<div class="kv"><span>${k}</span><span>${v}</span></div>`).join('') +
     msgs.map(([t, h, x]) => `<div class="msg ${t}"><b>${h}</b>${x}</div>`).join('');
+}
+
+/* Число по-русски: запятая вместо точки, без хвостовых нулей. */
+const fmtNum = v => String(Math.round(v * 100) / 100).replace('.', ',');
+
+function showFormula(s){
+  const entered = doses[s.id];
+  const rows = [], msgs = [];
+  let sum = 0;
+
+  s.inputs.forEach((inp, i) => {
+    const v = entered[i];
+    const pts = v ? v * inp.coef : 0;
+    sum += pts;
+    const tag = $('items').querySelector(`[data-pts="${i}"]`);
+    if (tag){
+      tag.textContent = v ? '+' + fmtNum(pts) : '—';
+      tag.classList.toggle('on', Boolean(v));
+    }
+    if (v) rows.push([`${inp.drug} · ${fmtNum(v)} ${inp.unit}`, '+' + fmtNum(pts)]);
+  });
+
+  sum = Math.round(sum * 100) / 100;
+  const used = Object.keys(entered).length;
+
+  if (!used){
+    msgs.push(['info', 'Введите дозы',
+      'Те, что идут прямо сейчас. Пустое поле — препарат не вводится.']);
+  } else {
+    rows.push([`<b>${s.name}</b>`, `<b>${fmtNum(sum)}</b>`]);
+    const b = band(s.bands, sum);
+    const head = /^\d/.test(b.title) ? b.title : `${b.title} — VIS ${fmtNum(sum)}`;
+    msgs.push([b.tone, head, b.text]);
+  }
+
+  setBar(fmtNum(sum), used, s.inputs.length, used ? band(s.bands, sum).tone : '');
+  paint(rows, msgs);
 }
 
 function setBar(value, done, total, tone){

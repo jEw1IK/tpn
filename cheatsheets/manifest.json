@@ -20,7 +20,7 @@
       "file": "pdf/rodzal.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rodzal.pdf",
       "bytes": 70005,
-      "sha256": "a3198972fe61020d"
+      "sha256": "6c9ea0b22891c192"
     },
     {
       "id": "rds_surfactant",
@@ -38,7 +38,7 @@
       "file": "pdf/rds_surfactant.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rds_surfactant.pdf",
       "bytes": 67964,
-      "sha256": "c8e6dfb676576607"
+      "sha256": "b3d76d5499aa446e"
     },
     {
       "id": "vent",
@@ -57,7 +57,7 @@
       "file": "pdf/vent.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/vent.pdf",
       "bytes": 66103,
-      "sha256": "4a7a7781f2b6bdb6"
+      "sha256": "073781d1ec6b27d7"
     },
     {
       "id": "pphn",
@@ -76,7 +76,7 @@
       "file": "pdf/pphn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pphn.pdf",
       "bytes": 70602,
-      "sha256": "70946ed7ffef4db5"
+      "sha256": "1983cfd2a8da2ca3"
     },
     {
       "id": "gbn",
@@ -97,7 +97,7 @@
       "file": "pdf/gbn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/gbn.pdf",
       "bytes": 84846,
-      "sha256": "a44775cc66a8fa68"
+      "sha256": "bff59365132336cd"
     },
     {
       "id": "pneumonia_rnns",
@@ -117,7 +117,7 @@
       "file": "pdf/pneumonia_rnns.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pneumonia_rnns.pdf",
       "bytes": 77079,
-      "sha256": "68ad4df3c4fd28c1"
+      "sha256": "eac4e548a07d415c"
     },
     {
       "id": "hypoglycemia",
@@ -134,7 +134,7 @@
       "file": "pdf/hypoglycemia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hypoglycemia.pdf",
       "bytes": 66230,
-      "sha256": "5f0526b63265ec47"
+      "sha256": "adf8d182d676f069"
     },
     {
       "id": "seizures",
@@ -151,7 +151,7 @@
       "file": "pdf/seizures.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/seizures.pdf",
       "bytes": 64011,
-      "sha256": "250c8bfd84411ae1"
+      "sha256": "0862bc8ffedadef2"
     },
     {
       "id": "hie_hypothermia",
@@ -167,7 +167,7 @@
       "file": "pdf/hie_hypothermia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hie_hypothermia.pdf",
       "bytes": 65034,
-      "sha256": "62ed5fc340c86385"
+      "sha256": "db247c075c575af9"
     },
     {
       "id": "pda",
@@ -184,7 +184,7 @@
       "file": "pdf/pda.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pda.pdf",
       "bytes": 65821,
-      "sha256": "6733a7dc160f6e5a"
+      "sha256": "3e60a6e65a97a209"
     },
     {
       "id": "nec",
@@ -201,7 +201,7 @@
       "file": "pdf/nec.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/nec.pdf",
       "bytes": 65136,
-      "sha256": "a5c4ad3cff41105e"
+      "sha256": "4de0492fccf851ef"
     },
     {
       "id": "inotropes",
@@ -219,7 +219,7 @@
       "file": "pdf/inotropes.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/inotropes.pdf",
       "bytes": 66321,
-      "sha256": "54ef9cc4ba8cd041"
+      "sha256": "48efe76c7022b163"
     },
     {
       "id": "fluids_tpn",
@@ -236,23 +236,23 @@
       "file": "pdf/fluids_tpn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/fluids_tpn.pdf",
       "bytes": 67435,
-      "sha256": "480553a9380addb5"
+      "sha256": "47d5449b42d5772e"
     },
     {
       "id": "scales",
       "title": "Шкалы оценки новорождённого",
-      "subtitle": "nSOFA · NIPS · N-PASS — полиорганная дисфункция, боль и седация",
-      "summary": "Три шкалы целиком: nSOFA из КР по сепсису, NIPS для процедурной боли и N-PASS для боли и глубины седации.",
+      "subtitle": "nSOFA · NIPS · N-PASS · VIS — дисфункция, боль, седация, вазоактивная поддержка",
+      "summary": "Четыре шкалы целиком: nSOFA из КР по сепсису, NIPS для процедурной боли, N-PASS для боли и седации и VIS для вазоактивной поддержки.",
       "category": "Справочники",
-      "button": "📊 Шкалы: nSOFA, боль, седация",
+      "button": "📊 Шкалы: nSOFA, боль, седация, VIS",
       "order": 125,
       "guidelines": [
         "912_1"
       ],
       "file": "pdf/scales.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/scales.pdf",
-      "bytes": 71274,
-      "sha256": "0bae14dd0f8b45a3"
+      "bytes": 76331,
+      "sha256": "d899f42d20eff39c"
     },
     {
       "id": "reference",
@@ -273,7 +273,7 @@
       "file": "pdf/reference.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/reference.pdf",
       "bytes": 71901,
-      "sha256": "767361526292226a"
+      "sha256": "aaab64cc7e50731a"
     }
   ]
 }
