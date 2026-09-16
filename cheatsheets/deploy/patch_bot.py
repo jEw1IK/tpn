@@ -35,7 +35,17 @@ SCALES_LABEL = "📊 Шкалы"
 SCALES_IMPORT = "from cheatsheets.bot.keyboard import scales_button"
 ROUTER_IMPORT = "from cheatsheets.bot.scales_router import scales_router"
 
-RE_IMPORT_BILI = re.compile(r"^\s*(from\s+[\w.]*bilirubin_router\s+import|import\s+[\w.]*bilirubin_router)\b")
+# Импорт модуля билирубина пишут по-разному, и это важно ловить полностью:
+#   from cheatsheets.bot.bilirubin_router import bilirubin_router
+#   from cheatsheets.bot import bilirubin_router as bili_module
+#   import cheatsheets.bot.bilirubin_router
+RE_IMPORT_BILI = re.compile(
+    r"^\s*(?:from\s+[\w.]*bilirubin_router\s+import\b"
+    r"|from\s+[\w.]+\s+import\s+[^#]*\bbilirubin_router\b"
+    r"|import\s+[\w.]*bilirubin_router\b)"
+)
+# Имя, под которым модуль оказался в коде: ... import bilirubin_router as ЭТО
+RE_IMPORT_ALIAS = re.compile(r"\bbilirubin_router\s+as\s+(\w+)")
 RE_INCLUDE_BILI = re.compile(r"^\s*\w+\.include_router\(\s*bilirubin_router\s*\)\s*,?\s*$")
 RE_BUTTON = re.compile(r"KeyboardButton\(\s*(?:text\s*=\s*)?[\"']🟡\s*Билирубин[\"']\s*\)")
 RE_INCLUDE_ANY = re.compile(r"^(\s*)(\w+)\.include_router\(\s*(\w+)\s*\)")
@@ -50,6 +60,29 @@ GREEDY_ROUTERS = ("kr_router", "search_router", "text_router", "fallback_router"
 log: list = []
 
 
+def bili_users(lines: list) -> tuple:
+    """Находит импорт модуля билирубина и все места, где им пользуются.
+
+    Возвращает (имя_в_коде, строки_импорта, строки_использования).
+    Если модуля в коде нет — все три пустые.
+    """
+    name, imports = "", []
+    for i, line in enumerate(lines, 1):
+        if RE_IMPORT_BILI.match(line):
+            imports.append(i)
+            alias = RE_IMPORT_ALIAS.search(line)
+            name = alias.group(1) if alias else "bilirubin_router"
+    if not name:
+        return "", [], []
+    used = [
+        i for i, line in enumerate(lines, 1)
+        if i not in imports
+        and re.search(rf"\b{re.escape(name)}\b", line)
+        and not re.match(rf"^\s*\w+\.include_router\(\s*{re.escape(name)}\s*\)", line)
+    ]
+    return name, imports, used
+
+
 def note(mark: str, text: str) -> None:
     log.append(f"{mark} {text}")
 
@@ -60,6 +93,17 @@ def patch(lines: list, menu_only: bool = False) -> list:
         return patch_menu(out)
 
     # 1. Импорт и подключение billirubin_router ------------------------------
+    name, imports, used = bili_users(out)
+    if used:
+        # Модуль не просто подключён роутером, а ещё где-то вызывается.
+        # Выдернуть импорт молча — значит поменять падение на старте
+        # на падение в руках у врача. Не трогаем и говорим прямо.
+        note("!", f"модуль билирубина в коде зовётся «{name}» и используется в "
+                  f"строках {', '.join(map(str, used))} — импорт не трогаю")
+        note("!", "пока эти строки не убраны вручную, старый модуль должен "
+                  "остаться на месте, иначе бот не запустится")
+        return patch_rest(out, skip_imports=True)
+
     kept = []
     for i, line in enumerate(out, 1):
         if RE_IMPORT_BILI.match(line):
@@ -71,6 +115,10 @@ def patch(lines: list, menu_only: bool = False) -> list:
         kept.append(line)
     out = kept
 
+    return patch_rest(out)
+
+
+def patch_rest(out: list, skip_imports: bool = False) -> list:
     # 2. Кнопка на клавиатуре ------------------------------------------------
     found_button = False
     used_helper = False
@@ -204,6 +252,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Правит bot.py под новую версию модуля")
     ap.add_argument("path", help="путь к файлу бота, обычно /opt/telegram-bot/bot.py")
     ap.add_argument("--dry", action="store_true", help="только показать, ничего не менять")
+    ap.add_argument("--check", action="store_true",
+                    help="только проверить, безопасно ли обновлять модуль (ничего не меняет)")
     ap.add_argument("--menu-only", action="store_true",
                     help="править только список команд (если он в отдельном файле)")
     args = ap.parse_args()
@@ -214,6 +264,27 @@ def main() -> int:
 
     with open(args.path, encoding="utf-8") as f:
         original = f.readlines()
+
+    if args.check:
+        name, imports, used = bili_users(original)
+        if not imports:
+            print("Проверка: модуль билирубина в коде не используется — можно обновлять.")
+            return 0
+        if not used:
+            print(f"Проверка: модуль билирубина подключён (строки "
+                  f"{', '.join(map(str, imports))}), но больше нигде не вызывается — "
+                  f"скрипт уберёт его сам.")
+            return 0
+        print("Проверка не пройдена.\n")
+        print(f"Модуль билирубина импортируется в строке "
+              f"{', '.join(map(str, imports))} под именем «{name}» и вызывается "
+              f"в строках: {', '.join(map(str, used))}.")
+        print("\nЕсли удалить модуль, бот упадёт на старте. Сначала нужно убрать "
+              "эти строки из кода — руками, потому что там ваши обработчики, "
+              "а не шаблонный код.")
+        for n in used[:12]:
+            print(f"  {n:>5}: {original[n - 1].rstrip()}")
+        return 2
 
     patched = patch(original, menu_only=args.menu_only)
 

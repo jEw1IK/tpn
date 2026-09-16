@@ -47,7 +47,17 @@ if [ -d "$BOT_DIR/cheatsheets" ]; then
     ok "$(basename "$MOD_BACKUP")"
 fi
 
-step "3. Модуль шпаргалок"
+step "3. Можно ли обновлять модуль"
+# Проверяем свежим скриптом из клона, а не тем, что стоит у бота.
+if ! "$PY" "$STAGE/tpn/cheatsheets/deploy/patch_bot.py" --check "$BOT_FILE"; then
+    printf '\n\033[31mОстанавливаюсь, ничего не тронув.\033[0m\n'
+    printf 'Бот работает как работал. Пришлите вывод выше — по нему видно,\n'
+    printf 'какие строки мешают, и правка будет точечной.\n'
+    exit 2
+fi
+ok "код готов к обновлению"
+
+step "4. Модуль шпаргалок"
 CACHE="$BOT_DIR/cheatsheets/bot/file_id_cache.json"
 [ -f "$CACHE" ] && cp "$CACHE" "$STAGE/file_id_cache.json" && ok "кэш file_id сохранён"
 rm -rf "$BOT_DIR/cheatsheets"
@@ -60,18 +70,18 @@ ok "модуль обновлён, PDF на месте: $PDFS"
 rm -rf "$BOT_DIR/webapp"; mkdir -p "$BOT_DIR/webapp"
 cp -a "$STAGE/tpn/index.html" "$STAGE/tpn/scales-data.js" "$BOT_DIR/webapp/"
 
-step "4. Правка bot.py"
+step "5. Правка bot.py"
 "$PY" "$BOT_DIR/cheatsheets/deploy/patch_bot.py" "$BOT_FILE" || {
     cp -a "$BOT_BACKUP" "$BOT_FILE"
     die "патч не применился, bot.py возвращён из копии"
 }
 
 if [ "$SKIP_RESTART" = "1" ]; then
-    step "5. Перезапуск пропущен (SKIP_RESTART=1)"
+    step "6. Перезапуск пропущен (SKIP_RESTART=1)"
     exit 0
 fi
 
-step "5. Перезапуск"
+step "6. Перезапуск"
 systemctl restart "$SERVICE"
 sleep 4
 
