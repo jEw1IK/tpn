@@ -38,11 +38,11 @@ VS Code и JetBrains и как команда в терминале. Стави�
 >    (в репозитории для этого есть `cheatsheets/deploy/install.sh`).
 > 3. Впиши подключение роутеров в мой код сам, в правильное место:
 >    `cheatsheets.bot.aiogram_router.cheatsheets_router` и
->    `cheatsheets.bot.bilirubin_router.bilirubin_router`.
+>    `cheatsheets.bot.scales_router.scales_router`.
 >    Если у меня не aiogram 3, а что-то другое — адаптируй под мой
 >    фреймворк, ядро каталога `cheatsheets/bot/catalog.py` от библиотеки
 >    не зависит.
-> 4. Добавь команды в меню бота: /shpory и /bili.
+> 4. Добавь команды в меню бота: /shpory и /scales.
 > 5. Проверь, что ничего не конфликтует с существующими хендлерами
 >    и что бот запускается.
 >
@@ -54,7 +54,7 @@ VS Code и JetBrains и как команда в терминале. Стави�
 
 ```
 /shpory   → меню разделов, кнопка присылает PDF
-/bili     → кнопка, открывающая калькулятор
+/scales   → кнопка, открывающая шкалы
 ```
 
 ---

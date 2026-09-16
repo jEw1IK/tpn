@@ -20,12 +20,10 @@ from aiogram.types import Message
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from cheatsheets.bot.aiogram_router import cheatsheets_router  # noqa: E402
-from cheatsheets.bot.bilirubin_router import bilirubin_router  # noqa: E402
 from cheatsheets.bot.scales_router import scales_router  # noqa: E402
 
 dp = Dispatcher()
 dp.include_router(cheatsheets_router)
-dp.include_router(bilirubin_router)
 dp.include_router(scales_router)
 
 
@@ -34,7 +32,6 @@ async def start(message: Message) -> None:
     await message.answer(
         "Привет!\n"
         "/shpory — шпаргалки в PDF\n"
-        "/bili — калькулятор билирубина\n"
         "/scales — шкалы оценки"
     )
 

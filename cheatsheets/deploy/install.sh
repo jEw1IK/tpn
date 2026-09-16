@@ -45,7 +45,7 @@ ok "модуль установлен в $BOT_DIR/cheatsheets"
 # Мини-приложения кладём рядом — пригодятся, если раздаёшь их своим nginx.
 rm -rf "$BOT_DIR/webapp"
 mkdir -p "$BOT_DIR/webapp"
-cp -a "$STAGE/tpn/bili" "$BOT_DIR/webapp/bili"
+cp -a "$STAGE/tpn/scales" "$BOT_DIR/webapp/scales"
 cp -a "$STAGE/tpn/index.html" "$BOT_DIR/webapp/index.html"
 ok "мини-приложения в $BOT_DIR/webapp"
 
@@ -72,22 +72,22 @@ cat <<'TXT'
 Осталось добавить в код бота две строки:
 
     from cheatsheets.bot.aiogram_router import cheatsheets_router
-    from cheatsheets.bot.bilirubin_router import bilirubin_router
+    from cheatsheets.bot.scales_router import scales_router
 
     dp.include_router(cheatsheets_router)
-    dp.include_router(bilirubin_router)
+    dp.include_router(scales_router)
 
 И зарегистрировать команды в меню:
 
     await bot.set_my_commands([
         BotCommand(command="shpory", description="📄 Шпаргалки в PDF"),
-        BotCommand(command="bili",   description="🧮 Калькулятор билирубина"),
+        BotCommand(command="scales", description="📊 Шкалы: nSOFA, боль, седация"),
     ])
 
-Адрес мини-приложения (кнопка в /bili) задаётся переменной окружения:
+Адрес мини-приложения (кнопка в /scales) задаётся переменной окружения:
 
-    BILI_WEBAPP_URL=https://jew1ik.github.io/tpn/bili/
+    SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/scales/
 
-После этого перезапусти бота. Проверка: /shpory и /bili
+После этого перезапусти бота. Проверка: /shpory и /scales
 ────────────────────────────────────────────────────────────
 TXT

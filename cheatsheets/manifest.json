@@ -14,7 +14,7 @@
       "file": "pdf/rodzal.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rodzal.pdf",
       "bytes": 70005,
-      "sha256": "ea8a0f20894c26a0"
+      "sha256": "0dba697992e10a22"
     },
     {
       "id": "rds_surfactant",
@@ -27,7 +27,7 @@
       "file": "pdf/rds_surfactant.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rds_surfactant.pdf",
       "bytes": 67964,
-      "sha256": "ac52bc2fbfd21814"
+      "sha256": "703680870d4bc79e"
     },
     {
       "id": "vent",
@@ -40,7 +40,7 @@
       "file": "pdf/vent.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/vent.pdf",
       "bytes": 66103,
-      "sha256": "1243f7bfe580264b"
+      "sha256": "042c39f482709044"
     },
     {
       "id": "pphn",
@@ -53,7 +53,7 @@
       "file": "pdf/pphn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pphn.pdf",
       "bytes": 70602,
-      "sha256": "ca97d8e9e4a6e578"
+      "sha256": "57867a37284526fd"
     },
     {
       "id": "gbn",
@@ -66,7 +66,7 @@
       "file": "pdf/gbn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/gbn.pdf",
       "bytes": 84846,
-      "sha256": "a663d5066d9a6248"
+      "sha256": "db40d1c70a60d87d"
     },
     {
       "id": "pneumonia_rnns",
@@ -79,7 +79,7 @@
       "file": "pdf/pneumonia_rnns.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pneumonia_rnns.pdf",
       "bytes": 77079,
-      "sha256": "26defc4cfea0c2cc"
+      "sha256": "efd3ee8d97d36a21"
     },
     {
       "id": "hypoglycemia",
@@ -92,7 +92,7 @@
       "file": "pdf/hypoglycemia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hypoglycemia.pdf",
       "bytes": 66230,
-      "sha256": "279146c9e4489195"
+      "sha256": "e546a63e5a8b6d78"
     },
     {
       "id": "seizures",
@@ -105,7 +105,7 @@
       "file": "pdf/seizures.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/seizures.pdf",
       "bytes": 64011,
-      "sha256": "2568860e81a21b32"
+      "sha256": "f5aa972eae87d978"
     },
     {
       "id": "hie_hypothermia",
@@ -118,7 +118,7 @@
       "file": "pdf/hie_hypothermia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hie_hypothermia.pdf",
       "bytes": 65034,
-      "sha256": "7ad491a24f5184ac"
+      "sha256": "3082e42903c5bf9c"
     },
     {
       "id": "pda",
@@ -131,7 +131,7 @@
       "file": "pdf/pda.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pda.pdf",
       "bytes": 65821,
-      "sha256": "92a7c10da5ef5f4a"
+      "sha256": "99a5a91585aa56d3"
     },
     {
       "id": "nec",
@@ -144,7 +144,7 @@
       "file": "pdf/nec.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/nec.pdf",
       "bytes": 65136,
-      "sha256": "681a3e88acaab668"
+      "sha256": "453d7e876bdf44b9"
     },
     {
       "id": "inotropes",
@@ -157,7 +157,7 @@
       "file": "pdf/inotropes.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/inotropes.pdf",
       "bytes": 66321,
-      "sha256": "cc14fb9a580ff9d2"
+      "sha256": "5961a0ca08c5d67f"
     },
     {
       "id": "fluids_tpn",
@@ -170,7 +170,7 @@
       "file": "pdf/fluids_tpn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/fluids_tpn.pdf",
       "bytes": 67435,
-      "sha256": "8c9b4b6ad3857708"
+      "sha256": "98b834c785f1baca"
     },
     {
       "id": "scales",
@@ -183,7 +183,7 @@
       "file": "pdf/scales.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/scales.pdf",
       "bytes": 71274,
-      "sha256": "5f30fc717d5bcdc7"
+      "sha256": "3370b72412de2448"
     },
     {
       "id": "reference",
@@ -196,7 +196,7 @@
       "file": "pdf/reference.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/reference.pdf",
       "bytes": 71901,
-      "sha256": "ffb0819123247451"
+      "sha256": "a46fd540bdcac0c5"
     }
   ]
 }

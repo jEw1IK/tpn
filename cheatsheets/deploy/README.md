@@ -7,15 +7,15 @@
 ## Сначала главное про кнопку мини-приложения
 
 **Telegram открывает Web App только по HTTPS с валидным сертификатом.**
-На голый IP сертификат не выпускается, поэтому `https://89.169.32.9/bili/`
+На голый IP сертификат не выпускается, поэтому `https://89.169.32.9/scales/`
 кнопкой работать не будет — Telegram её просто не откроет.
 
 Два рабочих варианта:
 
 | Вариант | Что нужно | Адрес |
 |---|---|---|
-| **GitHub Pages** (проще) | Включить Pages в настройках репозитория | `https://jew1ik.github.io/tpn/bili/` |
-| **Свой домен** | Домен, направленный на 89.169.32.9, + Let's Encrypt | `https://твой-домен/bili/` |
+| **GitHub Pages** (проще) | Включить Pages в настройках репозитория | `https://jew1ik.github.io/tpn/scales/` |
+| **Свой домен** | Домен, направленный на 89.169.32.9, + Let's Encrypt | `https://твой-домен/scales/` |
 
 Сам бот при этом может жить где угодно: он работает через long polling,
 то есть только исходящими соединениями. Открывать порты для него не нужно
@@ -28,9 +28,9 @@
    (или `main`, если сольёшь ветку), папка `/ (root)`.
 3. Через пару минут поднимутся:
    - `https://jew1ik.github.io/tpn/` — калькулятор ПП
-   - `https://jew1ik.github.io/tpn/bili/` — калькулятор билирубина
+   - `https://jew1ik.github.io/tpn/scales/` — шкалы оценки
    - `https://jew1ik.github.io/tpn/cheatsheets/` — список PDF
-4. Больше на сервере ничего не нужно, `BILI_WEBAPP_URL` уже указывает сюда.
+4. Больше на сервере ничего не нужно, `SCALES_WEBAPP_URL` уже указывает сюда.
 
 ### Вариант B. Свой домен на этом сервере
 
@@ -48,7 +48,7 @@ sudo certbot --nginx -d ДОМЕН
 
 Затем задать боту адрес:
 ```
-BILI_WEBAPP_URL=https://ДОМЕН/bili/
+SCALES_WEBAPP_URL=https://ДОМЕН/scales/
 ```
 
 ---
@@ -69,8 +69,8 @@ unset BOT_TOKEN
 токен, проверяет что мини-приложение реально отдаёт 200, и спрашивает
 подтверждение. На битую ссылку кнопку не повесит.
 
-Что получится сразу: кнопка «Билирубин» рядом с полем ввода открывает
-калькулятор, в списке команд появляются `/shpory` и `/bili`.
+Что получится сразу: в списке команд появляются `/shpory` и `/scales`,
+кнопка меню рядом с полем ввода открывает выбранное мини-приложение.
 **Отвечать** на эти команды бот начнёт только после подключения модуля
 к коду — витрина и логика это разные вещи.
 
@@ -104,11 +104,9 @@ chmod +x install.sh
 
 ```python
 from cheatsheets.bot.aiogram_router import cheatsheets_router
-from cheatsheets.bot.bilirubin_router import bilirubin_router
 from cheatsheets.bot.scales_router import scales_router
 
 dp.include_router(cheatsheets_router)
-dp.include_router(bilirubin_router)
 dp.include_router(scales_router)
 ```
 
@@ -129,7 +127,6 @@ from aiogram.types import BotCommand
 
 await bot.set_my_commands([
     BotCommand(command="shpory", description="📄 Шпаргалки в PDF"),
-    BotCommand(command="bili",   description="🧮 Калькулятор билирубина"),
     BotCommand(command="scales", description="📊 Шкалы: nSOFA, боль, седация"),
 ])
 ```
@@ -138,7 +135,6 @@ await bot.set_my_commands([
 
 | Переменная | Зачем | По умолчанию |
 |---|---|---|
-| `BILI_WEBAPP_URL` | Адрес калькулятора билирубина | `https://jew1ik.github.io/tpn/bili/` |
 | `SCALES_WEBAPP_URL` | Адрес мини-приложения со шкалами | `https://jew1ik.github.io/tpn/scales/` |
 | `CHEATSHEET_FILE_ID_CACHE` | Путь к кэшу `file_id` | `cheatsheets/bot/file_id_cache.json` |
 
@@ -151,14 +147,12 @@ await bot.set_my_commands([
 ```
 /shpory              → меню разделов, любая кнопка присылает PDF
 /shpory гбн          → сразу шпаргалка по ГБН
-/bili                → кнопка, открывающая калькулятор
 /scales              → кнопка, открывающая шкалы
 📊 Шкалы             → то же самое нажатием кнопки на клавиатуре
 ```
 
-В калькуляторе для доношенного в 48 часов должно получиться: стандартная ФТ
-239, ОЗПК 342 мкмоль/л. Если цифры другие — подхватилась старая версия данных,
-проверь `cheatsheets/data/bilirubin.json`.
+В шкале nSOFA при максимуме по всем трём системам должно получиться 15 баллов,
+в NIPS — 7. Если цифры другие, подхватилась старая версия `data/scales.json`.
 
 ---
 
@@ -197,4 +191,4 @@ sudo journalctl -u postneo-bot -f
 | Кнопка есть в личке, но не в группе | Так и задумано: `web_app` работает только в личных чатах, в группах роутер сам подставляет обычную ссылку |
 | PDF приходят долго при первой отправке | Нормально: первый раз файл заливается в Telegram, дальше идёт по `file_id` мгновенно |
 | После обновления PDF заливаются заново | Тоже нормально, если содержимое изменилось: кэш инвалидируется по sha256 |
-| `/bili` отвечает, `/shpory` молчит | Подключён только один роутер — нужны оба `include_router` |
+| `/scales` отвечает, `/shpory` молчит | Подключён только один роутер — нужны оба `include_router` |

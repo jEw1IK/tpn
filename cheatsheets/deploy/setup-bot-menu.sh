@@ -17,7 +17,7 @@
 set -euo pipefail
 
 API="https://api.telegram.org/bot${BOT_TOKEN:-}"
-WEBAPP_URL="${WEBAPP_URL:-https://jew1ik.github.io/tpn/bili/}"
+WEBAPP_URL="${WEBAPP_URL:-https://jew1ik.github.io/tpn/scales/}"
 MENU="${MENU:-webapp}"
 
 red()  { printf '\033[31m%s\033[0m\n' "$1"; }
@@ -85,7 +85,7 @@ echo
 call setMyCommands '{
   "commands": [
     {"command": "shpory", "description": "📄 Шпаргалки в PDF"},
-    {"command": "bili",   "description": "🧮 Калькулятор билирубина"}
+    {"command": "scales", "description": "📊 Шкалы: nSOFA, боль, седация"}
   ],
   "scope": {"type": "all_private_chats"},
   "language_code": "ru"
@@ -96,11 +96,11 @@ if [ "$MENU" = "webapp" ]; then
     call setChatMenuButton "{
       \"menu_button\": {
         \"type\": \"web_app\",
-        \"text\": \"Билирубин\",
+        \"text\": \"Шкалы\",
         \"web_app\": {\"url\": \"$WEBAPP_URL\"}
       }
-    }" && ok "Кнопка меню открывает калькулятор"
-    warn "Кнопка меню теперь калькулятор, а не список команд. Команды по-прежнему"
+    }" && ok "Кнопка меню открывает мини-приложение"
+    warn "Кнопка меню теперь мини-приложение, а не список команд. Команды по-прежнему"
     warn "работают, если набрать «/». Вернуть список: MENU=commands ./setup-bot-menu.sh"
 else
     call setChatMenuButton '{"menu_button": {"type": "commands"}}' \
@@ -109,16 +109,16 @@ fi
 
 # --- описание ---
 call setMyShortDescription '{
-  "short_description": "Шпаргалки неонатолога и калькулятор билирубина",
+  "short_description": "Шпаргалки неонатолога и шкалы оценки",
   "language_code": "ru"
 }' && ok "Короткое описание обновлено"
 
 call setMyDescription '{
-  "description": "Памятки для быстрой сверки у постели пациента: пороги фототерапии и ОЗПК, реанимация в родзале, РДС и сурфактант, параметры ИВЛ, сепсис, гипогликемия, судороги, ОАП, НЭК, гипотермия, инотропы, парентеральное питание, референсные значения.\n\n/shpory — шпаргалки в PDF\n/bili — калькулятор билирубина\n/ozpk — объём ОЗПК\n\nНе заменяет действующие клинические рекомендации и назначение врача.",
+  "description": "Памятки для быстрой сверки у постели пациента: пороги фототерапии и ОЗПК, реанимация в родзале, РДС и сурфактант, параметры ИВЛ, сепсис, гипогликемия, судороги, ОАП, НЭК, гипотермия, инотропы, парентеральное питание, референсные значения.\n\n/shpory — шпаргалки в PDF\n/scales — шкалы оценки\n\nНе заменяет действующие клинические рекомендации и назначение врача.",
   "language_code": "ru"
 }' && ok "Описание обновлено"
 
 echo
 ok "Готово. Открой @$username и проверь кнопку рядом с полем ввода."
-warn "Команды /shpory и /bili появятся в списке, но ОТВЕЧАТЬ на них"
+warn "Команды /shpory и /scales появятся в списке, но ОТВЕЧАТЬ на них"
 warn "бот начнёт только после подключения модуля к его коду."
