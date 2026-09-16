@@ -23,6 +23,7 @@ def load(name: str) -> dict:
 
 
 BILI = load("bilirubin")
+SURF = load("surfactants")
 KR = load("guidelines")["guidelines"]
 
 
@@ -186,5 +187,73 @@ def transfusion_table() -> Table:
               "Без респираторной поддержки"],
         widths=[1.1, 1.6, 1.6, 1.7],
         align="lccc",
+        rows=rows,
+    )
+
+
+# --------------------------------------------------------------------------
+# Сурфактанты
+# --------------------------------------------------------------------------
+def _fmt(v: float, digits: int = 1) -> str:
+    return f"{v:.{digits}f}".rstrip("0").rstrip(".").replace(".", ",")
+
+
+def surfactant_doses_table() -> Table:
+    """Дозы по инструкциям; препараты, названные в КР, помечены."""
+    named = set(SURF["kr_named"])
+    rows = []
+    for d in SURF["drugs"]:
+        lo, hi = d["first_mg_kg"]
+        first = f"{lo} мг/кг" if lo == hi else f"{lo}–{hi} мг/кг"
+        conc = f"{_fmt(d['conc_mg_ml'])} мг/мл" if d["conc_mg_ml"] else "после разведения"
+        limit = []
+        if d["max_doses"]:
+            limit.append(f"до {d['max_doses']} доз")
+        if d["max_total_mg_kg"]:
+            limit.append(f"суммарно ≤ {d['max_total_mg_kg']} мг/кг")
+        rows.append([
+            ("+ " if d["id"] in named else "") + f"<b>{d['inn']}</b><br/>{d['brand']}",
+            conc,
+            first,
+            f"{d['repeat_mg_kg']} мг/кг<br/>через {d['interval_h']} ч",
+            "; ".join(limit) or "—",
+        ])
+    return Table(
+        caption="Дозы по инструкциям к препаратам",
+        head=["Препарат", "Концентрация", "Первая доза", "Повторная", "Ограничение"],
+        widths=[1.5, 1.0, 1.1, 1.1, 1.3],
+        align="lcccl",
+        font_size=8.0,
+        rows=rows,
+    )
+
+
+def surfactant_volume_table() -> Table:
+    """Готовые объёмы в миллилитрах по массе тела — чтобы не считать у постели.
+
+    Берём только препараты, названные в КР: иначе таблица становится слишком
+    широкой и перестаёт читаться с телефона.
+    """
+    named = set(SURF["kr_named"])
+    specs = []
+    for d in SURF["drugs"]:
+        if d["id"] not in named or not d["conc_mg_ml"]:
+            continue
+        short = d["inn"].split()[0]
+        lo, hi = d["first_mg_kg"]
+        if hi != lo:
+            specs.append((f"{short}<br/>{hi} мг/кг", d["conc_mg_ml"], hi))
+        specs.append((f"{short}<br/>{d['repeat_mg_kg']} мг/кг", d["conc_mg_ml"], d["repeat_mg_kg"]))
+
+    rows = []
+    for g in SURF["weights_g"]:
+        kg = g / 1000
+        rows.append([f"<b>{g} г</b>"]
+                    + [f"{mg_kg * kg / conc:.1f}".replace(".", ",") for _, conc, mg_kg in specs])
+    return Table(
+        caption="Объём на введение, мл",
+        head=["Масса"] + [label for label, _, _ in specs],
+        widths=[1.0] + [1.0] * len(specs),
+        align="l" + "c" * len(specs),
         rows=rows,
     )
