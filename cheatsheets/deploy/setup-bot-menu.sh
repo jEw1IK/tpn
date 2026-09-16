@@ -17,7 +17,7 @@
 set -euo pipefail
 
 API="https://api.telegram.org/bot${BOT_TOKEN:-}"
-WEBAPP_URL="${WEBAPP_URL:-https://jew1ik.github.io/tpn/scales/}"
+WEBAPP_URL="${WEBAPP_URL:-https://jew1ik.github.io/tpn/}"
 MENU="${MENU:-webapp}"
 
 red()  { printf '\033[31m%s\033[0m\n' "$1"; }
@@ -96,7 +96,7 @@ if [ "$MENU" = "webapp" ]; then
     call setChatMenuButton "{
       \"menu_button\": {
         \"type\": \"web_app\",
-        \"text\": \"Шкалы\",
+        \"text\": \"Инструменты\",
         \"web_app\": {\"url\": \"$WEBAPP_URL\"}
       }
     }" && ok "Кнопка меню открывает мини-приложение"

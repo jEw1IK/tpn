@@ -45,7 +45,7 @@ ok "модуль установлен в $BOT_DIR/cheatsheets"
 # Мини-приложения кладём рядом — пригодятся, если раздаёшь их своим nginx.
 rm -rf "$BOT_DIR/webapp"
 mkdir -p "$BOT_DIR/webapp"
-cp -a "$STAGE/tpn/scales" "$BOT_DIR/webapp/scales"
+cp -a "$STAGE/tpn/scales-data.js" "$BOT_DIR/webapp/scales-data.js"
 cp -a "$STAGE/tpn/index.html" "$BOT_DIR/webapp/index.html"
 ok "мини-приложения в $BOT_DIR/webapp"
 
@@ -86,7 +86,7 @@ cat <<'TXT'
 
 Адрес мини-приложения (кнопка в /scales) задаётся переменной окружения:
 
-    SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/scales/
+    SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/#scales
 
 После этого перезапусти бота. Проверка: /shpory и /scales
 ────────────────────────────────────────────────────────────

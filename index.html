@@ -90,9 +90,56 @@ td.sub{color:var(--muted); font-size:12px; padding-top:0; border-bottom:none}
 details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px 0}
 .mix{font-size:13px; margin-top:8px; padding:9px 11px; background:var(--accent-soft); border-radius:10px; color:var(--text)}
 .mix b{font-variant-numeric:tabular-nums}
+
+/* ---------- вкладки ---------- */
+.tabs{
+  position:sticky; top:0; z-index:9;
+  display:flex; gap:6px; padding:8px 0 10px; background:var(--bg);
+}
+.tabs button{
+  flex:1; padding:10px 6px; font-size:14px; font-family:inherit; cursor:pointer;
+  background:var(--card); color:var(--muted);
+  border:1px solid var(--line); border-radius:10px;
+}
+.tabs button[aria-pressed="true"]{
+  background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600;
+}
+
+/* ---------- пункты шкалы ---------- */
+.item{margin-bottom:14px}
+.item:last-child{margin-bottom:0}
+.item > .q{font-size:14px; font-weight:600; margin-bottom:2px}
+.item > .qh{font-size:11px; color:var(--muted); margin-bottom:6px}
+.opts{display:flex; flex-direction:column; gap:5px}
+.opts button{
+  display:flex; align-items:flex-start; gap:9px; width:100%; text-align:left;
+  padding:8px 10px; font-size:13px; line-height:1.35; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--text);
+  border:1px solid var(--line); border-radius:10px;
+}
+.opts button .sc{
+  flex:none; min-width:26px; text-align:center; font-weight:700;
+  font-variant-numeric:tabular-nums; color:var(--muted);
+}
+.opts button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent)}
+.opts button[aria-pressed="true"] .sc{color:var(--accent)}
+.opts button[aria-pressed="true"] .tx{font-weight:600}
+.msg b{display:block; margin-bottom:2px}
+.reset{
+  width:100%; padding:10px; font-size:14px; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--muted); border:1px solid var(--line); border-radius:10px;
+}
+.bar .flag-ok b{color:var(--ok)}
 </style>
 </head>
 <body>
+
+<div class="tabs" id="tabs">
+  <button type="button" data-tab="tpn" aria-pressed="true">🧬 Питание</button>
+  <button type="button" data-tab="scales" aria-pressed="false">📊 Шкалы</button>
+</div>
+
+<section id="tab-tpn">
 
 <h1>Парентеральное питание новорождённого</h1>
 
@@ -313,11 +360,51 @@ details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px
   с протоколом отделения. Финальные дозы и совместимость растворов проверяет врач.
 </p>
 
-<div class="bar">
+</section>
+
+<section id="tab-scales" hidden>
+
+<h1>Шкалы оценки новорождённого</h1>
+
+<div class="card">
+  <div class="seg" id="scPicker"></div>
+  <div class="hint" id="scPurpose"></div>
+</div>
+
+<div class="card">
+  <h2 id="scName">Оценка</h2>
+  <div id="scItems"></div>
+</div>
+
+<div class="card" id="scModifierCard" hidden>
+  <h2 id="scModifierLabel"></h2>
+  <div class="opts" id="scModifierOpts"></div>
+  <div class="hint" id="scModifierNote"></div>
+</div>
+
+<div class="card">
+  <h2>Результат</h2>
+  <div id="scResult"></div>
+  <div style="margin-top:10px"><button class="reset" id="scReset" type="button">Сбросить</button></div>
+</div>
+
+<div class="card">
+  <h2>Как считать</h2>
+  <p class="disclaimer" id="scAbout"></p>
+</div>
+
+</section>
+
+<div class="bar" id="barTpn">
   <div id="barKcal"><b>—</b><small>ккал/кг</small></div>
   <div id="barGir"><b>—</b><small>GIR</small></div>
   <div id="barGlu"><b>—</b><small>глюкоза</small></div>
   <div id="barOsm"><b>—</b><small>мосм/л</small></div>
+</div>
+
+<div class="bar" id="barScales" hidden>
+  <div id="scBarScore"><b>—</b><small>Балл</small></div>
+  <div id="scBarDone"><b>—</b><small>Заполнено</small></div>
 </div>
 
 <script>
@@ -638,6 +725,207 @@ if (tg){
 document.addEventListener('input', calc);
 document.addEventListener('change', calc);
 calc();
+</script>
+
+<script src="scales-data.js"></script>
+<script>
+/* Вкладки и шкалы. Всё внутри функции: глобальные имена калькулятора
+   питания ($, fmt, calc, val) не трогаем. */
+(function(){
+"use strict";
+const D = window.SCALES_DATA;
+const $ = id => document.getElementById(id);
+
+/* ---------- переключение вкладок ---------- */
+const TABS = {
+  tpn:    {section: 'tab-tpn',    bar: 'barTpn'},
+  scales: {section: 'tab-scales', bar: 'barScales'},
+};
+
+function showTab(name){
+  if (!TABS[name]) name = 'tpn';
+  for (const [key, t] of Object.entries(TABS)){
+    $(t.section).hidden = key !== name;
+    $(t.bar).hidden = key !== name;
+  }
+  for (const b of $('tabs').querySelectorAll('button'))
+    b.setAttribute('aria-pressed', String(b.dataset.tab === name));
+  /* Чтобы бот мог открыть приложение сразу на нужной вкладке. */
+  if (location.hash.slice(1) !== name)
+    history.replaceState(null, '', name === 'tpn' ? location.pathname : '#' + name);
+  window.scrollTo(0, 0);
+}
+
+$('tabs').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (b) showTab(b.dataset.tab);
+});
+
+/* Смена адреса на #scales без перезагрузки — например, если бот открыл
+   приложение, а потом прислал ссылку на другую вкладку. */
+window.addEventListener('hashchange', () => showTab(location.hash.slice(1) || 'tpn'));
+
+/* ---------- шкалы ---------- */
+let current = D.scales[0].id;
+const answers = {};
+const modifiers = {};
+D.scales.forEach(sc => { answers[sc.id] = {}; });
+
+const scale = () => D.scales.find(sc => sc.id === current);
+
+$('scPicker').innerHTML = D.scales
+  .map(sc => `<button type="button" data-id="${sc.id}" aria-pressed="${sc.id === current}">${sc.name}</button>`)
+  .join('');
+$('scPicker').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  current = b.dataset.id;
+  for (const x of $('scPicker').querySelectorAll('button'))
+    x.setAttribute('aria-pressed', String(x.dataset.id === current));
+  render();
+});
+
+$('scReset').addEventListener('click', () => {
+  answers[current] = {};
+  delete modifiers[current];
+  render();
+});
+
+function render(){
+  const sc = scale();
+  $('scName').textContent = sc.name + ' · ' + sc.full;
+  $('scPurpose').textContent = sc.purpose + '. ' + sc.how;
+
+  $('scItems').innerHTML = sc.items.map((item, i) => `
+    <div class="item">
+      <div class="q">${i + 1}. ${item.label}</div>
+      ${item.hint ? `<div class="qh">${item.hint}</div>` : ''}
+      <div class="opts" data-item="${i}">
+        ${item.options.map(o => `
+          <button type="button" data-score="${o.score}"
+                  aria-pressed="${answers[sc.id][i] === o.score}">
+            <span class="sc">${o.score > 0 ? '+' + o.score : o.score}</span>
+            <span class="tx">${o.label}</span>
+          </button>`).join('')}
+      </div>
+    </div>`).join('');
+
+  for (const box of $('scItems').querySelectorAll('.opts')){
+    box.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const i = Number(box.dataset.item), v = Number(b.dataset.score);
+      /* Повторное нажатие снимает выбор — удобно, если ткнул мимо. */
+      if (answers[sc.id][i] === v) delete answers[sc.id][i];
+      else answers[sc.id][i] = v;
+      render();
+    });
+  }
+
+  if (sc.modifier){
+    $('scModifierCard').hidden = false;
+    $('scModifierLabel').textContent = sc.modifier.label;
+    $('scModifierNote').textContent = sc.modifier.note;
+    $('scModifierOpts').innerHTML = sc.modifier.options.map(o => `
+      <button type="button" data-score="${o.score}"
+              aria-pressed="${modifiers[sc.id] === o.score}">
+        <span class="sc">${o.score > 0 ? '+' + o.score : o.score}</span>
+        <span class="tx">${o.label}</span>
+      </button>`).join('');
+    $('scModifierOpts').onclick = e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const v = Number(b.dataset.score);
+      if (modifiers[sc.id] === v) delete modifiers[sc.id];
+      else modifiers[sc.id] = v;
+      render();
+    };
+  } else {
+    $('scModifierCard').hidden = true;
+  }
+
+  showResult();
+  $('scAbout').innerHTML =
+    `<b>${sc.name}</b> — ${sc.full}.<br>${sc.how}<br><br>` +
+    `${sc.interpretation_note}<br><br>Источник: ${sc.source}<br><br>` +
+    `Инструмент для быстрой сверки у постели пациента. Не заменяет действующие ` +
+    `клинические рекомендации и назначение врача.`;
+}
+
+const band = (list, v) => list.find(b => b.max === null || v <= b.max) || list[list.length - 1];
+const signed = v => v > 0 ? '+' + v : String(v).replace('-', '−');
+
+function plural(n, one, few, many){
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b > 1 && b < 5) return few;
+  return b === 1 ? one : many;
+}
+
+function showResult(){
+  const sc = scale();
+  const picked = answers[sc.id];
+  const done = Object.keys(picked).length;
+  const total = sc.items.length;
+  const sum = Object.values(picked).reduce((a, b) => a + b, 0);
+  const rows = [], msgs = [];
+
+  if (done < total){
+    rows.push(['Отмечено пунктов', `${done} из ${total}`]);
+    msgs.push(['info', 'Заполнено не полностью',
+      `Осталось ${total - done} ${plural(total - done, 'пункт', 'пункта', 'пунктов')}. ` +
+      `Промежуточная сумма — ${sum}.`]);
+  }
+
+  if (sc.kind === 'bidirectional'){
+    const mod = modifiers[sc.id] || 0;
+    const pain = sum > 0 ? sum + mod : 0;
+    rows.push(['Сумма по пунктам', signed(sum)]);
+    if (sum > 0 && mod) rows.push(['Поправка на недоношенность', '+' + mod]);
+    if (sum > 0){
+      rows.push(['Балл боли', String(pain)]);
+      const b = band(sc.bands_positive, pain);
+      msgs.push([b.tone, `${b.title} — ${pain} ${plural(pain, 'балл', 'балла', 'баллов')}`, b.text]);
+      setBar(pain, done, total, b.tone, true);
+    } else if (sum < 0){
+      const sed = Math.abs(sum);
+      rows.push(['Балл седации', '−' + sed]);
+      const b = band(sc.bands_negative, sed);
+      msgs.push([b.tone, `${b.title} — ${sed} ${plural(sed, 'балл', 'балла', 'баллов')}`, b.text]);
+      setBar(sum, done, total, b.tone, true);
+    } else {
+      if (done === total)
+        msgs.push(['ok', 'Ноль баллов',
+          'Ни боли, ни седации: состояние соответствует норме для этого ребёнка.']);
+      setBar(0, done, total, 'ok', true);
+    }
+  } else {
+    rows.push(['Сумма баллов', `${sum} из ${sc.max}`]);
+    const b = band(sc.bands, sum);
+    if (done === total || sum > 0){
+      const head = /^\d/.test(b.title)
+        ? b.title
+        : `${b.title} — ${sum} ${plural(sum, 'балл', 'балла', 'баллов')}`;
+      msgs.push([b.tone, head, b.text]);
+    }
+    setBar(sum, done, total, b.tone, false);
+  }
+
+  $('scResult').innerHTML =
+    rows.map(([k, v]) => `<div class="kv"><span>${k}</span><span>${v}</span></div>`).join('') +
+    msgs.map(([t, h, x]) => `<div class="msg ${t}"><b>${h}</b>${x}</div>`).join('');
+}
+
+function setBar(value, done, total, tone, withSign){
+  const el = $('scBarScore');
+  el.querySelector('b').textContent = withSign ? signed(value) : String(value);
+  el.className = tone ? 'flag-' + tone : '';
+  $('scBarDone').querySelector('b').textContent = `${done}/${total}`;
+}
+
+render();
+showTab(location.hash.slice(1) || 'tpn');
+})();
 </script>
 </body>
 </html>

@@ -7,15 +7,15 @@
 ## Сначала главное про кнопку мини-приложения
 
 **Telegram открывает Web App только по HTTPS с валидным сертификатом.**
-На голый IP сертификат не выпускается, поэтому `https://89.169.32.9/scales/`
+На голый IP сертификат не выпускается, поэтому `https://89.169.32.9/#scales`
 кнопкой работать не будет — Telegram её просто не откроет.
 
 Два рабочих варианта:
 
 | Вариант | Что нужно | Адрес |
 |---|---|---|
-| **GitHub Pages** (проще) | Включить Pages в настройках репозитория | `https://jew1ik.github.io/tpn/scales/` |
-| **Свой домен** | Домен, направленный на 89.169.32.9, + Let's Encrypt | `https://твой-домен/scales/` |
+| **GitHub Pages** (проще) | Включить Pages в настройках репозитория | `https://jew1ik.github.io/tpn/#scales` |
+| **Свой домен** | Домен, направленный на 89.169.32.9, + Let's Encrypt | `https://твой-домен/#scales` |
 
 Сам бот при этом может жить где угодно: он работает через long polling,
 то есть только исходящими соединениями. Открывать порты для него не нужно
@@ -28,7 +28,7 @@
    (или `main`, если сольёшь ветку), папка `/ (root)`.
 3. Через пару минут поднимутся:
    - `https://jew1ik.github.io/tpn/` — калькулятор ПП
-   - `https://jew1ik.github.io/tpn/scales/` — шкалы оценки
+   - `https://jew1ik.github.io/tpn/#scales` — то же приложение на вкладке «Шкалы»
    - `https://jew1ik.github.io/tpn/cheatsheets/` — список PDF
 4. Больше на сервере ничего не нужно, `SCALES_WEBAPP_URL` уже указывает сюда.
 
@@ -48,7 +48,7 @@ sudo certbot --nginx -d ДОМЕН
 
 Затем задать боту адрес:
 ```
-SCALES_WEBAPP_URL=https://ДОМЕН/scales/
+SCALES_WEBAPP_URL=https://ДОМЕН/#scales
 ```
 
 ---
@@ -135,7 +135,7 @@ await bot.set_my_commands([
 
 | Переменная | Зачем | По умолчанию |
 |---|---|---|
-| `SCALES_WEBAPP_URL` | Адрес мини-приложения со шкалами | `https://jew1ik.github.io/tpn/scales/` |
+| `SCALES_WEBAPP_URL` | Адрес мини-приложения, вкладка «Шкалы» | `https://jew1ik.github.io/tpn/#scales` |
 | `CHEATSHEET_FILE_ID_CACHE` | Путь к кэшу `file_id` | `cheatsheets/bot/file_id_cache.json` |
 
 ---
