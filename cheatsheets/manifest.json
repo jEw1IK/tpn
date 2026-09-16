@@ -11,10 +11,16 @@
       "category": "Родзал и реанимация",
       "button": "🚼 Реанимация в родзале",
       "order": 10,
+      "guidelines": [
+        "908_1",
+        "595_3",
+        "924_1",
+        "840_1"
+      ],
       "file": "pdf/rodzal.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rodzal.pdf",
       "bytes": 70005,
-      "sha256": "478bd7bfc8b76213"
+      "sha256": "9b7eb3a1b93f0441"
     },
     {
       "id": "rds_surfactant",
@@ -24,10 +30,15 @@
       "category": "Дыхание",
       "button": "🫁 РДС и сурфактант",
       "order": 20,
+      "guidelines": [
+        "340_2",
+        "951_1",
+        "377_2"
+      ],
       "file": "pdf/rds_surfactant.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rds_surfactant.pdf",
       "bytes": 67964,
-      "sha256": "891577d0d9062a0c"
+      "sha256": "6a8824c270f5d029"
     },
     {
       "id": "vent",
@@ -37,10 +48,16 @@
       "category": "Дыхание",
       "button": "🎛 Параметры ИВЛ",
       "order": 30,
+      "guidelines": [
+        "340_2",
+        "933_1",
+        "377_2",
+        "951_1"
+      ],
       "file": "pdf/vent.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/vent.pdf",
       "bytes": 66103,
-      "sha256": "81cd5ab1b05f56b5"
+      "sha256": "7311942c7b7d2435"
     },
     {
       "id": "pphn",
@@ -50,10 +67,16 @@
       "category": "Дыхание",
       "button": "🫀 ПЛГН и лёгочная гипертензия",
       "order": 35,
+      "guidelines": [
+        "912_1",
+        "377_2",
+        "340_2",
+        "840_1"
+      ],
       "file": "pdf/pphn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pphn.pdf",
       "bytes": 70602,
-      "sha256": "b73a418ccaf6e2bd"
+      "sha256": "a521a623b37996fd"
     },
     {
       "id": "gbn",
@@ -63,10 +86,18 @@
       "category": "Билирубин и гематология",
       "button": "🩸 ГБН: ОЗПК и трансфузия",
       "order": 40,
+      "guidelines": [
+        "917_1",
+        "916_1",
+        "596_3",
+        "661_2",
+        "660_2",
+        "906_1"
+      ],
       "file": "pdf/gbn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/gbn.pdf",
       "bytes": 84846,
-      "sha256": "2be826a4b33d9821"
+      "sha256": "e3296625cbb2dbb0"
     },
     {
       "id": "pneumonia_rnns",
@@ -76,10 +107,17 @@
       "category": "Инфекции",
       "button": "🦠 Пневмония и РННС",
       "order": 50,
+      "guidelines": [
+        "905_1",
+        "912_1",
+        "978_1",
+        "944_1",
+        "776_1"
+      ],
       "file": "pdf/pneumonia_rnns.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pneumonia_rnns.pdf",
       "bytes": 77079,
-      "sha256": "c75a9da6bb91a36d"
+      "sha256": "5fca4cf46658ccfc"
     },
     {
       "id": "hypoglycemia",
@@ -89,10 +127,14 @@
       "category": "Метаболизм и питание",
       "button": "🍬 Гипогликемия и GIR",
       "order": 60,
+      "guidelines": [
+        "907_1",
+        "924_1"
+      ],
       "file": "pdf/hypoglycemia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hypoglycemia.pdf",
       "bytes": 66230,
-      "sha256": "655a51ab6cd774e3"
+      "sha256": "703c3cd709860508"
     },
     {
       "id": "seizures",
@@ -102,10 +144,14 @@
       "category": "Неврология",
       "button": "⚡️ Судороги",
       "order": 70,
+      "guidelines": [
+        "908_1",
+        "948_1"
+      ],
       "file": "pdf/seizures.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/seizures.pdf",
       "bytes": 64011,
-      "sha256": "66009dfe4cef65a1"
+      "sha256": "e19e770f86ded06d"
     },
     {
       "id": "hie_hypothermia",
@@ -115,10 +161,13 @@
       "category": "Неврология",
       "button": "❄️ ГИЭ и гипотермия",
       "order": 75,
+      "guidelines": [
+        "908_1"
+      ],
       "file": "pdf/hie_hypothermia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hie_hypothermia.pdf",
       "bytes": 65034,
-      "sha256": "2be3354f52949f63"
+      "sha256": "42b1b019906e2e9d"
     },
     {
       "id": "pda",
@@ -128,10 +177,14 @@
       "category": "Гемодинамика",
       "button": "💧 ОАП: когда закрывать",
       "order": 80,
+      "guidelines": [
+        "43_2",
+        "377_2"
+      ],
       "file": "pdf/pda.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pda.pdf",
       "bytes": 65821,
-      "sha256": "490b0048dc9781c0"
+      "sha256": "dd3be47ff540963a"
     },
     {
       "id": "nec",
@@ -141,10 +194,14 @@
       "category": "Инфекции",
       "button": "🧫 НЭК: стадии и тактика",
       "order": 90,
+      "guidelines": [
+        "912_1",
+        "978_1"
+      ],
       "file": "pdf/nec.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/nec.pdf",
       "bytes": 65136,
-      "sha256": "0ac3d053553f5fea"
+      "sha256": "5ed4b3742e38ec9f"
     },
     {
       "id": "inotropes",
@@ -154,10 +211,15 @@
       "category": "Гемодинамика",
       "button": "💉 Инотропы и разведения",
       "order": 110,
+      "guidelines": [
+        "912_1",
+        "953_1",
+        "908_1"
+      ],
       "file": "pdf/inotropes.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/inotropes.pdf",
       "bytes": 66321,
-      "sha256": "df1ebd69b5945b01"
+      "sha256": "c880d4e4ba7bd1b1"
     },
     {
       "id": "fluids_tpn",
@@ -167,10 +229,14 @@
       "category": "Метаболизм и питание",
       "button": "🧮 Инфузия и ПП",
       "order": 120,
+      "guidelines": [
+        "924_1",
+        "959_1"
+      ],
       "file": "pdf/fluids_tpn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/fluids_tpn.pdf",
       "bytes": 67435,
-      "sha256": "edc0f09bb0009ab1"
+      "sha256": "b1b27cc0098204a9"
     },
     {
       "id": "scales",
@@ -180,10 +246,13 @@
       "category": "Справочники",
       "button": "📊 Шкалы: nSOFA, боль, седация",
       "order": 125,
+      "guidelines": [
+        "912_1"
+      ],
       "file": "pdf/scales.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/scales.pdf",
       "bytes": 71274,
-      "sha256": "c87a9f73f9ca453b"
+      "sha256": "30ba71f8ca6d67d1"
     },
     {
       "id": "reference",
@@ -193,10 +262,18 @@
       "category": "Справочники",
       "button": "📋 Референсы",
       "order": 130,
+      "guidelines": [
+        "924_1",
+        "912_1",
+        "917_1",
+        "661_2",
+        "909_1",
+        "906_1"
+      ],
       "file": "pdf/reference.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/reference.pdf",
       "bytes": 71901,
-      "sha256": "48ffce0a0bb7d510"
+      "sha256": "bbd56570e436895a"
     }
   ]
 }

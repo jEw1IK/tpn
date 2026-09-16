@@ -16,6 +16,7 @@ import hashlib
 import html
 import json
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -33,6 +34,21 @@ INDEX = os.path.join(HERE, "index.html")
 
 # Базовый URL GitHub Pages — чтобы бот мог отдавать ссылку, а не файл.
 PAGES_BASE = "https://jew1ik.github.io/tpn/cheatsheets/pdf"
+
+
+# ID клинических рекомендаций прячутся в строках раздела «Источники»
+# («… — ID 917_1, размещены …»). Достаём их сюда, чтобы бот мог показать
+# по запросу «желтуха» не только карточку КР, но и готовую шпаргалку.
+_KR_ID_RE = re.compile(r"\bID (\d+_\d+)")
+
+
+def _guideline_ids(sources) -> list:
+    out = []
+    for line in sources:
+        for cid in _KR_ID_RE.findall(str(line)):
+            if cid not in out:
+                out.append(cid)
+    return out
 
 
 def _sha(path: str) -> str:
@@ -62,6 +78,7 @@ def build(only=None) -> list:
             "category": sheet.category,
             "button": sheet.button_label(),
             "order": sheet.order,
+            "guidelines": _guideline_ids(sheet.sources),
             "file": f"pdf/{sheet.id}.pdf",
             "url": f"{PAGES_BASE}/{sheet.id}.pdf",
             "bytes": size,

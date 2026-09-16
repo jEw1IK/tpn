@@ -1,33 +1,36 @@
 # -*- coding: utf-8 -*-
-"""Готовая кнопка «Шкалы» для реплай-клавиатуры бота.
+"""Клавиатура бота: мини-приложения в один тап.
 
-Открывает мини-приложение сразу на вкладке со шкалами — в один тап,
-как кнопка парентерального питания, без промежуточного сообщения.
+Два инструмента живут в одном мини-приложении, на разных вкладках:
+парентеральное питание и шкалы. Кнопка сразу открывает нужную вкладку —
+без промежуточного сообщения «нажмите здесь».
 
-    from cheatsheets.bot.keyboard import scales_button
+    from cheatsheets.bot.keyboard import main_keyboard, scales_button
 
-    ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="🔎 Найти рекомендации")],
-            [KeyboardButton(text="🧬 Парентеральное питание", web_app=WebAppInfo(url=TPN_URL))],
-            [KeyboardButton(text="📄 Шпаргалки"), scales_button()],
-            [KeyboardButton(text="ℹ️ О проекте"), KeyboardButton(text="❓ Помощь")],
-        ],
-        resize_keyboard=True,
-    )
+    await message.answer("…", reply_markup=main_keyboard(message.chat.type))
 
 ВАЖНО: кнопки web_app в реплай-клавиатуре работают только в личных чатах.
-Если бот отдаёт эту клавиатуру в группе, Telegram её отклонит — для групп
-используйте обычную KeyboardButton с текстом «📊 Шкалы»: её поймает
-scales_router и ответит сообщением с инлайн-кнопкой.
+В группе Telegram отклонит такую клавиатуру целиком, поэтому там
+main_keyboard() отдаёт те же кнопки обычным текстом: их ловят роутеры
+и отвечают сообщением со ссылкой.
 """
 from __future__ import annotations
 
-from aiogram.types import KeyboardButton, WebAppInfo
+import os
+
+from aiogram.enums import ChatType
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 
 from .scales_router import WEBAPP_URL
 
+TPN_URL = os.environ.get("TPN_WEBAPP_URL", "https://jew1ik.github.io/tpn/")
+
 DEFAULT_TEXT = "📊 Шкалы"
+TPN_TEXT = "🧬 Парентеральное питание"
+SEARCH_TEXT = "🔎 Найти рекомендации"
+SHEETS_TEXT = "📄 Шпаргалки"
+ABOUT_TEXT = "ℹ️ О проекте"
+HELP_TEXT_BTN = "❓ Помощь"
 
 
 def scales_button(text: str = DEFAULT_TEXT, url: str = None) -> KeyboardButton:
@@ -35,6 +38,32 @@ def scales_button(text: str = DEFAULT_TEXT, url: str = None) -> KeyboardButton:
     return KeyboardButton(text=text, web_app=WebAppInfo(url=url or WEBAPP_URL))
 
 
+def tpn_button(text: str = TPN_TEXT, url: str = None) -> KeyboardButton:
+    """Кнопка, открывающая калькулятор парентерального питания."""
+    return KeyboardButton(text=text, web_app=WebAppInfo(url=url or TPN_URL))
+
+
+def main_keyboard(chat_type: str = ChatType.PRIVATE) -> ReplyKeyboardMarkup:
+    """Основная клавиатура. В группах — без web_app, иначе Telegram её отклонит."""
+    private = chat_type == ChatType.PRIVATE
+    tpn = tpn_button() if private else KeyboardButton(text=TPN_TEXT)
+    scales = scales_button() if private else KeyboardButton(text=DEFAULT_TEXT)
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=SEARCH_TEXT)],
+            [tpn],
+            [KeyboardButton(text=SHEETS_TEXT), scales],
+            [KeyboardButton(text=ABOUT_TEXT), KeyboardButton(text=HELP_TEXT_BTN)],
+        ],
+        resize_keyboard=True,
+        input_field_placeholder="Диагноз, код МКБ-10 или препарат",
+    )
+
+
 def scales_url() -> str:
     """Адрес вкладки со шкалами — если кнопку собираете сами."""
     return WEBAPP_URL
+
+
+def tpn_url() -> str:
+    return TPN_URL

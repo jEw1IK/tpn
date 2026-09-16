@@ -1,41 +1,84 @@
 # Развёртывание на сервере
 
-Сервер: `89.169.32.9`. Ниже — что нужно сделать на нём руками.
+Сервер: `89.169.32.9`. Бот работает через long polling — только исходящие
+соединения, открывать порты не нужно.
 
 ---
 
-## Сначала главное про кнопку мини-приложения
+## Быстрый путь: готовый бот одной командой
+
+В репозитории лежит собранный бот: поиск по 57 клиническим рекомендациям,
+15 шпаргалок в PDF, дозы препаратов, шкалы и калькулятор питания. Свой код
+писать не нужно.
+
+```bash
+ssh root@89.169.32.9
+apt update && apt install -y git python3-venv
+git clone --depth 1 https://github.com/jEw1IK/tpn.git /tmp/tpn
+sudo /tmp/tpn/cheatsheets/deploy/install-bot.sh /opt/postneo
+```
+
+Скрипт спросит токен от @BotFather (ввод не отображается), создаст
+виртуальное окружение, системного пользователя `postneo`, напишет
+systemd-юнит и запустит сервис. Повторный запуск той же команды —
+это обновление: заберёт свежий код и перезапустит бота.
+
+```
+Обновить:    sudo /opt/postneo/app/cheatsheets/deploy/install-bot.sh /opt/postneo
+Логи:        journalctl -u postneo-bot -f
+Остановить:  sudo systemctl stop postneo-bot
+```
+
+Что где лежит после установки:
+
+| Путь | Что это |
+|---|---|
+| `/opt/postneo/app` | клон репозитория, обновляется `git fetch` |
+| `/opt/postneo/.venv` | питон-окружение с aiogram |
+| `/opt/postneo/.env` | токен и адреса, права 600 |
+| `/opt/postneo/file_id_cache.json` | кэш Telegram: PDF не заливается дважды |
+
+### Если бот уже работает на этом сервере
+
+Старый процесс нужно остановить — иначе два бота будут драться за один
+токен, и Telegram начнёт отдавать обновления то одному, то другому:
+
+```bash
+sudo systemctl stop <старый-сервис>
+sudo systemctl disable <старый-сервис>
+```
+
+---
+
+## Настройки: /opt/postneo/.env
+
+```
+BOT_TOKEN=123456:AA…                                  обязательно
+TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/          калькулятор питания
+SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/#scales вкладка «Шкалы»
+CHEATSHEET_FILE_ID_CACHE=/opt/postneo/file_id_cache.json
+CHANNEL_URL=https://t.me/…                            появится команда /channel
+```
+
+После правки: `sudo systemctl restart postneo-bot`.
+
+---
+
+## Про кнопку мини-приложения
 
 **Telegram открывает Web App только по HTTPS с валидным сертификатом.**
 На голый IP сертификат не выпускается, поэтому `https://89.169.32.9/#scales`
-кнопкой работать не будет — Telegram её просто не откроет.
-
-Два рабочих варианта:
+кнопкой не заработает.
 
 | Вариант | Что нужно | Адрес |
 |---|---|---|
-| **GitHub Pages** (проще) | Включить Pages в настройках репозитория | `https://jew1ik.github.io/tpn/#scales` |
-| **Свой домен** | Домен, направленный на 89.169.32.9, + Let's Encrypt | `https://твой-домен/#scales` |
+| **GitHub Pages** (уже настроено) | ничего | `https://jew1ik.github.io/tpn/#scales` |
+| **Свой домен** | домен на 89.169.32.9 + Let's Encrypt | `https://домен/#scales` |
 
-Сам бот при этом может жить где угодно: он работает через long polling,
-то есть только исходящими соединениями. Открывать порты для него не нужно
-вообще — они нужны только если раздаёшь мини-приложения со своего сервера.
+### Свой домен вместо Pages
 
-### Вариант A. GitHub Pages
-
-1. В репозитории: **Settings → Pages**.
-2. Source: *Deploy from a branch*, ветка `claude/telegram-bot-pdf-cheatsheets-sdb289`
-   (или `main`, если сольёшь ветку), папка `/ (root)`.
-3. Через пару минут поднимутся:
-   - `https://jew1ik.github.io/tpn/` — калькулятор ПП
-   - `https://jew1ik.github.io/tpn/#scales` — то же приложение на вкладке «Шкалы»
-   - `https://jew1ik.github.io/tpn/cheatsheets/` — список PDF
-4. Больше на сервере ничего не нужно, `SCALES_WEBAPP_URL` уже указывает сюда.
-
-### Вариант B. Свой домен на этом сервере
-
-`install.sh` кладёт мини-приложения в `<каталог бота>/webapp`.
-Дальше — nginx и сертификат, конфиг лежит рядом: `nginx-webapp.conf`.
+`install.sh` кладёт мини-приложения в `<каталог бота>/webapp`; конфиг nginx
+лежит рядом — `nginx-webapp.conf`.
 
 ```bash
 sudo apt install nginx certbot python3-certbot-nginx
@@ -46,206 +89,85 @@ sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d ДОМЕН
 ```
 
-Затем задать боту адрес:
-```
-SCALES_WEBAPP_URL=https://ДОМЕН/#scales
-```
+Затем в `.env`: `SCALES_WEBAPP_URL=https://ДОМЕН/#scales` и
+`TPN_WEBAPP_URL=https://ДОМЕН/`.
 
 ---
 
-## Витрина бота без правки кода
+## Второй путь: встроить модуль в свой код бота
 
-Часть работы можно сделать через Bot API, вообще не трогая код: повесить
-кнопку меню на калькулятор, прописать команды и описание.
+Если хочется оставить свой код, а взять только начинку:
 
 ```bash
-export BOT_TOKEN='1234567890:AA...'
-./setup-bot-menu.sh
-unset BOT_TOKEN
+./cheatsheets/deploy/install.sh /путь/к/каталогу/бота
 ```
 
-Токен передаётся переменной окружения, а не аргументом — иначе он осел бы
-в истории оболочки и был бы виден в `ps`. Скрипт сначала показывает, чей это
-токен, проверяет что мини-приложение реально отдаёт 200, и спрашивает
-подтверждение. На битую ссылку кнопку не повесит.
-
-Что получится сразу: в списке команд появляются `/shpory` и `/scales`,
-кнопка меню рядом с полем ввода открывает выбранное мини-приложение.
-**Отвечать** на эти команды бот начнёт только после подключения модуля
-к коду — витрина и логика это разные вещи.
-
-Вернуть кнопку меню в обычный список команд: `MENU=commands ./setup-bot-menu.sh`
-
----
-
-## Если обновляешься с версии, где был калькулятор билирубина
-
-Калькулятор убран — осталась только шпаргалка по ГБН. Поэтому после
-обновления модуля **обязательно** правится код бота, иначе он не запустится.
-
-**1. Убрать импорт, которого больше нет.** Файла `bilirubin_router.py`
-в модуле нет, и строка
-
-```python
-from cheatsheets.bot.bilirubin_router import bilirubin_router
-```
-
-уронит бота на старте с `ModuleNotFoundError`. Удалить её вместе с
-`dp.include_router(bilirubin_router)`.
-
-**2. Подключить шкалы вместо него:**
-
-```python
-from cheatsheets.bot.scales_router import scales_router
-dp.include_router(scales_router)
-```
-
-**3. Убрать `/bili` и `/ozpk` из `set_my_commands`** — команд больше нет,
-а в списке они останутся висеть.
-
-**4. Заменить кнопку на клавиатуре.** Готовая кнопка лежит в модуле и
-открывает мини-приложение сразу на вкладке со шкалами — в один тап,
-как кнопка парентерального питания:
-
-```python
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
-from cheatsheets.bot.keyboard import scales_button
-
-ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="🔎 Найти рекомендации")],
-        [KeyboardButton(text="🧬 Парентеральное питание",
-                        web_app=WebAppInfo(url="https://jew1ik.github.io/tpn/"))],
-        [KeyboardButton(text="📄 Шпаргалки"), scales_button()],
-        [KeyboardButton(text="ℹ️ О проекте"), KeyboardButton(text="❓ Помощь")],
-    ],
-    resize_keyboard=True,
-)
-```
-
-`scales_button()` принимает свою подпись и свой адрес, если нужно:
-`scales_button("📊 Шкалы оценки")`.
-
-Кнопки `web_app` в реплай-клавиатуре работают **только в личных чатах**.
-Если бот отдаёт клавиатуру в группе, используйте обычную
-`KeyboardButton(text="📊 Шкалы")` — её поймает `scales_router` и ответит
-сообщением с инлайн-кнопкой.
-
-**5. Обновить текст справки** — готовый лежит в `cheatsheets/bot/help_text.py`.
-
----
-
-## Установка модуля в бота
-
-```bash
-# на сервере, под пользователем, от которого работает бот
-cd ~
-curl -fsSL -o install.sh \
-  https://raw.githubusercontent.com/jEw1IK/tpn/claude/telegram-bot-pdf-cheatsheets-sdb289/cheatsheets/deploy/install.sh
-chmod +x install.sh
-./install.sh /путь/к/каталогу/бота        # например /opt/postneo
-```
-
-Скрипт:
-
-- скачивает ветку и кладёт `cheatsheets/` рядом с кодом бота;
-- **не трогает** твой код — только печатает, что дописать;
-- если модуль уже стоял, делает бэкап `cheatsheets.backup.ГГГГММДД-ЧЧММСС`
-  и переносит кэш `file_id`, чтобы PDF не заливались в Telegram заново;
-- проверяет, что все 13 PDF на месте и что виден aiogram 3.x.
-
-Готовые PDF лежат в репозитории, поэтому **reportlab на сервере не нужен** —
-бот просто отдаёт файлы с диска.
-
-### Две строки в коде бота
+Скрипт кладёт рядом каталог `cheatsheets/` и ничего не правит сам.
+Дальше в коде:
 
 ```python
 from cheatsheets.bot.aiogram_router import cheatsheets_router
 from cheatsheets.bot.scales_router import scales_router
+from cheatsheets.bot.search_router import search_router
+from cheatsheets.bot.keyboard import main_keyboard, scales_button, tpn_button
+from cheatsheets.bot.help_text import HELP_TEXT
 
-dp.include_router(cheatsheets_router)
-dp.include_router(scales_router)
+dp.include_router(scales_router)        # ловит кнопку «📊 Шкалы»
+dp.include_router(cheatsheets_router)   # /shpory и его колбэки
+dp.include_router(search_router)        # ПОСЛЕДНИМ: он забирает весь свободный текст
 ```
 
-**Порядок важен.** Эти роутеры подключаются **до** обработчика свободного
-текста: `scales_router` ловит нажатие кнопки «📊 Шкалы» по точному совпадению,
-и если поиск по КР зарегистрирован раньше, он перехватит нажатие первым.
-Свободный текст вроде «шкалы боли у недоношенных» роутер пропускает дальше —
-сравнение точное, не по вхождению.
+Порядок важен. `search_router` отвечает на любое текстовое сообщение,
+поэтому всё, что должно срабатывать раньше, подключается выше.
 
-Важно: `cheatsheets/` должен лежать в том каталоге, откуда запускается бот
-(или в `PYTHONPATH`). Если бот запускается из `/opt/postneo/main.py`, то
-каталог `/opt/postneo/cheatsheets/` — то, что нужно.
+### Что убрать из старого кода
 
-### Команды в меню
+| Убрать | Почему |
+|---|---|
+| `from cheatsheets.bot.bilirubin_router import bilirubin_router` | модуля больше нет — бот упадёт на старте с `ModuleNotFoundError` |
+| `dp.include_router(bilirubin_router)` | то же самое |
+| кнопку `🟡 Билирубин` | вместо неё `scales_button()` |
+| `/bili` и `/ozpk` в `set_my_commands` | команд больше нет, в меню висят мёртвыми |
 
-```python
-from aiogram.types import BotCommand
-
-await bot.set_my_commands([
-    BotCommand(command="shpory", description="📄 Шпаргалки в PDF"),
-    BotCommand(command="scales", description="📊 Шкалы: nSOFA, боль, седация"),
-])
-```
-
-### Переменные окружения
-
-| Переменная | Зачем | По умолчанию |
-|---|---|---|
-| `SCALES_WEBAPP_URL` | Адрес мини-приложения, вкладка «Шкалы» | `https://jew1ik.github.io/tpn/#scales` |
-| `CHEATSHEET_FILE_ID_CACHE` | Путь к кэшу `file_id` | `cheatsheets/bot/file_id_cache.json` |
+Расчёт билирубина убран сознательно — осталась шпаргалка `gbn.pdf`
+с таблицами порогов фототерапии и ОЗПК по КР 917_1 и 916_1.
 
 ---
 
-## Проверка
+## Проверка после установки
 
-После перезапуска бота, в личке с ним:
+| Что нажать | Что должно прийти |
+|---|---|
+| `/start` | приветствие и клавиатура из шести кнопок |
+| `желтуха` | карточка КР «Неонатальная желтуха» и кнопка со шпаргалкой |
+| `P23.0` | «Врожденная пневмония» |
+| `/doza гентамицин 1200` | схема по ГВ и «5 мг/кг → 6 мг на введение» |
+| `/shpory` | разделы, из них PDF |
+| `/scales` | кнопка, открывающая шкалы внутри Telegram |
+| `/help` | справка без `/bili` и `/ozpk` |
 
-```
-/shpory              → меню разделов, любая кнопка присылает PDF
-/shpory гбн          → сразу шпаргалка по ГБН
-/scales              → кнопка, открывающая шкалы
-📊 Шкалы             → то же самое нажатием кнопки на клавиатуре
-```
-
-В шкале nSOFA при максимуме по всем трём системам должно получиться 15 баллов,
-в NIPS — 7. Если цифры другие, подхватилась старая версия `data/scales.json`.
-
----
-
-## Обновление
+Локально то же самое прогоняется без сервера и без токена:
 
 ```bash
-./cheatsheets/deploy/update.sh /opt/postneo postneo-bot
-```
-
-Второй аргумент — имя systemd-сервиса, его перезапустят автоматически.
-Кэш `file_id` переносится, поэтому заново в Telegram заливаются только те PDF,
-которые действительно изменились (сверяется по sha256).
-
----
-
-## Если бот запускается как systemd-сервис
-
-Шаблон — `postneo-bot.service` рядом. Установка:
-
-```bash
-sudo cp postneo-bot.service /etc/systemd/system/
-sudo nano /etc/systemd/system/postneo-bot.service   # поправить пути и пользователя
-sudo systemctl daemon-reload
-sudo systemctl enable --now postneo-bot
-sudo journalctl -u postneo-bot -f
+cd cheatsheets && python tests/test_bot.py
 ```
 
 ---
 
 ## Частые грабли
 
-| Симптом | Причина |
-|---|---|
-| `ModuleNotFoundError: cheatsheets` | Бот запускается не из того каталога. Проверь `WorkingDirectory` в юните |
-| Кнопка калькулятора ничего не делает | Адрес не HTTPS или сертификат невалиден. На голый IP не заработает |
-| Кнопка есть в личке, но не в группе | Так и задумано: `web_app` работает только в личных чатах, в группах роутер сам подставляет обычную ссылку |
-| PDF приходят долго при первой отправке | Нормально: первый раз файл заливается в Telegram, дальше идёт по `file_id` мгновенно |
-| После обновления PDF заливаются заново | Тоже нормально, если содержимое изменилось: кэш инвалидируется по sha256 |
-| `/scales` отвечает, `/shpory` молчит | Подключён только один роутер — нужны оба `include_router` |
+**Бот молчит.** `journalctl -u postneo-bot -n 50`. Чаще всего это второй
+экземпляр со старым кодом: `systemctl list-units | grep -i bot`.
+
+**`ModuleNotFoundError: cheatsheets`.** `WorkingDirectory` в юните должен
+указывать на каталог, внутри которого лежит `cheatsheets/` — то есть на
+`/opt/postneo/app`.
+
+**Кнопка мини-приложения не нажимается.** Она работает только в личном
+чате и только по HTTPS. В группе бот отдаёт обычную ссылку.
+
+**PDF приходит с ошибкой.** Проверь, что `pdf/*.pdf` на месте:
+`ls /opt/postneo/app/cheatsheets/pdf | wc -l` — должно быть 15.
+
+**Изменения не видны.** Код на сервере обновляется только `install-bot.sh`.
+Правки в GitHub сами туда не доезжают.

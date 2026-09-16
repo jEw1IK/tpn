@@ -105,6 +105,13 @@ async def send_cheatsheet(message: Message, sheet: Cheatsheet) -> None:
 # --------------------------------------------------------------------------
 # Хендлеры
 # --------------------------------------------------------------------------
+async def send_root(message: Message) -> None:
+    """Корневое меню шпаргалок — общее для команды и кнопки на клавиатуре."""
+    await message.answer(
+        _root_text(), reply_markup=_root_keyboard(), parse_mode=ParseMode.HTML,
+    )
+
+
 @cheatsheets_router.message(Command("shpory", "cheatsheets", "шпоры"))
 async def cmd_cheatsheets(message: Message, command: CommandObject) -> None:
     query = (command.args or "").strip()
@@ -125,9 +132,7 @@ async def cmd_cheatsheets(message: Message, command: CommandObject) -> None:
         )
         return
 
-    await message.answer(
-        _root_text(), reply_markup=_root_keyboard(), parse_mode=ParseMode.HTML,
-    )
+    await send_root(message)
 
 
 @cheatsheets_router.callback_query(F.data == CB_ROOT)

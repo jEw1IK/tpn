@@ -8,7 +8,7 @@
 set -euo pipefail
 
 REPO="https://github.com/jEw1IK/tpn.git"
-BRANCH="${BRANCH:-claude/telegram-bot-pdf-cheatsheets-sdb289}"
+BRANCH="${BRANCH:-main}"
 BOT_DIR="${1:-}"
 
 die() { printf '\033[31mОшибка:\033[0m %s\n' "$1" >&2; exit 1; }
@@ -69,25 +69,39 @@ python3 -c "import aiogram, sys; v=aiogram.__version__; print('  aiogram', v); s
 cat <<'TXT'
 
 ────────────────────────────────────────────────────────────
-Осталось добавить в код бота две строки:
+Модуль на месте. Дальше два пути.
 
-    from cheatsheets.bot.aiogram_router import cheatsheets_router
-    from cheatsheets.bot.scales_router import scales_router
+1) Проще: запустить готового бота из этого же репозитория —
+   поиск по КР, шпаргалки, дозы, шкалы и питание уже собраны:
 
-    dp.include_router(cheatsheets_router)
-    dp.include_router(scales_router)
+       sudo cheatsheets/deploy/install-bot.sh /opt/postneo
 
-И зарегистрировать команды в меню:
+2) Встроить в свой код бота — четыре строки:
 
-    await bot.set_my_commands([
-        BotCommand(command="shpory", description="📄 Шпаргалки в PDF"),
-        BotCommand(command="scales", description="📊 Шкалы: nSOFA, боль, седация"),
-    ])
+       from cheatsheets.bot.aiogram_router import cheatsheets_router
+       from cheatsheets.bot.scales_router import scales_router
+       from cheatsheets.bot.search_router import search_router
 
-Адрес мини-приложения (кнопка в /scales) задаётся переменной окружения:
+       dp.include_router(scales_router)       # до обработчика текста!
+       dp.include_router(cheatsheets_router)
+       dp.include_router(search_router)       # он ловит свободный текст, поэтому последний
 
+   Кнопки мини-приложений для реплай-клавиатуры:
+
+       from cheatsheets.bot.keyboard import scales_button, tpn_button
+
+   Справка /help — готовым текстом:
+
+       from cheatsheets.bot.help_text import HELP_TEXT
+
+   ВАЖНО: если в коде остался старый импорт bilirubin_router — убери его,
+   этого модуля больше нет, бот упадёт на старте.
+
+Адреса мини-приложений задаются переменными окружения:
+
+    TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/
     SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/#scales
 
-После этого перезапусти бота. Проверка: /shpory и /scales
+После этого перезапусти бота. Проверка: /shpory, /scales, /search желтуха
 ────────────────────────────────────────────────────────────
 TXT

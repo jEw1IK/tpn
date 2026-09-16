@@ -1,4 +1,5 @@
 # Шаблон systemd-юнита. Поправь User, WorkingDirectory и ExecStart под себя.
+# Проще не трогать этот файл: install-bot.sh пишет юнит сам.
 #   sudo cp postneo-bot.service /etc/systemd/system/
 #   sudo systemctl daemon-reload && sudo systemctl enable --now postneo-bot
 
@@ -16,10 +17,14 @@ Group=postneo
 # Именно отсюда Python найдёт пакет cheatsheets — не меняй, не поправив PYTHONPATH.
 WorkingDirectory=/opt/postneo
 Environment=PYTHONUNBUFFERED=1
-Environment=BILI_WEBAPP_URL=https://jew1ik.github.io/tpn/bili/
+Environment=TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/
+Environment=SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/#scales
 EnvironmentFile=-/opt/postneo/.env
 
-ExecStart=/opt/postneo/.venv/bin/python -m bot
+# Готовый бот из этого репозитория:
+ExecStart=/opt/postneo/.venv/bin/python -m cheatsheets.bot.app
+# Свой код бота — укажи свой модуль вместо строки выше:
+# ExecStart=/opt/postneo/.venv/bin/python -m bot
 
 Restart=always
 RestartSec=5

@@ -19,7 +19,13 @@ cheatsheets/
 │
 ├── data/
 │   ├── bilirubin.json    ← ЕДИНЫЙ ИСТОЧНИК порогов билирубина
-│   └── guidelines.json   ← реестр КР МЗ РФ: ID, дата, ссылка
+│   ├── guidelines.json   ← реестр КР МЗ РФ: ID, дата, ссылка
+│   ├── synonyms.json     ← как врач называет диагноз → какая это КР
+│   ├── antibiotics.json  ← дозы, приложение А3.4 КР 912_1
+│   ├── surfactants.json  ← дозы сурфактантов
+│   ├── vitals.json       ← среднее АД и другие референсы
+│   ├── ventilation.json  ← стартовые параметры ИВЛ
+│   └── scales.json       ← nSOFA, NIPS, N-PASS
 │
 ├── content/              ← ЗДЕСЬ ЖИВЁТ МЕДИЦИНСКИЙ ТЕКСТ
 │   ├── __init__.py       ← список модулей MODULES
@@ -37,18 +43,27 @@ cheatsheets/
 ├── pdf/                  ← готовые PDF (лежат в репозитории)
 ├── deploy/               ← РАЗВЁРТЫВАНИЕ НА СЕРВЕРЕ
 │   ├── README.md         ← пошаговая инструкция
-│   ├── install.sh        ← ставит модуль в каталог бота
+│   ├── install-bot.sh    ← ставит ГОТОВОГО бота одной командой
+│   ├── install.sh        ← ставит только модуль в чужого бота
 │   ├── update.sh         ← обновляет и перезапускает сервис
 │   ├── postneo-bot.service
 │   └── nginx-webapp.conf
 │
+├── tests/
+│   ├── fake_bot.py          ← подставной Bot: ловит вызовы API
+│   └── test_bot.py          ← прогон всех команд без сети и токена
+│
 └── bot/
+    ├── app.py               ← ГОТОВЫЙ БОТ ЦЕЛИКОМ, запускается как есть
     ├── catalog.py           ← каталог + кэш file_id, без привязки к фреймворку
-    ├── aiogram_router.py    ← роутер aiogram v3: раздача PDF
-    ├── scales_router.py     ← роутер aiogram v3: /scales
-    ├── keyboard.py          ← готовая кнопка «Шкалы» для клавиатуры
+    ├── search.py            ← поиск по КР: МКБ-10, аббревиатуры, опечатки
+    ├── doses.py             ← дозы препаратов и расчёт на массу
+    ├── aiogram_router.py    ← роутер: раздача PDF
+    ├── search_router.py     ← роутер: /search, /kr, /doza, свободный текст
+    ├── scales_router.py     ← роутер: /scales
+    ├── keyboard.py          ← клавиатура и кнопки мини-приложений
     ├── help_text.py         ← текст справки для /help
-    └── standalone_bot.py    ← отдельный бот для проверки
+    └── standalone_bot.py    ← минимальный бот для проверки шпаргалок
 
 ../index.html             ← мини-приложение: вкладки «Питание» и «Шкалы»
 ../scales-data.js         ← генерируется сборкой из data/scales.json
@@ -269,40 +284,60 @@ sources=D.kr_sources("917_1", "916_1", "596_3") + [
 
 ## 6. Подключение к телеграм-боту
 
-### Вариант A — бот на aiogram v3 (две строки)
+### Вариант A — запустить готового бота
+
+Весь бот уже собран в `bot/app.py`: поиск по рекомендациям, шпаргалки,
+дозы, шкалы, калькулятор питания, меню команд и справка.
+
+```bash
+pip install -r requirements-bot.txt
+export BOT_TOKEN=123456:AA...
+python -m cheatsheets.bot.app
+```
+
+| Команда | Что делает |
+|---|---|
+| `/start` | меню и клавиатура |
+| любой текст | поиск по 57 КР: «желтуха», «ГБН», «P23.0», даже в латинской раскладке |
+| `/search`, `/kr` | то же командой и реестр рекомендаций по разделам |
+| `/doza гентамицин 1200` | схема по ГВ и доза в мг на эту массу |
+| `/shpory` | разделы → шпаргалка PDF в чат |
+| `/scales`, `/tpn` | мини-приложение на нужной вкладке |
+| `/materials`, `/about`, `/help` | список ссылок, о проекте, справка |
+
+Переменные окружения: `BOT_TOKEN`, `TPN_WEBAPP_URL`, `SCALES_WEBAPP_URL`,
+`CHANNEL_URL` (необязательная — без неё команды `/channel` нет).
+
+Прогнать всё это без сети и без токена:
+
+```bash
+python tests/test_bot.py
+```
+
+### Вариант Б — встроить в свой код бота (три строки)
 
 Скопируй папку `cheatsheets/` в репозиторий бота и добавь:
 
 ```python
-from cheatsheets.bot.aiogram_router import cheatsheets_router
 from cheatsheets.bot.scales_router import scales_router
+from cheatsheets.bot.aiogram_router import cheatsheets_router
+from cheatsheets.bot.search_router import search_router
 
-dp.include_router(cheatsheets_router)
 dp.include_router(scales_router)
+dp.include_router(cheatsheets_router)
+dp.include_router(search_router)   # ПОСЛЕДНИМ: ловит любой текст
 ```
 
-Появятся команды:
+Порядок важен: `search_router` отвечает на свободный текст, поэтому всё,
+что должно срабатывать раньше, подключается выше него.
 
-| Команда | Что делает |
-|---|---|
-| `/shpory` | Меню по разделам → список шпаргалок → PDF в чат |
-| `/shpory гбн` | Поиск по названию и описанию |
-| `/scales` | Открывает шкалы: nSOFA, NIPS, N-PASS |
+Кнопки мини-приложений — `bot/keyboard.py`, текст справки — `bot/help_text.py`.
 
-Расчёта текстом в чате нет намеренно: набирать команду с аргументами
+Расчёта шкал текстом в чате нет намеренно: набирать команду с аргументами
 у постели пациента неудобно, всё считается в мини-приложении.
 
-Адрес мини-приложения задаётся переменной окружения `SCALES_WEBAPP_URL`
-(по умолчанию `https://jew1ik.github.io/tpn/#scales`).
-
-Не забудь добавить команды в меню бота:
-
-```python
-await bot.set_my_commands([
-    BotCommand(command="shpory", description="📄 Шпаргалки в PDF"),
-    BotCommand(command="scales", description="📊 Шкалы: nSOFA, боль, седация"),
-])
-```
+Адреса мини-приложений задаются переменными окружения `SCALES_WEBAPP_URL`
+и `TPN_WEBAPP_URL`.
 
 ### Вариант B — любой другой фреймворк
 
@@ -352,13 +387,18 @@ python -m cheatsheets.bot.standalone_bot
 Полная инструкция — [`deploy/README.md`](deploy/README.md). Коротко:
 
 ```bash
-./cheatsheets/deploy/install.sh /opt/postneo      # поставить
-./cheatsheets/deploy/update.sh  /opt/postneo postneo-bot   # обновить и перезапустить
+# готовый бот с нуля (спросит токен, поставит сервис, запустит)
+sudo ./cheatsheets/deploy/install-bot.sh /opt/postneo
+
+# только модуль, если бот свой
+./cheatsheets/deploy/install.sh /opt/postneo
+./cheatsheets/deploy/update.sh  /opt/postneo postneo-bot
 ```
 
+`install-bot.sh` идемпотентен: повторный запуск — это обновление.
 `install.sh` не трогает код бота: кладёт `cheatsheets/` рядом, делает бэкап
-прежней версии, переносит кэш `file_id` и печатает две строки, которые нужно
-дописать самому. reportlab на сервере не нужен — PDF собраны заранее.
+прежней версии и переносит кэш `file_id`. reportlab на сервере не нужен —
+PDF собраны заранее.
 
 **Кнопка мини-приложения работает только по HTTPS с валидным сертификатом**,
 на голый IP Telegram её не откроет. Проще всего включить GitHub Pages;

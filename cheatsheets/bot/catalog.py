@@ -40,6 +40,9 @@ class Cheatsheet:
     url: str
     sha256: str
     bytes: int
+    # ID клинических рекомендаций, на которых построена шпаргалка —
+    # по ним поиск связывает карточку КР с готовым PDF.
+    guidelines: tuple = ()
 
     @property
     def caption(self) -> str:
@@ -79,6 +82,7 @@ class Catalog:
                 button=e.get("button") or e["title"], order=e.get("order", 100),
                 path=os.path.join(CHEATSHEETS_DIR, e["file"]),
                 url=e.get("url", ""), sha256=e.get("sha256", ""), bytes=e.get("bytes", 0),
+                guidelines=tuple(e.get("guidelines", ())),
             ))
         self._sheets = sorted(sheets, key=lambda s: (s.order, s.title))
         self._by_id = {s.id: s for s in self._sheets}
@@ -120,6 +124,10 @@ class Catalog:
             if q in haystack:
                 hits.append(s)
         return hits
+
+    def by_guideline(self, kr_id: str) -> list[Cheatsheet]:
+        """Шпаргалки, опирающиеся на конкретную клиническую рекомендацию."""
+        return [s for s in self._sheets if kr_id in s.guidelines]
 
     # -- кэш file_id --------------------------------------------------------
     def file_id(self, sheet_id: str) -> str | None:
