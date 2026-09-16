@@ -60,31 +60,152 @@ GREEDY_ROUTERS = ("kr_router", "search_router", "text_router", "fallback_router"
 log: list = []
 
 
-def bili_users(lines: list) -> tuple:
-    """Находит импорт модуля билирубина и все места, где им пользуются.
-
-    Возвращает (имя_в_коде, строки_импорта, строки_использования).
-    Если модуля в коде нет — все три пустые.
-    """
-    name, imports = "", []
-    for i, line in enumerate(lines, 1):
-        if RE_IMPORT_BILI.match(line):
-            imports.append(i)
-            alias = RE_IMPORT_ALIAS.search(line)
-            name = alias.group(1) if alias else "bilirubin_router"
-    if not name:
-        return "", [], []
-    used = [
-        i for i, line in enumerate(lines, 1)
-        if i not in imports
-        and re.search(rf"\b{re.escape(name)}\b", line)
-        and not re.match(rf"^\s*\w+\.include_router\(\s*{re.escape(name)}\s*\)", line)
-    ]
-    return name, imports, used
-
-
 def note(mark: str, text: str) -> None:
     log.append(f"{mark} {text}")
+
+
+# --------------------------------------------------------------------------
+# Тексты: что в справке говорится про билирубин
+# --------------------------------------------------------------------------
+# Правила подобраны по живому боту. "drop" — строка удаляется целиком,
+# "sub" — замена куска текста, "inner" — переписывается содержимое строковой
+# константы, а отступ, кавычки и запятая остаются на месте.
+TEXT_RULES = [
+    ("sub", "3. Билирубин", "3. Шкалы"),
+    ("sub", "Пороги фототерапии и ОЗПК по таблицам КР МЗ РФ — прямо в чате:",
+            "nSOFA, NIPS и N-PASS — отмечаете пункты, сумма и трактовка считаются сами."),
+    ("drop", "/bili 38 48 250"),
+    ("drop", "/bili 36 24 190"),
+    ("drop", "/ozpk 3200"),
+    ("inner", "Без чисел <code>/bili</code>",
+              "Открыть: кнопка <b>📊 Шкалы</b> или <code>/scales</code>. "
+              "Пороги ФТ и ОЗПК остались в шпаргалке: <code>/shpory гбн</code>.\\n\\n"),
+    ("inner", "/bili — пороги билирубина",
+              "/scales — шкалы: nSOFA, NIPS, N-PASS\\n"),
+    ("inner", "🟡 <b>Билирубин</b>",
+              "📊 <b>Шкалы</b> · nSOFA, NIPS, N-PASS: <code>/scales</code>\\n\\n"),
+    ("sub", "калькулятор билирубина (/bili, /ozpk)", "шкалы оценки (/scales)"),
+]
+
+
+def replace_inner(line: str, new_inner: str) -> str:
+    """Меняет содержимое строковой константы, не трогая обрамление."""
+    first, last = line.find('"'), line.rfind('"')
+    if first < 0 or last <= first:
+        return line
+    return line[:first + 1] + new_inner + line[last:]
+
+
+def patch_texts(out: list) -> list:
+    result, dropped = [], 0
+    for i, line in enumerate(out, 1):
+        new = line
+        skip = False
+        for rule in TEXT_RULES:
+            kind, needle = rule[0], rule[1]
+            if needle not in new:
+                continue
+            if kind == "drop":
+                note("✓", f"строка {i}: убрана строка справки про {needle}")
+                skip = True
+                dropped += 1
+                break
+            if kind == "sub":
+                new = new.replace(needle, rule[2])
+                note("✓", f"строка {i}: текст «{needle[:40]}…» обновлён")
+            elif kind == "inner":
+                new = replace_inner(new, rule[2])
+                note("✓", f"строка {i}: строка справки переписана под шкалы")
+        if not skip:
+            result.append(new)
+    return result
+
+
+# --------------------------------------------------------------------------
+# Обработчик кнопки «Билирубин»
+# --------------------------------------------------------------------------
+def drop_handler(out: list, aliases) -> list:
+    """Удаляет обработчик кнопки вместе с его декораторами.
+
+    Начало — первая строка подряд идущих декораторов над функцией.
+    Конец — там, где кончился отступ, то есть началась следующая
+    конструкция нулевого уровня. Сколько строк внутри — неважно.
+    """
+    blocks = []
+    for i, line in enumerate(out):
+        if not re.match(r"^(async\s+)?def\s+\w*bili\w*", line, re.IGNORECASE):
+            continue
+
+        end = i + 1
+        while end < len(out) and (out[end].strip() == "" or out[end][:1].isspace()):
+            end += 1
+        while end > i + 1 and out[end - 1].strip() == "":
+            end -= 1
+
+        body = out[i + 1:end]
+        # Тело должно обращаться к модулю билирубина — иначе это чужая
+        # функция с похожим именем, и трогать её нельзя.
+        names = {aliases} if isinstance(aliases, str) else set(aliases or ())
+        if names and not any(
+            re.search(rf"\b{re.escape(n)}\b", b) for b in body for n in names
+        ):
+            continue
+
+        start = i
+        while start > 0 and out[start - 1].lstrip().startswith("@"):
+            start -= 1
+
+        blocks.append((start, end))
+
+    for start, end in reversed(blocks):
+        note("✓", f"строки {start + 1}–{end}: удалён обработчик кнопки "
+                  f"«{BILI_BUTTON}» ({end - start} строк)")
+        del out[start:end]
+    return out
+
+
+def bili_users(lines: list) -> tuple:
+    """Находит импорты модуля билирубина и все места, где им пользуются.
+
+    Возвращает (имена_в_коде, строки_импорта, строки_использования).
+    Имён может быть несколько: модуль нередко импортируют дважды —
+    и целиком под псевдонимом, и отдельным роутером.
+    """
+    names, imports = set(), []
+    for i, line in enumerate(lines, 1):
+        if not RE_IMPORT_BILI.match(line):
+            continue
+        imports.append(i)
+        alias = RE_IMPORT_ALIAS.search(line)
+        names.add(alias.group(1) if alias else "bilirubin_router")
+    if not names:
+        return set(), [], []
+
+    used = []
+    for i, line in enumerate(lines, 1):
+        if i in imports:
+            continue
+        for name in names:
+            if not re.search(rf"\b{re.escape(name)}\b", line):
+                continue
+            # Подключение роутера скрипт умеет убирать сам — это не «использование».
+            if re.match(rf"^\s*\w+\.include_router\(\s*{re.escape(name)}\s*\)", line):
+                continue
+            used.append(i)
+            break
+    return names, imports, used
+
+
+def remaining_after_handler(lines: list) -> tuple:
+    """Что останется от модуля билирубина, если убрать обработчик кнопки."""
+    probe = list(lines)
+    names, imports, used = bili_users(probe)
+    if used:
+        silent = len(log)
+        probe = drop_handler(probe, names)
+        del log[silent:]          # это разведка, в отчёт она не идёт
+        names, imports, used = bili_users(probe)
+    return names, imports, used
 
 
 def patch(lines: list, menu_only: bool = False) -> list:
@@ -93,16 +214,22 @@ def patch(lines: list, menu_only: bool = False) -> list:
         return patch_menu(out)
 
     # 1. Импорт и подключение billirubin_router ------------------------------
-    name, imports, used = bili_users(out)
+    names, imports, used = bili_users(out)
+    if used:
+        # Сначала убираем обработчик кнопки — обычно он и есть единственный,
+        # кто дёргает модуль напрямую.
+        out = drop_handler(out, names)
+        names, imports, used = bili_users(out)
+
     if used:
         # Модуль не просто подключён роутером, а ещё где-то вызывается.
         # Выдернуть импорт молча — значит поменять падение на старте
         # на падение в руках у врача. Не трогаем и говорим прямо.
-        note("!", f"модуль билирубина в коде зовётся «{name}» и используется в "
+        note("!", f"модуль билирубина в коде зовётся «{', '.join(sorted(names))}» и используется в "
                   f"строках {', '.join(map(str, used))} — импорт не трогаю")
         note("!", "пока эти строки не убраны вручную, старый модуль должен "
                   "остаться на месте, иначе бот не запустится")
-        return patch_rest(out, skip_imports=True)
+        return patch_texts(patch_rest(out, skip_imports=True))
 
     kept = []
     for i, line in enumerate(out, 1):
@@ -115,7 +242,7 @@ def patch(lines: list, menu_only: bool = False) -> list:
         kept.append(line)
     out = kept
 
-    return patch_rest(out)
+    return patch_texts(patch_rest(out))
 
 
 def patch_rest(out: list, skip_imports: bool = False) -> list:
@@ -266,7 +393,7 @@ def main() -> int:
         original = f.readlines()
 
     if args.check:
-        name, imports, used = bili_users(original)
+        names, imports, used = remaining_after_handler(original)
         if not imports:
             print("Проверка: модуль билирубина в коде не используется — можно обновлять.")
             return 0
@@ -276,8 +403,8 @@ def main() -> int:
                   f"скрипт уберёт его сам.")
             return 0
         print("Проверка не пройдена.\n")
-        print(f"Модуль билирубина импортируется в строке "
-              f"{', '.join(map(str, imports))} под именем «{name}» и вызывается "
+        print(f"Модуль билирубина импортируется в строках "
+              f"{', '.join(map(str, imports))} под именем «{', '.join(sorted(names))}» и вызывается "
               f"в строках: {', '.join(map(str, used))}.")
         print("\nЕсли удалить модуль, бот упадёт на старте. Сначала нужно убрать "
               "эти строки из кода — руками, потому что там ваши обработчики, "
