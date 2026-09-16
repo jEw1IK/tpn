@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.enums import ChatType, ParseMode
 from aiogram.filters import Command
 from aiogram.types import (
@@ -49,10 +49,29 @@ def _keyboard(chat_type: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[button]])
 
 
-@scales_router.message(Command("scales", "shkaly", "шкалы"))
-async def cmd_scales(message: Message) -> None:
+# Подписи кнопки на реплай-клавиатуре. Сравнение точное, а не по вхождению:
+# иначе роутер перехватывал бы поисковые запросы вроде «шкалы боли».
+BUTTON_LABELS = {"📊 Шкалы", "Шкалы", "шкалы", "📊 Шкалы оценки", "Шкалы оценки"}
+
+
+async def _send(message: Message) -> None:
     await message.answer(
         INTRO,
         reply_markup=_keyboard(message.chat.type),
         parse_mode=ParseMode.HTML,
     )
+
+
+@scales_router.message(Command("scales", "shkaly"))
+async def cmd_scales(message: Message) -> None:
+    await _send(message)
+
+
+@scales_router.message(F.text.in_(BUTTON_LABELS))
+async def btn_scales(message: Message) -> None:
+    """Нажатие кнопки на клавиатуре — чтобы не писать отдельный обработчик.
+
+    ВАЖНО: подключать этот роутер ДО обработчика свободного текста, иначе
+    поиск по клиническим рекомендациям перехватит нажатие первым.
+    """
+    await _send(message)

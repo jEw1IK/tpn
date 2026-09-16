@@ -47,6 +47,8 @@ cheatsheets/
     ├── catalog.py           ← каталог + кэш file_id, без привязки к фреймворку
     ├── aiogram_router.py    ← роутер aiogram v3: раздача PDF
     ├── bilirubin_router.py  ← роутер aiogram v3: /bili
+    ├── scales_router.py     ← роутер aiogram v3: /scales
+    ├── help_text.py         ← текст справки для /help
     └── standalone_bot.py    ← отдельный бот для проверки
 
 ../bili/
@@ -299,9 +301,11 @@ sources=D.kr_sources("917_1", "916_1", "596_3") + [
 ```python
 from cheatsheets.bot.aiogram_router import cheatsheets_router
 from cheatsheets.bot.bilirubin_router import bilirubin_router
+from cheatsheets.bot.scales_router import scales_router
 
 dp.include_router(cheatsheets_router)
 dp.include_router(bilirubin_router)
+dp.include_router(scales_router)
 ```
 
 Появятся команды:
@@ -311,6 +315,7 @@ dp.include_router(bilirubin_router)
 | `/shpory` | Меню по разделам → список шпаргалок → PDF в чат |
 | `/shpory гбн` | Поиск по названию и описанию |
 | `/bili` | Открывает калькулятор билирубина |
+| `/scales` | Открывает шкалы: nSOFA, NIPS, N-PASS |
 
 Расчёта текстом в чате нет намеренно: набирать команду с аргументами
 у постели пациента неудобно, всё считается в мини-приложении.
@@ -324,6 +329,7 @@ dp.include_router(bilirubin_router)
 await bot.set_my_commands([
     BotCommand(command="shpory", description="📄 Шпаргалки в PDF"),
     BotCommand(command="bili",   description="🧮 Калькулятор билирубина"),
+    BotCommand(command="scales", description="📊 Шкалы: nSOFA, боль, седация"),
 ])
 ```
 

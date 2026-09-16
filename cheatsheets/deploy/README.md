@@ -105,10 +105,18 @@ chmod +x install.sh
 ```python
 from cheatsheets.bot.aiogram_router import cheatsheets_router
 from cheatsheets.bot.bilirubin_router import bilirubin_router
+from cheatsheets.bot.scales_router import scales_router
 
 dp.include_router(cheatsheets_router)
 dp.include_router(bilirubin_router)
+dp.include_router(scales_router)
 ```
+
+**Порядок важен.** Эти роутеры подключаются **до** обработчика свободного
+текста: `scales_router` ловит нажатие кнопки «📊 Шкалы» по точному совпадению,
+и если поиск по КР зарегистрирован раньше, он перехватит нажатие первым.
+Свободный текст вроде «шкалы боли у недоношенных» роутер пропускает дальше —
+сравнение точное, не по вхождению.
 
 Важно: `cheatsheets/` должен лежать в том каталоге, откуда запускается бот
 (или в `PYTHONPATH`). Если бот запускается из `/opt/postneo/main.py`, то
@@ -122,6 +130,7 @@ from aiogram.types import BotCommand
 await bot.set_my_commands([
     BotCommand(command="shpory", description="📄 Шпаргалки в PDF"),
     BotCommand(command="bili",   description="🧮 Калькулятор билирубина"),
+    BotCommand(command="scales", description="📊 Шкалы: nSOFA, боль, седация"),
 ])
 ```
 
@@ -129,7 +138,8 @@ await bot.set_my_commands([
 
 | Переменная | Зачем | По умолчанию |
 |---|---|---|
-| `BILI_WEBAPP_URL` | Адрес мини-приложения для кнопки | `https://jew1ik.github.io/tpn/bili/` |
+| `BILI_WEBAPP_URL` | Адрес калькулятора билирубина | `https://jew1ik.github.io/tpn/bili/` |
+| `SCALES_WEBAPP_URL` | Адрес мини-приложения со шкалами | `https://jew1ik.github.io/tpn/scales/` |
 | `CHEATSHEET_FILE_ID_CACHE` | Путь к кэшу `file_id` | `cheatsheets/bot/file_id_cache.json` |
 
 ---
@@ -142,6 +152,8 @@ await bot.set_my_commands([
 /shpory              → меню разделов, любая кнопка присылает PDF
 /shpory гбн          → сразу шпаргалка по ГБН
 /bili                → кнопка, открывающая калькулятор
+/scales              → кнопка, открывающая шкалы
+📊 Шкалы             → то же самое нажатием кнопки на клавиатуре
 ```
 
 В калькуляторе для доношенного в 48 часов должно получиться: стандартная ФТ
