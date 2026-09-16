@@ -24,6 +24,7 @@ def load(name: str) -> dict:
 
 BILI = load("bilirubin")
 SURF = load("surfactants")
+ABX = load("antibiotics")
 KR = load("guidelines")["guidelines"]
 
 
@@ -255,5 +256,61 @@ def surfactant_volume_table() -> Table:
         head=["Масса"] + [label for label, _, _ in specs],
         widths=[1.0] + [1.0] * len(specs),
         align="l" + "c" * len(specs),
+        rows=rows,
+    )
+
+
+# --------------------------------------------------------------------------
+# Антимикробные препараты
+# --------------------------------------------------------------------------
+def antibiotic_table() -> Table:
+    """Схемы дозирования дословно по приложению А3.4 КР «Сепсис новорождённых».
+
+    Условие в КР задаётся по-разному — массой, гестационным возрастом или
+    возрастом в днях. Сводить их к одной схеме нельзя: потеряется смысл,
+    поэтому колонка «Когда» повторяет формулировку КР.
+    """
+    rows = []
+    group = None
+    for drug in ABX["drugs"]:
+        if drug["group"] != group:
+            group = drug["group"]
+            rows.append(f"~ {group}")
+        for i, r in enumerate(drug["rows"]):
+            rows.append([
+                f"<b>{drug['name']}</b>" if i == 0 else "",
+                r["when"], r["dose"], r["freq"],
+            ])
+        if drug.get("note"):
+            rows.append(["", f"<i>{drug['note']}</i>", "", ""])
+    return Table(
+        head=["Препарат", "Когда", "Разовая доза", "Кратность"],
+        widths=[1.2, 2.3, 1.1, 1.2],
+        align="llcl",
+        font_size=7.6,
+        rows=rows,
+    )
+
+
+def antibiotic_reckoner_table() -> Table:
+    """Готовая разовая доза в миллиграммах по массе тела."""
+    items = ABX["reckoner"]
+    head = ["Масса"] + [f"{it['name']}<br/>{it['label']}" for it in items]
+    rows = []
+    for g in ABX["reckoner_weights_g"]:
+        kg = g / 1000
+        cells = [f"<b>{g} г</b>"]
+        for it in items:
+            # Округляем до десятых и убираем хвостовой ноль: у аминогликозидов
+            # половина миллиграмма значима, а «30,0» вместо «30» только шумит.
+            mg = round(it["mg_kg"] * kg, 1)
+            cells.append(f"{mg:.1f}".rstrip("0").rstrip(".").replace(".", ","))
+        rows.append(cells)
+    return Table(
+        caption="Разовая доза в миллиграммах",
+        head=head,
+        widths=[0.9] + [1.0] * len(items),
+        align="l" + "c" * len(items),
+        font_size=7.6,
         rows=rows,
     )
