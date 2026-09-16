@@ -25,6 +25,7 @@ def load(name: str) -> dict:
 BILI = load("bilirubin")
 SURF = load("surfactants")
 ABX = load("antibiotics")
+VITALS = load("vitals")
 KR = load("guidelines")["guidelines"]
 
 
@@ -313,4 +314,19 @@ def antibiotic_reckoner_table() -> Table:
         align="l" + "c" * len(items),
         font_size=7.6,
         rows=rows,
+    )
+
+
+# --------------------------------------------------------------------------
+# Витальные показатели
+# --------------------------------------------------------------------------
+def mean_bp_table() -> Table:
+    """Среднее АД — приложение А3.8 КР «Сепсис новорождённых», дословно."""
+    bp = VITALS["mean_bp"]
+    return Table(
+        caption=f"Среднее артериальное давление, {bp['unit']}",
+        head=["ГВ / ПКВ"] + [f"{h} ч" for h in bp["hours"]],
+        widths=[1.6] + [1.0] * len(bp["hours"]),
+        align="l" + "c" * len(bp["hours"]),
+        rows=[[f"<b>{b['label']}</b>"] + [str(v) for v in b["values"]] for b in bp["bands"]],
     )
