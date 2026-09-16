@@ -31,6 +31,7 @@ import sys
 import tempfile
 
 BILI_BUTTON = "🟡 Билирубин"
+SCALES_LABEL = "📊 Шкалы"
 SCALES_IMPORT = "from cheatsheets.bot.keyboard import scales_button"
 ROUTER_IMPORT = "from cheatsheets.bot.scales_router import scales_router"
 
@@ -72,11 +73,24 @@ def patch(lines: list, menu_only: bool = False) -> list:
 
     # 2. Кнопка на клавиатуре ------------------------------------------------
     found_button = False
+    used_helper = False
     for i, line in enumerate(out):
         if RE_BUTTON.search(line):
             out[i] = RE_BUTTON.sub("scales_button()", line)
             found_button = True
+            used_helper = True
             note("✓", f"строка {i + 1}: кнопка «{BILI_BUTTON}» заменена на scales_button()")
+    if not found_button:
+        # Клавиатура бывает собрана и без KeyboardButton(...): списком строк
+        # или билдером. Тогда меняем саму подпись — нажатие поймает
+        # scales_router и ответит кнопкой мини-приложения.
+        for i, line in enumerate(out):
+            if BILI_BUTTON not in line or "F.text" in line or "<" in line:
+                continue
+            out[i] = line.replace(BILI_BUTTON, SCALES_LABEL)
+            found_button = True
+            note("✓", f"строка {i + 1}: подпись кнопки заменена на «{SCALES_LABEL}»")
+
     if not found_button:
         where = [i + 1 for i, l in enumerate(out) if BILI_BUTTON in l]
         handlers = [i + 1 for i, l in enumerate(out)
@@ -116,9 +130,9 @@ def patch(lines: list, menu_only: bool = False) -> list:
         else:
             note("!", "не нашёл ни одного include_router — подключи scales_router сам")
 
-    # 4. Импорты --------------------------------------------------------------
-    need = [imp for imp in (ROUTER_IMPORT, SCALES_IMPORT)
-            if not any(imp in l for l in out)]
+    # 4. Импорты — только те, что действительно понадобились ------------------
+    wanted = [ROUTER_IMPORT] + ([SCALES_IMPORT] if used_helper else [])
+    need = [imp for imp in wanted if not any(imp in l for l in out)]
     if need:
         last = 0
         for i, line in enumerate(out[:80]):

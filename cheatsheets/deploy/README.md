@@ -120,6 +120,19 @@ dp.include_router(search_router)        # ПОСЛЕДНИМ: он забира�
 Порядок важен. `search_router` отвечает на любое текстовое сообщение,
 поэтому всё, что должно срабатывать раньше, подключается выше.
 
+### Всё сразу, одной командой
+
+`apply.sh` обновляет модуль, правит `bot.py`, перезапускает сервис —
+и, если сервис не поднялся, возвращает всё как было и печатает журнал:
+
+```bash
+git clone --depth 1 https://github.com/jEw1IK/tpn.git /tmp/tpn-new
+BOT_DIR=/opt/telegram-bot SERVICE=telegram-bot bash /tmp/tpn-new/cheatsheets/deploy/apply.sh
+```
+
+Копии складывает рядом: `bot.py.bak-<дата>` и `cheatsheets.backup-<дата>`.
+Кэш `file_id` переносит, так что PDF не заливаются заново.
+
 ### Что убрать из старого кода — можно скриптом
 
 `patch_bot.py` делает это сам: снимает копию файла, правит, проверяет
