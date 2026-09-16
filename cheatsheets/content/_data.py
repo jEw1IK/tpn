@@ -27,6 +27,7 @@ SURF = load("surfactants")
 ABX = load("antibiotics")
 VITALS = load("vitals")
 SCALES = load("scales")
+VENT = load("ventilation")
 KR = load("guidelines")["guidelines"]
 
 
@@ -394,5 +395,38 @@ def scale_bands_table(scale_id: str, key: str = "bands", caption: str = None) ->
         head=["Баллы", "Трактовка", "Что делать"],
         widths=[0.8, 1.5, 3.2],
         align="cll",
+        rows=rows,
+    )
+
+
+# --------------------------------------------------------------------------
+# Респираторная поддержка
+# --------------------------------------------------------------------------
+def start_vent_table(only: list = None) -> Table:
+    """Стартовые параметры ИВЛ — приложение А3.7 КР «Сепсис новорождённых».
+
+    КР режет параметры по особенностям течения заболевания, а не по массе.
+    `only` оставляет подмножество состояний — чтобы в шпаргалке по ПЛГН
+    показать её рядом с меконием, а не всю таблицу.
+    """
+    rows = []
+    for st in VENT["start_params"]:
+        if only and st["state"] not in only:
+            continue
+        mark = "!! " if st.get("highlight") else ""
+        targets = "<br/>".join(st["targets"])
+        if st["warn"]:
+            targets += f"<br/><b>{st['warn']}</b>"
+        rows.append([
+            f"{mark}<b>{st['state']}</b>",
+            "<br/>".join(st["params"]),
+            targets,
+        ])
+    return Table(
+        caption="Стартовые параметры инвазивной ИВЛ",
+        head=["Состояние", "Стартовые параметры", "Целевые газы"],
+        widths=[1.6, 1.5, 1.9],
+        align="lll",
+        font_size=7.8,
         rows=rows,
     )

@@ -12,6 +12,7 @@ MODULES = [
     "rodzal",
     "rds_surfactant",
     "vent",
+    "pphn",
     "gbn",
     "pneumonia_rnns",
     "hypoglycemia",
