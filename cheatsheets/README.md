@@ -46,6 +46,7 @@ cheatsheets/
     ├── catalog.py           ← каталог + кэш file_id, без привязки к фреймворку
     ├── aiogram_router.py    ← роутер aiogram v3: раздача PDF
     ├── scales_router.py     ← роутер aiogram v3: /scales
+    ├── keyboard.py          ← готовая кнопка «Шкалы» для клавиатуры
     ├── help_text.py         ← текст справки для /help
     └── standalone_bot.py    ← отдельный бот для проверки
 

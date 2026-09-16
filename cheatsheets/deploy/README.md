@@ -78,6 +78,63 @@ unset BOT_TOKEN
 
 ---
 
+## Если обновляешься с версии, где был калькулятор билирубина
+
+Калькулятор убран — осталась только шпаргалка по ГБН. Поэтому после
+обновления модуля **обязательно** правится код бота, иначе он не запустится.
+
+**1. Убрать импорт, которого больше нет.** Файла `bilirubin_router.py`
+в модуле нет, и строка
+
+```python
+from cheatsheets.bot.bilirubin_router import bilirubin_router
+```
+
+уронит бота на старте с `ModuleNotFoundError`. Удалить её вместе с
+`dp.include_router(bilirubin_router)`.
+
+**2. Подключить шкалы вместо него:**
+
+```python
+from cheatsheets.bot.scales_router import scales_router
+dp.include_router(scales_router)
+```
+
+**3. Убрать `/bili` и `/ozpk` из `set_my_commands`** — команд больше нет,
+а в списке они останутся висеть.
+
+**4. Заменить кнопку на клавиатуре.** Готовая кнопка лежит в модуле и
+открывает мини-приложение сразу на вкладке со шкалами — в один тап,
+как кнопка парентерального питания:
+
+```python
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
+from cheatsheets.bot.keyboard import scales_button
+
+ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="🔎 Найти рекомендации")],
+        [KeyboardButton(text="🧬 Парентеральное питание",
+                        web_app=WebAppInfo(url="https://jew1ik.github.io/tpn/"))],
+        [KeyboardButton(text="📄 Шпаргалки"), scales_button()],
+        [KeyboardButton(text="ℹ️ О проекте"), KeyboardButton(text="❓ Помощь")],
+    ],
+    resize_keyboard=True,
+)
+```
+
+`scales_button()` принимает свою подпись и свой адрес, если нужно:
+`scales_button("📊 Шкалы оценки")`.
+
+Кнопки `web_app` в реплай-клавиатуре работают **только в личных чатах**.
+Если бот отдаёт клавиатуру в группе, используйте обычную
+`KeyboardButton(text="📊 Шкалы")` — её поймает `scales_router` и ответит
+сообщением с инлайн-кнопкой.
+
+**5. Обновить текст справки** — готовый лежит в `cheatsheets/bot/help_text.py`.
+
+---
+
 ## Установка модуля в бота
 
 ```bash
