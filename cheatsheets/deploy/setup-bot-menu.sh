@@ -85,8 +85,7 @@ echo
 call setMyCommands '{
   "commands": [
     {"command": "shpory", "description": "📄 Шпаргалки в PDF"},
-    {"command": "bili",   "description": "🧮 Калькулятор билирубина"},
-    {"command": "ozpk",   "description": "🩸 Объём ОЗПК по массе тела"}
+    {"command": "bili",   "description": "🧮 Калькулятор билирубина"}
   ],
   "scope": {"type": "all_private_chats"},
   "language_code": "ru"
@@ -121,5 +120,5 @@ call setMyDescription '{
 
 echo
 ok "Готово. Открой @$username и проверь кнопку рядом с полем ввода."
-warn "Команды /shpory, /bili и /ozpk появятся в списке, но ОТВЕЧАТЬ на них"
+warn "Команды /shpory и /bili появятся в списке, но ОТВЕЧАТЬ на них"
 warn "бот начнёт только после подключения модуля к его коду."

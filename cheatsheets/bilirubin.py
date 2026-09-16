@@ -2,8 +2,10 @@
 """Расчёт порогов билирубина.
 
 Логика полностью повторяет калькулятор bili/index.html и работает на тех же
-данных из data/bilirubin.json. Нужна, чтобы бот считал пороги текстом,
-не открывая мини-приложение.
+данных из data/bilirubin.json. Это библиотека: бот считает пороги не здесь,
+а в мини-приложении. Модуль остаётся как эталон для сверки — расчёт на
+Python и в браузере проверяется на одном наборе случаев, и расхождение
+между ними сразу видно.
 
 Две шкалы:
   kr_rf — критерии КР МЗ РФ («New 2017 revised Kobe University criteria»).
@@ -28,18 +30,6 @@ MGDL_FACTOR = DATA["mgdl_factor"]
 DEFAULT_SCALE = DATA["default_scale"]
 SCALES = DATA["scales"]
 RISK_FACTORS = {f["id"]: f for f in DATA["risk_factors"]}
-
-# Синонимы для разбора текстовой команды: «/bili 36 24 190 гбн сепсис»
-RISK_ALIASES = {
-    "гбн": "hemolysis", "гемолиз": "hemolysis", "кумбс": "hemolysis",
-    "г6фд": "g6pd", "g6pd": "g6pd",
-    "асфиксия": "asphyxia",
-    "сепсис": "sepsis",
-    "ацидоз": "acidosis",
-    "летаргия": "lethargy",
-    "альбумин": "albumin", "гипоальбуминемия": "albumin",
-}
-
 
 def r(v: float) -> int:
     """Округление «половина вверх».
@@ -210,13 +200,3 @@ def exchange_volumes(weight_kg: float, preterm: bool = False) -> dict:
 def transfusion_volume(hb_now: float, hb_target: float, weight_kg: float) -> float:
     tr = DATA["transfusion"]
     return (hb_target - hb_now) * weight_kg * tr["bcc_ml_per_kg"] / tr["rbc_hb_g_l"]
-
-
-def parse_risks(tokens: list[str]) -> list[str]:
-    """Достаёт факторы риска из словесных хвостов команды."""
-    found = []
-    for tok in tokens:
-        rid = RISK_ALIASES.get(tok.strip().strip(",").lower())
-        if rid and rid not in found:
-            found.append(rid)
-    return found

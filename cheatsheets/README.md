@@ -46,7 +46,7 @@ cheatsheets/
 └── bot/
     ├── catalog.py           ← каталог + кэш file_id, без привязки к фреймворку
     ├── aiogram_router.py    ← роутер aiogram v3: раздача PDF
-    ├── bilirubin_router.py  ← роутер aiogram v3: /bili и /ozpk
+    ├── bilirubin_router.py  ← роутер aiogram v3: /bili
     └── standalone_bot.py    ← отдельный бот для проверки
 
 ../bili/
@@ -231,7 +231,7 @@ Table(
 |---|---|
 | PDF-шпаргалка по ГБН | `content/_data.py` строит таблицы при сборке |
 | Мини-приложение | `build.py` генерирует `bili/thresholds.js` |
-| Бот (`/bili`, `/ozpk`) | `bilirubin.py` читает JSON напрямую |
+| `bilirubin.py` | Библиотека расчёта на Python, зеркало логики калькулятора |
 
 Разойтись они не могут: правишь JSON, запускаешь `python build.py` — меняется
 везде. Логика расчёта продублирована на Python и на JS; она сверена
@@ -310,10 +310,10 @@ dp.include_router(bilirubin_router)
 |---|---|
 | `/shpory` | Меню по разделам → список шпаргалок → PDF в чат |
 | `/shpory гбн` | Поиск по названию и описанию |
-| `/bili` | Кнопка, открывающая калькулятор билирубина |
-| `/bili 36 24 190` | Пороги текстом по таблицам КР |
-| `/bili 38 60 250 гбн aap` | То же по кривым AAP, с факторами риска |
-| `/ozpk 3200` | Объём ОЗПК по массе; допиши «нед» для недоношенного |
+| `/bili` | Открывает калькулятор билирубина |
+
+Расчёта текстом в чате нет намеренно: набирать команду с аргументами
+у постели пациента неудобно, всё считается в мини-приложении.
 
 Адрес мини-приложения задаётся переменной окружения `BILI_WEBAPP_URL`
 (по умолчанию `https://jew1ik.github.io/tpn/bili/`).
@@ -324,7 +324,6 @@ dp.include_router(bilirubin_router)
 await bot.set_my_commands([
     BotCommand(command="shpory", description="📄 Шпаргалки в PDF"),
     BotCommand(command="bili",   description="🧮 Калькулятор билирубина"),
-    BotCommand(command="ozpk",   description="🩸 Объём ОЗПК по массе"),
 ])
 ```
 

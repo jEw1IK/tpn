@@ -82,13 +82,12 @@ cat <<'TXT'
     await bot.set_my_commands([
         BotCommand(command="shpory", description="📄 Шпаргалки в PDF"),
         BotCommand(command="bili",   description="🧮 Калькулятор билирубина"),
-        BotCommand(command="ozpk",   description="🩸 Объём ОЗПК по массе"),
     ])
 
 Адрес мини-приложения (кнопка в /bili) задаётся переменной окружения:
 
     BILI_WEBAPP_URL=https://jew1ik.github.io/tpn/bili/
 
-После этого перезапусти бота. Проверка: /shpory и /bili 38 48 250
+После этого перезапусти бота. Проверка: /shpory и /bili
 ────────────────────────────────────────────────────────────
 TXT

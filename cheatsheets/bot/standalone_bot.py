@@ -32,8 +32,7 @@ async def start(message: Message) -> None:
     await message.answer(
         "Привет!\n"
         "/shpory — шпаргалки в PDF\n"
-        "/bili — калькулятор билирубина\n"
-        "/ozpk — объём ОЗПК по массе"
+        "/bili — калькулятор билирубина"
     )
 
 
