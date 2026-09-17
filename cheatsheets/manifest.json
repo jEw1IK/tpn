@@ -1,6 +1,6 @@
 {
-  "generated": "16.09.2026",
-  "count": 15,
+  "generated": "17.09.2026",
+  "count": 18,
   "pages_base": "https://jew1ik.github.io/tpn/cheatsheets/pdf",
   "sheets": [
     {
@@ -19,8 +19,8 @@
       ],
       "file": "pdf/rodzal.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rodzal.pdf",
-      "bytes": 70005,
-      "sha256": "6c9ea0b22891c192"
+      "bytes": 70006,
+      "sha256": "fd6f652e9d0c1b78"
     },
     {
       "id": "rds_surfactant",
@@ -37,8 +37,8 @@
       ],
       "file": "pdf/rds_surfactant.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rds_surfactant.pdf",
-      "bytes": 67964,
-      "sha256": "b3d76d5499aa446e"
+      "bytes": 67963,
+      "sha256": "7fb66526a1be7cf0"
     },
     {
       "id": "vent",
@@ -57,7 +57,7 @@
       "file": "pdf/vent.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/vent.pdf",
       "bytes": 66103,
-      "sha256": "073781d1ec6b27d7"
+      "sha256": "57dfb8d13b1ddf53"
     },
     {
       "id": "pphn",
@@ -76,7 +76,40 @@
       "file": "pdf/pphn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pphn.pdf",
       "bytes": 70602,
-      "sha256": "1983cfd2a8da2ca3"
+      "sha256": "fd58f214779977f7"
+    },
+    {
+      "id": "apnea",
+      "title": "Апноэ недоношенных",
+      "subtitle": "Что считать апноэ · кофеина цитрат · когда на CPAP · когда домой",
+      "summary": "Определение и критерии тяжёлого апноэ, дозы кофеина цитрата по КР, ступени респираторной поддержки, отмена терапии и выписка.",
+      "category": "Дыхание",
+      "button": "😮‍💨 Апноэ недоношенных",
+      "order": 37,
+      "guidelines": [
+        "933_1"
+      ],
+      "file": "pdf/apnea.pdf",
+      "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/apnea.pdf",
+      "bytes": 68583,
+      "sha256": "5901652eb9bfe6d4"
+    },
+    {
+      "id": "bpd",
+      "title": "Бронхолёгочная дисплазия",
+      "subtitle": "Когда ставится диагноз · степени тяжести · дексаметазон · целевая SpO₂",
+      "summary": "Критерии диагноза и классификация по тяжести, целевая сатурация, схема дексаметазона, ингаляции, диуретики, питание и профилактика РСВИ.",
+      "category": "Дыхание",
+      "button": "🌬 БЛД",
+      "order": 39,
+      "guidelines": [
+        "377_2",
+        "933_1"
+      ],
+      "file": "pdf/bpd.pdf",
+      "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/bpd.pdf",
+      "bytes": 69229,
+      "sha256": "11408ef2e7fe89f0"
     },
     {
       "id": "gbn",
@@ -96,8 +129,8 @@
       ],
       "file": "pdf/gbn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/gbn.pdf",
-      "bytes": 84846,
-      "sha256": "bff59365132336cd"
+      "bytes": 84850,
+      "sha256": "bad6217e52c686b6"
     },
     {
       "id": "pneumonia_rnns",
@@ -116,8 +149,8 @@
       ],
       "file": "pdf/pneumonia_rnns.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pneumonia_rnns.pdf",
-      "bytes": 77079,
-      "sha256": "eac4e548a07d415c"
+      "bytes": 77082,
+      "sha256": "b139c66080b2ba4f"
     },
     {
       "id": "hypoglycemia",
@@ -133,8 +166,8 @@
       ],
       "file": "pdf/hypoglycemia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hypoglycemia.pdf",
-      "bytes": 66230,
-      "sha256": "adf8d182d676f069"
+      "bytes": 66229,
+      "sha256": "c987737915f81ecd"
     },
     {
       "id": "seizures",
@@ -151,7 +184,23 @@
       "file": "pdf/seizures.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/seizures.pdf",
       "bytes": 64011,
-      "sha256": "0862bc8ffedadef2"
+      "sha256": "c7ce25874a70004b"
+    },
+    {
+      "id": "ivh",
+      "title": "Внутрижелудочковые кровоизлияния",
+      "subtitle": "Papile и Volpe · график НСГ · профилактика · постгеморрагическая вентрикуломегалия",
+      "summary": "Две классификации и разница между ними, сроки нейросонографии, доказанная профилактика и нейропротективный уход, измерения желудочков при вентрикуломегалии.",
+      "category": "Неврология",
+      "button": "🧠 ВЖК",
+      "order": 72,
+      "guidelines": [
+        "948_1"
+      ],
+      "file": "pdf/ivh.pdf",
+      "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/ivh.pdf",
+      "bytes": 66506,
+      "sha256": "902d512c56f4c83e"
     },
     {
       "id": "hie_hypothermia",
@@ -166,8 +215,8 @@
       ],
       "file": "pdf/hie_hypothermia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hie_hypothermia.pdf",
-      "bytes": 65034,
-      "sha256": "db247c075c575af9"
+      "bytes": 65035,
+      "sha256": "c29708aeaebacadd"
     },
     {
       "id": "pda",
@@ -183,8 +232,8 @@
       ],
       "file": "pdf/pda.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pda.pdf",
-      "bytes": 65821,
-      "sha256": "3e60a6e65a97a209"
+      "bytes": 65820,
+      "sha256": "d36dbf514a5472e2"
     },
     {
       "id": "nec",
@@ -201,7 +250,7 @@
       "file": "pdf/nec.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/nec.pdf",
       "bytes": 65136,
-      "sha256": "4de0492fccf851ef"
+      "sha256": "003d0752e7655df4"
     },
     {
       "id": "inotropes",
@@ -219,7 +268,7 @@
       "file": "pdf/inotropes.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/inotropes.pdf",
       "bytes": 66321,
-      "sha256": "48efe76c7022b163"
+      "sha256": "f49322bd12aa9fe5"
     },
     {
       "id": "fluids_tpn",
@@ -236,7 +285,7 @@
       "file": "pdf/fluids_tpn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/fluids_tpn.pdf",
       "bytes": 67435,
-      "sha256": "47d5449b42d5772e"
+      "sha256": "beaccdf567c80a7d"
     },
     {
       "id": "scales",
@@ -251,8 +300,8 @@
       ],
       "file": "pdf/scales.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/scales.pdf",
-      "bytes": 76331,
-      "sha256": "d899f42d20eff39c"
+      "bytes": 76332,
+      "sha256": "de4dd8b8221fd834"
     },
     {
       "id": "reference",
@@ -273,7 +322,7 @@
       "file": "pdf/reference.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/reference.pdf",
       "bytes": 71901,
-      "sha256": "aaab64cc7e50731a"
+      "sha256": "b8e1377b283823be"
     }
   ]
 }
