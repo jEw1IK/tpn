@@ -27,6 +27,7 @@ SURF = load("surfactants")
 ABX = load("antibiotics")
 VITALS = load("vitals")
 SCALES = load("scales")
+INOTROPES = load("inotropes")
 VENT = load("ventilation")
 KR = load("guidelines")["guidelines"]
 
@@ -370,6 +371,32 @@ def scale_modifier_table(scale_id: str) -> Table:
         widths=[0.5, 5.0],
         align="cl",
         rows=[[f"<b>{_sign(o['score'])}</b>", o["label"]] for o in mod["options"]],
+    )
+
+
+def inotrope_table() -> Table:
+    """Приложение А3.6: дозы кардиотоников — старт, диапазон, шаг, отмена."""
+    rows = []
+    for d in INOTROPES["drugs"]:
+        rows.append([
+            f"<b>{d['name']}</b>",
+            d["start"], d["range"], d["titrate"], d["wean"],
+        ])
+    return Table(
+        caption=f"Дозы в {INOTROPES['unit']} · приложение {INOTROPES['appendix']} КР {INOTROPES['kr_id']}",
+        head=["Препарат", "Старт", "Диапазон", "Шаг титрования", "Шаг отмены"],
+        widths=[1.4, 1.0, 1.0, 1.1, 1.0],
+        align="lcccc",
+        rows=rows,
+    )
+
+
+def inotrope_cautions_table() -> Table:
+    """О чём помнить при каждом препарате — из той же таблицы А3.6."""
+    return Table(
+        head=["Препарат", "На что смотреть"],
+        widths=[1.4, 4.0],
+        rows=[[f"<b>{d['name']}</b>", " · ".join(d["cautions"])] for d in INOTROPES["drugs"]],
     )
 
 

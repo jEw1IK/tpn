@@ -264,10 +264,12 @@ class Search:
                     weight = S_SYN_PART
                 else:
                     continue
-                for gid in krs:
-                    bump(scores, gid, weight)
-                for sid in shs:
-                    bump(sheet_ids, sid, weight)
+                # Порядок внутри записи словаря — это порядок уместности:
+                # первым стоит то, что врач имел в виду с наибольшей вероятностью.
+                for pos, gid in enumerate(krs):
+                    bump(scores, gid, weight - pos * 0.5)
+                for pos, sid in enumerate(shs):
+                    bump(sheet_ids, sid, weight - pos * 0.5)
 
             # 4-6. Название рекомендации
             for gid, name in self._names.items():
