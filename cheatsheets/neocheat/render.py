@@ -325,6 +325,42 @@ def _title_flowables(sheet, styles):
     return out
 
 
+def _credit_parts():
+    """Куски подписи: (текст, жирный?, цвет). Название проекта выделяем цветом."""
+    b = T.BRAND
+    author, role = b.get("author", "").strip(), b.get("role", "").strip()
+    project, link = b.get("project", "").strip(), b.get("link", "").strip()
+    prefix = b.get("prefix", "Автор").strip()
+
+    parts = []
+    if author:
+        who = f"{prefix}: {author}" if prefix else author
+        if role:
+            who += f", {role}"
+        parts.append((who, False, T.MUTED))
+    if project:
+        if parts:
+            parts.append((" · ", False, T.LINE))
+        parts.append((project, True, T.ACCENT))
+    if link:
+        parts.append((" · " + link, False, T.MUTED))
+    return parts
+
+
+def _draw_credit(canvas, y):
+    """Подпись слева внизу: автор обычным, проект — акцентом."""
+    parts = _credit_parts()
+    if not parts:
+        return
+    x = T.PAGE_MARGIN_X
+    for text, bold, color in parts:
+        font = T.FONT_BOLD if bold else T.FONT
+        canvas.setFont(font, 6.6)
+        canvas.setFillColor(color)
+        canvas.drawString(x, y, text)
+        x += pdfmetrics.stringWidth(text, font, 6.6)
+
+
 def _make_page_painter(sheet, build_date, show_runhead):
     def paint(canvas, doc):
         canvas.saveState()
@@ -351,6 +387,8 @@ def _make_page_painter(sheet, build_date, show_runhead):
         canvas.setFillColor(T.MUTED)
         canvas.drawString(T.PAGE_MARGIN_X, fy, DISCLAIMER)
         canvas.drawRightString(PAGE_W - T.PAGE_MARGIN_X, fy, f"{build_date} · стр. {page}")
+        # Вторая строка подвала: авторство и проект — на каждой странице.
+        _draw_credit(canvas, fy - 3.6 * mm)
         canvas.restoreState()
 
     return paint

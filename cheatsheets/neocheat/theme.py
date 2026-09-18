@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import json
 import os
 
 from reportlab.lib import colors
@@ -57,6 +58,21 @@ CELL_TONES = {
 # --------------------------------------------------------------------------
 # Геометрия страницы
 # --------------------------------------------------------------------------
+# Подпись автора и проекта: единственное место, где она задаётся.
+def _load_brand() -> dict:
+    path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "brand.json"
+    )
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+BRAND = _load_brand()
+
+
 PAGE_MARGIN_X = 13 * mm
 PAGE_MARGIN_TOP = 26 * mm
 PAGE_MARGIN_BOTTOM = 15 * mm

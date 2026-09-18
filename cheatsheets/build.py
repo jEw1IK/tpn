@@ -100,7 +100,29 @@ def write_manifest(entries, build_date):
         f.write("\n")
 
 
+def _credit_html() -> str:
+    """Подпись автора и проекта для страницы со списком — из data/brand.json."""
+    try:
+        with open(os.path.join(HERE, "data", "brand.json"), encoding="utf-8") as f:
+            b = json.load(f)
+    except (OSError, ValueError):
+        return ""
+    author, role = b.get("author", "").strip(), b.get("role", "").strip()
+    project, link = b.get("project", "").strip(), b.get("link", "").strip()
+    prefix = b.get("prefix", "Автор").strip()
+    parts = []
+    if author:
+        who = f"{prefix}: {author}" if prefix else author
+        parts.append(html.escape(f"{who}, {role}" if role else who))
+    if project:
+        parts.append(f"<b>{html.escape(project)}</b>")
+    if link:
+        parts.append(html.escape(link))
+    return " · ".join(parts)
+
+
 def write_index(entries, build_date):
+    credit = _credit_html()
     cats = {}
     for e in entries:
         cats.setdefault(e["category"], []).append(e)
@@ -144,7 +166,7 @@ footer{{color:var(--muted);font-size:11px;margin-top:26px;border-top:1px solid v
 с подсчётом суммы и трактовкой.</div></li></ul>
 {"".join(rows)}
 <footer>Памятки для быстрой сверки у постели пациента. Не заменяют действующие
-клинические рекомендации и назначение врача.</footer>
+клинические рекомендации и назначение врача.<br>{credit}</footer>
 </body></html>
 """
     with open(INDEX, "w", encoding="utf-8") as f:
