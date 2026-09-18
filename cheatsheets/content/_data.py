@@ -419,6 +419,41 @@ def vis_table() -> Table:
     )
 
 
+def stage_table(scale_id: str) -> Table:
+    """Шкала-стадия в том же виде, в каком она напечатана в приложении КР."""
+    sc = next(s for s in SCALES["scales"] if s["id"] == scale_id)
+    rows = []
+    for item in sc["items"]:
+        cells = {1: "", 2: "", 3: ""}
+        for o in item["options"]:
+            if o["stage"] is None:
+                # Вариант, общий для стадий I и II: в источнике он напечатан в обеих
+                # колонках, так и оставляем.
+                text = o["label"].split(" — ")[0]
+                cells[1] = cells[2] = text
+            else:
+                cells[o["stage"]] = o["label"]
+        rows.append([item["label"], cells[1], cells[2], f"!! {cells[3]}"])
+    return Table(
+        head=["Признак", "Стадия I", "Стадия II", "Стадия III"],
+        widths=[1.1, 1.2, 1.4, 1.5],
+        font_size=8.0,
+        rows=rows,
+    )
+
+
+def stage_summary_table(scale_id: str) -> Table:
+    """Длительность, прогноз и что это значит для тактики."""
+    sc = next(s for s in SCALES["scales"] if s["id"] == scale_id)
+    tones = {"ok": "+ ", "info": "~ ", "warn": "! ", "danger": "!! "}
+    return Table(
+        head=["Стадия", "Длительность", "Прогноз", "Что это значит"],
+        widths=[1.1, 1.1, 1.1, 2.1],
+        rows=[[f"{tones[st['tone']]}{st['title']}", st["duration"], st["prognosis"], st["text"]]
+              for st in sc["stages"]],
+    )
+
+
 def scale_bands_table(scale_id: str, key: str = "bands", caption: str = None) -> Table:
     """Трактовка суммы. Диапазоны выводятся из верхних границ полос."""
     sc = next(s for s in SCALES["scales"] if s["id"] == scale_id)
