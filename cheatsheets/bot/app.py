@@ -51,6 +51,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from cheatsheets.bot.aiogram_router import (  # noqa: E402
     catalog, cheatsheets_router, send_root,
 )
+from cheatsheets.bot.brand import channel_url, credit_line  # noqa: E402
 from cheatsheets.bot.help_text import HELP_TEXT  # noqa: E402
 from cheatsheets.bot.keyboard import (  # noqa: E402
     ABOUT_TEXT, HELP_TEXT_BTN, SEARCH_TEXT, SHEETS_TEXT, TPN_TEXT, TPN_URL,
@@ -63,7 +64,8 @@ log = logging.getLogger("postneo")
 
 main_router = Router(name="main")
 
-CHANNEL_URL = os.environ.get("CHANNEL_URL", "").strip()
+# Переменная окружения важнее файла — на случай переезда канала.
+CHANNEL_URL = channel_url()
 
 COMMANDS = [
     BotCommand(command="start", description="Меню"),
@@ -97,6 +99,7 @@ ABOUT = (
     "{count} шпаргалки в PDF · {kr} рекомендаций в поиске · "
     "калькулятор парентерального питания · семь шкал: nSOFA, NEOMOD, Сарнат, "
     "NIPS, N-PASS, VIS.\n\n"
+    "{credit}\n\n"
     "<i>Материалы для быстрой сверки у постели пациента. Не заменяют "
     "действующие клинические рекомендации и назначение врача.</i>"
 )
@@ -128,7 +131,8 @@ async def cmd_about(message: Message) -> None:
     from cheatsheets.bot.search_router import search
 
     await message.answer(
-        ABOUT.format(count=len(catalog.sheets), kr=len(search.guidelines)),
+        ABOUT.format(count=len(catalog.sheets), kr=len(search.guidelines),
+                     credit=credit_line()),
         parse_mode=ParseMode.HTML,
     )
 

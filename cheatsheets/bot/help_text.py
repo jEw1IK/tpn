@@ -12,13 +12,11 @@
 не перечитывая. Команды перечислены один раз, без повторов описаний.
 """
 
-import os
+from .brand import channel_url
 
 # Канал появляется в справке, только если он задан: обещать врачу команду,
 # которой нет, — худший вид опечатки.
-_CHANNEL = (
-    "<code>/channel</code> — канал ПОСТ·НЕО\n" if os.environ.get("CHANNEL_URL", "").strip() else ""
-)
+_CHANNEL = "<code>/channel</code> — канал ПОСТ·НЕО\n" if channel_url() else ""
 
 HELP_TEXT = (
     "<b>ПОСТ·НЕО</b> — инструменты неонатолога под рукой.\n"

@@ -61,8 +61,9 @@ BOT_TOKEN=$TOKEN
 TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/
 SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/scales/
 CHEATSHEET_FILE_ID_CACHE=$TARGET/file_id_cache.json
-# Ссылка на канал — раскомментируй и впиши адрес, тогда появится /channel
-# CHANNEL_URL=https://t.me/…
+# Канал: адрес по умолчанию берётся из cheatsheets/data/brand.json,
+# эта переменная его перебивает — пригодится, если канал переедет.
+# CHANNEL_URL=https://t.me/postneo01
 ENV
     chmod 600 "$ENV_FILE"
     ok "токен записан в $ENV_FILE (права 600)"

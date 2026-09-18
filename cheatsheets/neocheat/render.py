@@ -343,6 +343,11 @@ def _credit_parts():
             parts.append((" · ", False, T.LINE))
         parts.append((project, True, T.ACCENT))
     if link:
+        # В подвале схема не нужна: «t.me/postneo01» и короче, и читается легче.
+        for scheme in ("https://", "http://"):
+            if link.startswith(scheme):
+                link = link[len(scheme):]
+                break
         parts.append((" · " + link, False, T.MUTED))
     return parts
 

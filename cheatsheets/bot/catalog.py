@@ -17,43 +17,13 @@ import threading
 from dataclasses import dataclass
 from typing import Iterable
 
+from .brand import credit_line
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 CHEATSHEETS_DIR = os.path.dirname(HERE)
 MANIFEST_PATH = os.path.join(CHEATSHEETS_DIR, "manifest.json")
 
 # Кэш file_id живёт рядом с ботом и переживает перезапуск.
-def _load_brand() -> dict:
-    """Подпись автора и проекта — тот же файл, из которого её берут PDF."""
-    path = os.path.join(CHEATSHEETS_DIR, "data", "brand.json")
-    try:
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, ValueError):
-        return {}
-
-
-BRAND = _load_brand()
-
-
-def credit_line() -> str:
-    """Строка «Автор: … · ПОСТ·НЕО» для подписи к документу."""
-    author = BRAND.get("author", "").strip()
-    role = BRAND.get("role", "").strip()
-    project = BRAND.get("project", "").strip()
-    link = BRAND.get("link", "").strip()
-    prefix = BRAND.get("prefix", "Автор").strip()
-
-    parts = []
-    if author:
-        who = f"{prefix}: {author}" if prefix else author
-        parts.append(f"{who}, {role}" if role else who)
-    if project:
-        parts.append(f"<b>{project}</b>")
-    if link:
-        parts.append(link)
-    return " · ".join(parts)
-
-
 FILE_ID_CACHE = os.environ.get(
     "CHEATSHEET_FILE_ID_CACHE", os.path.join(HERE, "file_id_cache.json")
 )
