@@ -17,6 +17,8 @@ MODULES = [
     "bpd",
     "pphn",
     "gbn",
+    "polycythemia",
+    "vitk",
     "sepsis",
     "pneumonia_rnns",
     "hypoglycemia",
@@ -28,6 +30,7 @@ MODULES = [
     "inotropes",
     "fluids_tpn",
     "scales",
+    "rop",
     "reference",
 ]
 
