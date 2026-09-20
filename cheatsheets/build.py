@@ -51,6 +51,30 @@ def _guideline_ids(sources) -> list:
     return out
 
 
+# Маркеры тона (!!, !, ~, +) работают только в начале ячейки. Если такой
+# знак случайно оказался в середине текста, он просто напечатается в PDF —
+# ловим это на сборке, а не глазами на готовой странице.
+_STRAY_MARK_RE = re.compile(r"(?<=\S)\s+(?:!!|!|~)\s")
+
+
+def _stray_marks(sheet) -> list:
+    found = []
+
+    def walk(value):
+        if isinstance(value, str):
+            if _STRAY_MARK_RE.search(value):
+                found.append(value)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                walk(item)
+        elif hasattr(value, "__dict__"):
+            for item in vars(value).values():
+                walk(item)
+
+    walk(sheet.blocks)
+    return found
+
+
 def _sha(path: str) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -67,6 +91,12 @@ def build(only=None) -> list:
     for sheet in load_all():
         if only and sheet.id not in only:
             continue
+        stray = _stray_marks(sheet)
+        if stray:
+            print(f"  ✗ {sheet.id}: маркер тона в середине текста —")
+            for text in stray:
+                print(f"      {text[:120]}")
+            raise SystemExit("Маркеры !!, !, ~ работают только в начале ячейки.")
         out = os.path.join(PDF_DIR, f"{sheet.id}.pdf")
         render(sheet, out, build_date)
         size = os.path.getsize(out)

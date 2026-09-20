@@ -1,8 +1,24 @@
 {
   "generated": "20.09.2026",
-  "count": 23,
+  "count": 30,
   "pages_base": "https://jew1ik.github.io/tpn/cheatsheets/pdf",
   "sheets": [
+    {
+      "id": "healthy",
+      "title": "Здоровый новорождённый",
+      "subtitle": "Первый час · скрининги · профилактика · критерии выписки",
+      "summary": "Критерии диагноза «здоровый новорождённый», таймлайн рутины роддома, скрининг на критические ВПС, неонатальный и аудиологический скрининг, профилактика и критерии выписки.",
+      "category": "Скрининг и наблюдение",
+      "button": "👶 Здоровый новорождённый",
+      "order": 5,
+      "guidelines": [
+        "924_1"
+      ],
+      "file": "pdf/healthy.pdf",
+      "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/healthy.pdf",
+      "bytes": 72747,
+      "sha256": "09d463cbe9135c18"
+    },
     {
       "id": "rodzal",
       "title": "Реанимация в родильном зале",
@@ -20,7 +36,7 @@
       "file": "pdf/rodzal.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rodzal.pdf",
       "bytes": 70739,
-      "sha256": "39f4d473aae677a7"
+      "sha256": "a3a2dd9f9aa65155"
     },
     {
       "id": "rds_surfactant",
@@ -38,7 +54,7 @@
       "file": "pdf/rds_surfactant.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rds_surfactant.pdf",
       "bytes": 68535,
-      "sha256": "2af7e8d967291e87"
+      "sha256": "b29efa608a1c6026"
     },
     {
       "id": "vent",
@@ -57,7 +73,7 @@
       "file": "pdf/vent.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/vent.pdf",
       "bytes": 66682,
-      "sha256": "ff0c346765cf381f"
+      "sha256": "7e2ac15b5dbbf08c"
     },
     {
       "id": "ttn",
@@ -74,7 +90,7 @@
       "file": "pdf/ttn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/ttn.pdf",
       "bytes": 70560,
-      "sha256": "b3f0d664821c949b"
+      "sha256": "81566e7d931b324c"
     },
     {
       "id": "pphn",
@@ -93,7 +109,23 @@
       "file": "pdf/pphn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pphn.pdf",
       "bytes": 71280,
-      "sha256": "dc07fef0225217ae"
+      "sha256": "7882d5dfbc9dc58b"
+    },
+    {
+      "id": "cdh",
+      "title": "Врождённая диафрагмальная грыжа",
+      "subtitle": "Родзал без маски · щадящая вентиляция · лёгочная гипертензия · когда оперировать",
+      "summary": "Что делать и чего нельзя в родзале, параметры щадящей вентиляции и ВЧО, терапия лёгочной гипертензии, показания к ЭКМО и критерии готовности к операции.",
+      "category": "Дыхание",
+      "button": "🫁 Диафрагмальная грыжа",
+      "order": 36,
+      "guidelines": [
+        "840_1"
+      ],
+      "file": "pdf/cdh.pdf",
+      "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/cdh.pdf",
+      "bytes": 66199,
+      "sha256": "92df705cd05d4af4"
     },
     {
       "id": "apnea",
@@ -109,7 +141,7 @@
       "file": "pdf/apnea.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/apnea.pdf",
       "bytes": 69290,
-      "sha256": "73e69824187a2ba9"
+      "sha256": "30a57583561493a5"
     },
     {
       "id": "bpd",
@@ -125,8 +157,8 @@
       ],
       "file": "pdf/bpd.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/bpd.pdf",
-      "bytes": 69970,
-      "sha256": "194df6dd6fd8bed3"
+      "bytes": 70001,
+      "sha256": "01feee8bda0cfb63"
     },
     {
       "id": "gbn",
@@ -147,7 +179,7 @@
       "file": "pdf/gbn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/gbn.pdf",
       "bytes": 88313,
-      "sha256": "d03377e997dba164"
+      "sha256": "910e323dcd8a156f"
     },
     {
       "id": "polycythemia",
@@ -164,7 +196,7 @@
       "file": "pdf/polycythemia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/polycythemia.pdf",
       "bytes": 66809,
-      "sha256": "38479b0173a220e2"
+      "sha256": "a355f54fd22c7f12"
     },
     {
       "id": "vitk",
@@ -181,7 +213,24 @@
       "file": "pdf/vitk.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/vitk.pdf",
       "bytes": 66082,
-      "sha256": "39f47e66f38f7179"
+      "sha256": "efe0c20f8d19055b"
+    },
+    {
+      "id": "anemia",
+      "title": "Ранняя анемия недоношенных",
+      "subtitle": "Когда переливать · сколько · эритропоэтин и железо · как не доводить",
+      "summary": "Референсные значения по возрасту, пороги гемоглобина для трансфузии с учётом респираторной поддержки, объём и техника, схемы эпоэтина и железа.",
+      "category": "Билирубин и гематология",
+      "button": "🩹 Анемия недоношенных",
+      "order": 47,
+      "guidelines": [
+        "661_2",
+        "660_2"
+      ],
+      "file": "pdf/anemia.pdf",
+      "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/anemia.pdf",
+      "bytes": 66087,
+      "sha256": "fe8c21811301706f"
     },
     {
       "id": "sepsis",
@@ -199,7 +248,7 @@
       "file": "pdf/sepsis.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/sepsis.pdf",
       "bytes": 72455,
-      "sha256": "ac38690e852ca8b8"
+      "sha256": "e1a4fd3fb6ad5c04"
     },
     {
       "id": "pneumonia_rnns",
@@ -219,7 +268,40 @@
       "file": "pdf/pneumonia_rnns.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pneumonia_rnns.pdf",
       "bytes": 77948,
-      "sha256": "077769f3c1eeb8f1"
+      "sha256": "ab9ec7fd5245ac6b"
+    },
+    {
+      "id": "candida",
+      "title": "Кандидоз новорождённых",
+      "subtitle": "Кто в группе риска · посевы · флуконазол и микафунгин · профилактика",
+      "summary": "Факторы риска инвазивного кандидоза, объём посевов и поиск очагов, дозы противогрибковых и схема профилактики в ОРИТН.",
+      "category": "Инфекции",
+      "button": "🍄 Кандидоз новорождённых",
+      "order": 55,
+      "guidelines": [
+        "944_1",
+        "912_1"
+      ],
+      "file": "pdf/candida.pdf",
+      "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/candida.pdf",
+      "bytes": 61344,
+      "sha256": "9ca3e614b3c2ea6f"
+    },
+    {
+      "id": "cmv",
+      "title": "Врождённая ЦМВ-инфекция",
+      "subtitle": "Кого обследовать · ПЦР до 3 недель · формы по тяжести · ганцикловир и валганцикловир",
+      "summary": "Показания к обследованию на врождённую ЦМВИ, сроки и материал для ПЦР, деление форм по тяжести, дозы противовирусных и план диспансерного наблюдения.",
+      "category": "Инфекции",
+      "button": "🦠 Врождённая ЦМВ-инфекция",
+      "order": 56,
+      "guidelines": [
+        "260_2"
+      ],
+      "file": "pdf/cmv.pdf",
+      "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/cmv.pdf",
+      "bytes": 70407,
+      "sha256": "bd2362ff0bf19a80"
     },
     {
       "id": "hypoglycemia",
@@ -236,7 +318,24 @@
       "file": "pdf/hypoglycemia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hypoglycemia.pdf",
       "bytes": 66709,
-      "sha256": "d9c2ffe997c6bb5f"
+      "sha256": "92108a94f51d067d"
+    },
+    {
+      "id": "reflux",
+      "title": "Срыгивания и ГЭРБ",
+      "subtitle": "Норма или болезнь · шкала ESPGHAN · красные флаги · АР-смеси и эзомепразол",
+      "summary": "Разграничение физиологических срыгиваний и ГЭРБ, шкала интенсивности срыгиваний, симптомы тревоги, ступени терапии от позы до фундопликации.",
+      "category": "ЖКТ и питание",
+      "button": "🍼 Срыгивания и ГЭРБ",
+      "order": 62,
+      "guidelines": [
+        "950_1",
+        "962_1"
+      ],
+      "file": "pdf/reflux.pdf",
+      "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/reflux.pdf",
+      "bytes": 70148,
+      "sha256": "7b59e02707c19f7a"
     },
     {
       "id": "seizures",
@@ -253,7 +352,7 @@
       "file": "pdf/seizures.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/seizures.pdf",
       "bytes": 64529,
-      "sha256": "45933267c886df15"
+      "sha256": "2f706e9241abc6ed"
     },
     {
       "id": "ivh",
@@ -268,8 +367,8 @@
       ],
       "file": "pdf/ivh.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/ivh.pdf",
-      "bytes": 67046,
-      "sha256": "04ad04a5ca41d9e8"
+      "bytes": 67055,
+      "sha256": "cb3b618a0c5e0359"
     },
     {
       "id": "hie_hypothermia",
@@ -285,7 +384,7 @@
       "file": "pdf/hie_hypothermia.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/hie_hypothermia.pdf",
       "bytes": 66244,
-      "sha256": "0583cbe2f5ec9c3b"
+      "sha256": "ba342d77ecde50fe"
     },
     {
       "id": "pda",
@@ -302,7 +401,7 @@
       "file": "pdf/pda.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/pda.pdf",
       "bytes": 66325,
-      "sha256": "b6287b5bf506781a"
+      "sha256": "5cf688df6e71af2e"
     },
     {
       "id": "nec",
@@ -319,7 +418,7 @@
       "file": "pdf/nec.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/nec.pdf",
       "bytes": 65675,
-      "sha256": "fcaeabe116704c71"
+      "sha256": "7eaa8bf79671d2c0"
     },
     {
       "id": "inotropes",
@@ -337,7 +436,7 @@
       "file": "pdf/inotropes.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/inotropes.pdf",
       "bytes": 66891,
-      "sha256": "84721ec4c3fc75c0"
+      "sha256": "6087a82034d3e1c6"
     },
     {
       "id": "fluids_tpn",
@@ -354,7 +453,24 @@
       "file": "pdf/fluids_tpn.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/fluids_tpn.pdf",
       "bytes": 67934,
-      "sha256": "8cd88f161f8d26e8"
+      "sha256": "91d3cfbcefc10181"
+    },
+    {
+      "id": "cholestasis",
+      "title": "Неонатальный холестаз",
+      "subtitle": "Прямой билирубин выше 17 · не пропустить билиарную атрезию · УДХК и витамины",
+      "summary": "Когда прямая фракция становится тревогой, чем отличается транзиторный холестаз от атрезии и гепатита, объём обследования и лечение.",
+      "category": "Метаболизм и питание",
+      "button": "🟤 Неонатальный холестаз",
+      "order": 122,
+      "guidelines": [
+        "959_1",
+        "906_1"
+      ],
+      "file": "pdf/cholestasis.pdf",
+      "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/cholestasis.pdf",
+      "bytes": 66528,
+      "sha256": "e0bde56414a5eb37"
     },
     {
       "id": "scales",
@@ -371,7 +487,7 @@
       "file": "pdf/scales.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/scales.pdf",
       "bytes": 92874,
-      "sha256": "c6029d5cff9c2420"
+      "sha256": "f5eca0b6fd7fea3d"
     },
     {
       "id": "rop",
@@ -389,7 +505,7 @@
       "file": "pdf/rop.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/rop.pdf",
       "bytes": 64907,
-      "sha256": "087c97d8d8ab51dd"
+      "sha256": "9eae6e356e09fecf"
     },
     {
       "id": "reference",
@@ -410,7 +526,7 @@
       "file": "pdf/reference.pdf",
       "url": "https://jew1ik.github.io/tpn/cheatsheets/pdf/reference.pdf",
       "bytes": 72501,
-      "sha256": "f5151687ce6b4c29"
+      "sha256": "1ded93981524c724"
     }
   ]
 }

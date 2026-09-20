@@ -9,6 +9,7 @@ from __future__ import annotations
 import importlib
 
 MODULES = [
+    "healthy",
     "rodzal",
     "rds_surfactant",
     "vent",
@@ -16,9 +17,11 @@ MODULES = [
     "apnea",
     "bpd",
     "pphn",
+    "cdh",
     "gbn",
     "polycythemia",
     "vitk",
+    "anemia",
     "sepsis",
     "pneumonia_rnns",
     "hypoglycemia",
@@ -26,9 +29,13 @@ MODULES = [
     "ivh",
     "pda",
     "nec",
+    "candida",
+    "cmv",
     "hie_hypothermia",
     "inotropes",
     "fluids_tpn",
+    "reflux",
+    "cholestasis",
     "scales",
     "rop",
     "reference",
