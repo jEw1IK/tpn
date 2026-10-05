@@ -85,9 +85,11 @@ async def main() -> None:
     check("📊 Шкалы" in labels, "на клавиатуре есть «Шкалы»")
     check(not any("илирубин" in b for b in labels), "билирубина на клавиатуре нет")
     web = [b for row in markup.keyboard for b in row if b.web_app]
-    check(len(web) == 2, "две кнопки открывают мини-приложение")
+    check(len(web) == 3, "три кнопки открывают мини-приложения")
     check(any(b.web_app.url.rstrip("/").endswith("scales") for b in web),
           "одна из них — приложение шкал")
+    check(any(b.web_app.url.rstrip("/").endswith("sedation") for b in web),
+          "и калькулятор седации")
 
     await send(dp, bot, text_update("/help"))
     out = bot.texts()
@@ -146,6 +148,58 @@ async def main() -> None:
     await send(dp, bot, text_update("/doza аспирин"))
     check("нет" in bot.texts()[0].lower(), "неизвестный препарат — честный ответ")
 
+    print("\nСедация")
+    await send(dp, bot, text_update("/sed"))
+    out = bot.texts()
+    check(bool(out) and "до скольки развести" in out[0], "/sed рассказывает, что умеет")
+    check(bot.calls[0].reply_markup.inline_keyboard[0][0].web_app is not None,
+          "/sed открывает калькулятор кнопкой web_app")
+
+    await send(dp, bot, text_update("мидазолам 468 0,1=0,03"))
+    out = bot.texts()
+    check(bool(out) and "Развести до 35,6 мл" in out[0],
+          "«мидазолам 468 0,1=0,03» → развести до 35,6 мл (как в переписке)")
+    check(bool(out) and "0,1 мл (0,5 мг) до 3,56 мл" in out[0],
+          "и подсказывает экономный шприц на сутки: 0,1 мл до 3,56 мл")
+    btn = bot.calls[0].reply_markup.inline_keyboard[0][0]
+    check(btn.web_app is not None and "w=468" in btn.web_app.url and "rate=0.1" in btn.web_app.url,
+          "кнопка открывает калькулятор с теми же числами")
+
+    await send(dp, bot, text_update("фентанил 1,180 100 мкг 0,1=1"))
+    out = bot.texts()
+    check(bool(out) and "Развести до 8,5 мл" in out[0], "фентанил 1180 г, 100 мкг → до 8,5 мл")
+    check(bool(out) and "2 мл" in out[0] and "6,5 мл" in out[0], "пропись: 2 мл фентанила + 6,5 мл")
+
+    await send(dp, bot, text_update("мидаз 5 мг до 6 мл скорость 0,2 3090"))
+    out = bot.texts()
+    check(bool(out) and "0,2 мл/ч = 0,054" in out[0], "готовый шприц: 5 мг в 6 мл на 0,2 мл/ч = 0,054")
+
+    await send(dp, bot, text_update("/sed 1200"))
+    out = bot.texts()
+    check(len(out) == 2 and "Мидазолам" in out[0] and "Фентанил" in out[1],
+          "/sed 1200 без препарата — обе карточки")
+
+    await send(dp, bot, text_update("мидазолам 1200 0,3 0,03"))
+    out = bot.texts()
+    check(bool(out) and "Не понял числа" in out[0] and "Развести" not in out[0],
+          "непонятные числа не угадываются молча")
+
+    await send(dp, bot, text_update("мидазолам 1200 0=0,03"))
+    out = bot.texts()
+    check(bool(out) and "Ноль не подходит" in out[0], "правило с нулём — переспрашивает, а не падает")
+
+    await send(dp, bot, text_update("фентанил 5500"))
+    out = bot.texts()
+    check(bool(out) and "крепче, чем в ампуле" in out[0], "фентанил 5500 г, 0,1 = 1 — честное «нельзя»")
+
+    await send(dp, bot, text_update("седация при ИВЛ"))
+    out = bot.texts()
+    check(bool(out) and "Развести" not in out[0], "фраза без препарата уходит в поиск")
+
+    await send(dp, bot, text_update("💉 Седация", chat_type="supergroup"))
+    check(bot.calls[0].reply_markup.inline_keyboard[0][0].url is not None,
+          "в группе калькулятор отдаётся ссылкой")
+
     print("\nРеестр рекомендаций")
     await send(dp, bot, text_update("/kr"))
     check("Клинические рекомендации" in bot.texts()[0], "/kr показывает разделы")
@@ -186,7 +240,7 @@ async def main() -> None:
     print("\nМеню команд")
     names = [c.command for c in COMMANDS]
     check("bili" not in names and "ozpk" not in names, "в меню нет удалённых команд")
-    check({"start", "search", "kr", "doza", "shpory", "scales", "tpn", "help"} <= set(names),
+    check({"start", "search", "kr", "doza", "shpory", "scales", "tpn", "sed", "help"} <= set(names),
           "все основные команды в меню")
 
     print(f"\nПроверок: {checks}, провалов: {len(failures)}")

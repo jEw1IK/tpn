@@ -8,6 +8,10 @@
 
 Команды: /shpory, /cheatsheets, /шпоры
 Поиск:   /shpory гбн
+
+Внутри — роутер калькулятора седации (/sed, «мидазолам 1200»): он вложен
+сюда, чтобы заработать в любом боте, где уже подключены шпаргалки.
+Отдельно подключать sedation_router не нужно — aiogram откажет в повторном.
 """
 from __future__ import annotations
 
@@ -173,3 +177,11 @@ async def cb_get(call: CallbackQuery) -> None:
         return
     await call.answer("Отправляю…")
     await send_cheatsheet(call.message, sheet)
+
+
+# --------------------------------------------------------------------------
+# Калькулятор седации — вложенный роутер
+# --------------------------------------------------------------------------
+from .sedation_router import sedation_router  # noqa: E402
+
+cheatsheets_router.include_router(sedation_router)

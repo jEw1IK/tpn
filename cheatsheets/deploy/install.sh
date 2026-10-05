@@ -47,6 +47,7 @@ rm -rf "$BOT_DIR/webapp"
 mkdir -p "$BOT_DIR/webapp"
 cp -a "$STAGE/tpn/index.html" "$BOT_DIR/webapp/index.html"
 cp -a "$STAGE/tpn/scales" "$BOT_DIR/webapp/scales"
+cp -a "$STAGE/tpn/sedation" "$BOT_DIR/webapp/sedation"
 ok "мини-приложения в $BOT_DIR/webapp"
 
 PDFS=$(find "$BOT_DIR/cheatsheets/pdf" -name '*.pdf' | wc -l)

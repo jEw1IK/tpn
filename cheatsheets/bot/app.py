@@ -15,6 +15,7 @@
     /shpory     15 шпаргалок в PDF
     /scales     мини-приложение со шкалами (nSOFA, NIPS, N-PASS)
     /tpn        калькулятор парентерального питания
+    /sed        седация: до скольки развести мидазолам и фентанил
     /materials  список шпаргалок ссылками
     /about      о проекте
     /help       справка
@@ -24,6 +25,7 @@
     BOT_TOKEN           токен от @BotFather (обязательно)
     TPN_WEBAPP_URL      адрес калькулятора питания
     SCALES_WEBAPP_URL   адрес вкладки со шкалами
+    SEDATION_WEBAPP_URL адрес калькулятора седации
     CHANNEL_URL         ссылка на канал; без неё команда /channel скрыта
 """
 from __future__ import annotations
@@ -75,6 +77,7 @@ COMMANDS = [
     BotCommand(command="shpory", description="Шпаргалки в PDF"),
     BotCommand(command="scales", description="Шкалы оценки"),
     BotCommand(command="tpn", description="Парентеральное питание"),
+    BotCommand(command="sed", description="Седация: мидазолам, фентанил"),
     BotCommand(command="materials", description="Список шпаргалок"),
     BotCommand(command="about", description="О проекте"),
     BotCommand(command="help", description="Справка"),
@@ -97,8 +100,8 @@ ABOUT = (
     "в каждой шпаргалке указан ID рекомендации и дата размещения, "
     "чтобы можно было проверить источник.\n\n"
     "{count} шпаргалки в PDF · {kr} рекомендаций в поиске · "
-    "калькулятор парентерального питания · семь шкал: nSOFA, NEOMOD, Сарнат, "
-    "NIPS, N-PASS, VIS.\n\n"
+    "калькулятор парентерального питания · разведение мидазолама и фентанила · "
+    "семь шкал: nSOFA, NEOMOD, Сарнат, NIPS, N-PASS, VIS.\n\n"
     "{credit}\n\n"
     "<i>Материалы для быстрой сверки у постели пациента. Не заменяют "
     "действующие клинические рекомендации и назначение врача.</i>"
@@ -206,7 +209,7 @@ def build_dispatcher() -> Dispatcher:
     dp = Dispatcher()
     dp.include_router(main_router)        # команды и подписи кнопок
     dp.include_router(scales_router)      # кнопка «Шкалы»
-    dp.include_router(cheatsheets_router) # /shpory и его колбэки
+    dp.include_router(cheatsheets_router) # /shpory и колбэки, внутри — седация
     dp.include_router(search_router)      # поиск, реестр, дозы и весь прочий текст
     return dp
 

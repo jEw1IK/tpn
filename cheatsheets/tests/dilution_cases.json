@@ -1,0 +1,23 @@
+{
+  "_comment": "Примеры из живой переписки автора — реальные дети, реальные шприцы, — плюс пара граничных случаев. Их проходят и расчёт бота (bot/dilution.py), и мини-приложение (sedation/dilution.js), так цифры в чате и в приложении не разойдутся.",
+  "cases": [
+    {"name": "3090 г, 2 ампулы мидазолама, 0,3 мл/ч = 0,03", "fn": "dilute", "drug": "midazolam", "weight_g": 3090, "amount": 10, "rule": [0.3, 0.03], "expect": {"volume": 32.4, "draw_ml": 2, "syringe_ml": 50}},
+    {"name": "3090 г, 1 ампула, 0,3 = 0,03", "fn": "dilute", "drug": "midazolam", "weight_g": 3090, "amount": 5, "rule": [0.3, 0.03], "expect": {"volume": 16.2, "syringe_ml": 20}},
+    {"name": "5 мг развели до 7 мл, 3090 г, стоит 0,3 мл/ч", "fn": "check", "drug": "midazolam", "weight_g": 3090, "amount": 5, "volume": 7, "rate": 0.3, "expect": {"dose_at_rate": 0.069, "warn": true}},
+    {"name": "Тот же шприц на 0,2 мл/ч", "fn": "check", "drug": "midazolam", "weight_g": 3090, "amount": 5, "volume": 7, "rate": 0.2, "expect": {"dose_at_rate": 0.046}},
+    {"name": "5 мг до 6 мл физа, 0,2 мл/ч", "fn": "check", "drug": "midazolam", "weight_g": 3090, "amount": 5, "volume": 6, "rate": 0.2, "expect": {"dose_at_rate": 0.054}},
+    {"name": "640 г, 1 ампула, 0,3 = 0,06: целиком и экономно", "fn": "dilute", "drug": "midazolam", "weight_g": 640, "amount": 5, "rule": [0.3, 0.06], "expect": {"volume": 39.1, "alt_draw_ml": 0.2, "alt_volume": 7.8}},
+    {"name": "640 г, 1 ампула, 0,3 = 0,03 — в шприц не влезает", "fn": "dilute", "drug": "midazolam", "weight_g": 640, "amount": 5, "rule": [0.3, 0.03], "expect": {"volume": 78.1, "syringe_ml": 0, "alt_draw_ml": 0.1, "alt_volume": 7.8, "warn": true}},
+    {"name": "640 г, 2 мг, 0,3 = 0,03", "fn": "dilute", "drug": "midazolam", "weight_g": 640, "amount": 2, "rule": [0.3, 0.03], "expect": {"volume": 31.3, "draw_ml": 0.4}},
+    {"name": "5 мг до 24 мл, 640 г, 0,1 мл/ч", "fn": "check", "drug": "midazolam", "weight_g": 640, "amount": 5, "volume": 24, "rate": 0.1, "expect": {"dose_at_rate": 0.033}},
+    {"name": "950 г, шприц 5 мг до 24 мл — какая скорость на 0,03", "fn": "check", "drug": "midazolam", "weight_g": 950, "amount": 5, "volume": 24, "target": 0.03, "expect": {"rate_for_target": 0.14}},
+    {"name": "468 г, 1 ампула, 0,1 мл/ч = 0,03", "fn": "dilute", "drug": "midazolam", "weight_g": 468, "amount": 5, "rule": [0.1, 0.03], "expect": {"volume": 35.6, "alt_draw_ml": 0.1, "alt_volume": 3.56}},
+    {"name": "468 г, 0,3 = 0,06", "fn": "dilute", "drug": "midazolam", "weight_g": 468, "amount": 5, "rule": [0.3, 0.06], "expect": {"volume": 53.4, "alt_draw_ml": 0.2, "alt_volume": 10.7, "warn": true}},
+    {"name": "468 г, 0,1 = 0,01", "fn": "dilute", "drug": "midazolam", "weight_g": 468, "amount": 5, "rule": [0.1, 0.01], "expect": {"volume": 106.8, "alt_draw_ml": 0.1, "alt_volume": 10.7}},
+    {"name": "468 г, хочу шприц 10,7 мл под 0,1 = 0,01", "fn": "draw", "drug": "midazolam", "weight_g": 468, "volume": 10.7, "rule": [0.1, 0.01], "expect": {"draw_ml": 0.1}},
+    {"name": "Фентанил, 1180 г, 100 мкг, 0,1 мл/ч = 1 мкг/кг/ч", "fn": "dilute", "drug": "fentanyl", "weight_g": 1180, "amount": 100, "rule": [0.1, 1], "expect": {"volume": 8.5, "draw_ml": 2, "syringe_ml": 10}},
+    {"name": "Фентанил, 3000 г, одной ампулы хватит на 11 ч", "fn": "dilute", "drug": "fentanyl", "weight_g": 3000, "amount": 100, "rule": [0.1, 1], "expect": {"volume": 3.33, "alt_draw_ml": 6, "alt_volume": 10}},
+    {"name": "Фентанил, 5500 г, 0,1 = 1 — крепче ампулы не развести", "fn": "dilute", "drug": "fentanyl", "weight_g": 5500, "amount": 100, "rule": [0.1, 1], "expect": {"ok": false}},
+    {"name": "Правило 0 = 0,03 — делить на ноль не пытаемся", "fn": "dilute", "drug": "midazolam", "weight_g": 1200, "amount": 5, "rule": [0, 0.03], "expect": {"ok": false}}
+  ]
+}

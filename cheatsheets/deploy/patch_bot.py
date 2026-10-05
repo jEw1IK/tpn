@@ -10,7 +10,10 @@
        без этого бот упадёт на старте;
     2. меняет кнопку «🟡 Билирубин» на кнопку шкал;
     3. подключает scales_router ДО роутера, который ловит свободный текст;
-    4. убирает /bili и /ozpk из меню команд и добавляет /scales.
+    4. убирает /bili и /ozpk из меню команд и добавляет /scales;
+    5. ставит на клавиатуру кнопку «💉 Седация» под питанием, добавляет
+       /sed в меню команд и строку про седацию в стартовое сообщение.
+       Сам калькулятор подключать не нужно: он вложен в cheatsheets_router.
 
 Чего НЕ делает: не трогает тексты справки и не удаляет твои обработчики.
 Вместо этого показывает их в конце — чтобы решение принимал человек.
@@ -34,6 +37,20 @@ BILI_BUTTON = "🟡 Билирубин"
 SCALES_LABEL = "📊 Шкалы"
 SCALES_IMPORT = "from cheatsheets.bot.keyboard import scales_button"
 ROUTER_IMPORT = "from cheatsheets.bot.scales_router import scales_router"
+SEDATION_IMPORT = "from cheatsheets.bot.keyboard import sedation_button"
+SEDATION_LABEL = "💉 Седация"
+SEDATION_MENU = ("💉 <b>Седация</b> · до скольки развести мидазолам и фентанил: "
+                 "<code>/sed</code>\\n\\n")
+SEDATION_COMMAND = 'description="Седация: мидазолам, фентанил"'
+
+# Ряд клавиатуры с кнопкой питания — одной строкой: [KeyboardButton(...)],
+RE_TPN_ROW = re.compile(
+    r"^(\s*)\[\s*(?:KeyboardButton\([^\]]*Парентеральное питание[^\]]*\)|tpn_button\([^\]]*\))\s*\]\s*,\s*$"
+)
+RE_SHEETS_ROW = re.compile(
+    r"^(\s*)\[\s*KeyboardButton\(\s*(?:text\s*=\s*)?[\"']📄 Шпаргалки[\"']\s*\).*\]\s*,\s*$"
+)
+RE_STRING_LINE = re.compile(r'^\s*"[^"]*"\s*$')
 
 # Импорт модуля билирубина пишут по-разному, и это важно ловить полностью:
 #   from cheatsheets.bot.bilirubin_router import bilirubin_router
@@ -229,7 +246,7 @@ def patch(lines: list, menu_only: bool = False) -> list:
                   f"строках {', '.join(map(str, used))} — импорт не трогаю")
         note("!", "пока эти строки не убраны вручную, старый модуль должен "
                   "остаться на месте, иначе бот не запустится")
-        return patch_texts(patch_rest(out, skip_imports=True))
+        return patch_sedation_text(patch_texts(patch_rest(out, skip_imports=True)))
 
     kept = []
     for i, line in enumerate(out, 1):
@@ -242,7 +259,65 @@ def patch(lines: list, menu_only: bool = False) -> list:
         kept.append(line)
     out = kept
 
-    return patch_texts(patch_rest(out))
+    return patch_sedation_text(patch_texts(patch_rest(out)))
+
+
+def add_import(out: list, imp: str) -> None:
+    """Добавляет импорт после последнего верхнего import, если его ещё нет."""
+    if any(imp in l for l in out):
+        return
+    last = 0
+    for i, line in enumerate(out[:80]):
+        if RE_TOP_IMPORT.match(line):
+            last = i
+    out.insert(last + 1, imp + "\n")
+    note("✓", f"добавлен импорт: {imp}")
+
+
+def patch_sedation(out: list) -> list:
+    """Кнопка калькулятора седации на клавиатуре."""
+    if any("sedation_button(" in l or SEDATION_LABEL in l for l in out):
+        note("·", f"кнопка «{SEDATION_LABEL}» уже на клавиатуре")
+    else:
+        spot = None
+        for i, line in enumerate(out):
+            m = RE_TPN_ROW.match(line)
+            if m:
+                spot = (i + 1, m.group(1), "под кнопкой питания")
+                break
+        if spot is None:
+            for i, line in enumerate(out):
+                m = RE_SHEETS_ROW.match(line)
+                if m:
+                    spot = (i, m.group(1), "над шпаргалками")
+                    break
+        if spot:
+            i, indent, where = spot
+            out.insert(i, f"{indent}[sedation_button()],\n")
+            note("✓", f"строка {i + 1}: кнопка «{SEDATION_LABEL}» поставлена {where}")
+            add_import(out, SEDATION_IMPORT)
+        else:
+            note("!", f"не нашёл ряд клавиатуры для кнопки «{SEDATION_LABEL}» — "
+                      "калькулятор всё равно работает: /sed и «мидазолам 1200» в чате")
+    return out
+
+
+def patch_sedation_text(out: list) -> list:
+    """Строка про седацию в стартовом сообщении — под строкой про шкалы.
+
+    Идёт после patch_texts: строку «📊 Шкалы» пишет именно он.
+    """
+    if any("💉 <b>Седация</b>" in l for l in out):
+        note("·", "строка про седацию в стартовом сообщении уже есть")
+    else:
+        for i, line in enumerate(out):
+            if "📊 <b>Шкалы</b>" in line and RE_STRING_LINE.match(line.rstrip("\n")):
+                out.insert(i + 1, replace_inner(line, SEDATION_MENU))
+                note("✓", f"строка {i + 2}: в стартовое сообщение добавлена седация")
+                break
+        else:
+            note("·", "строку «📊 Шкалы» в текстах не нашёл — стартовое сообщение не трогаю")
+    return out
 
 
 def patch_rest(out: list, skip_imports: bool = False) -> list:
@@ -317,6 +392,7 @@ def patch_rest(out: list, skip_imports: bool = False) -> list:
             out.insert(last + 1 + offset, imp + "\n")
             note("✓", f"добавлен импорт: {imp}")
 
+    out = patch_sedation(out)
     return patch_menu(out)
 
 
@@ -345,6 +421,24 @@ def patch_menu(out: list) -> list:
         note("✓", f"строка {idx + 2}: в меню добавлена команда /scales")
     elif not shpory_line:
         note("!", "строку с /shpory в меню не нашёл — команду /scales добавь сам")
+
+    if any(re.search(r"[\"']sed[\"']", l) for l in out):
+        note("·", "/sed в меню уже есть")
+    else:
+        anchor = None
+        for key in ("scales", "tpn", "shpory"):
+            anchor = next((l for l in out if "BotCommand" in l
+                           and re.search(rf"[\"']{key}[\"']", l)), None)
+            if anchor:
+                break
+        if anchor:
+            new = re.sub(r"([\"'])(scales|tpn|shpory)\1", r"\1sed\1", anchor, count=1)
+            new = re.sub(r'description\s*=\s*(["\']).*?\1', SEDATION_COMMAND, new)
+            idx = out.index(anchor)
+            out.insert(idx + 1, new)
+            note("✓", f"строка {idx + 2}: в меню добавлена команда /sed")
+        else:
+            note("!", "меню команд не нашёл — /sed добавь сам")
 
     return out
 

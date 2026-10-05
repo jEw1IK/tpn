@@ -29,6 +29,8 @@ REPO_ROOT = os.path.dirname(HERE)
 PDF_DIR = os.path.join(HERE, "pdf")
 SCALES_DATA = os.path.join(HERE, "data", "scales.json")
 SCALES_JS = os.path.join(REPO_ROOT, "scales", "scales.js")
+SEDATION_DATA = os.path.join(HERE, "data", "sedation.json")
+SEDATION_JS = os.path.join(REPO_ROOT, "sedation", "sedation.js")
 MANIFEST = os.path.join(HERE, "manifest.json")
 INDEX = os.path.join(HERE, "index.html")
 
@@ -191,9 +193,11 @@ footer{{color:var(--muted);font-size:11px;margin-top:26px;border-top:1px solid v
 </style></head><body>
 <h1>Шпаргалки неонатолога</h1>
 <p class="lead">{len(entries)} PDF · обновлено {build_date}</p>
-<ul><li><a href="../scales/">📊 Шкалы: nSOFA, NIPS, N-PASS</a>
-<div class='s'>Полиорганная дисфункция, боль и глубина седации —
-с подсчётом суммы и трактовкой.</div></li></ul>
+<ul><li><a href="../scales/">📊 Шкалы: nSOFA, NEOMOD, Сарнат, NIPS, N-PASS, VIS</a>
+<div class='s'>Полиорганная дисфункция, стадия ГИЭ, боль и глубина седации —
+с подсчётом суммы и трактовкой.</div></li>
+<li><a href="../sedation/">💉 Седация: мидазолам и фентанил</a>
+<div class='s'>До скольки развести ампулу, чтобы нужная скорость давала нужную дозу.</div></li></ul>
 {"".join(rows)}
 <footer>Памятки для быстрой сверки у постели пациента. Не заменяют действующие
 клинические рекомендации и назначение врача.<br>{credit}</footer>
@@ -217,6 +221,20 @@ def write_scales_js():
     return SCALES_JS
 
 
+def write_sedation_js():
+    """Мини-приложению «Седация» — те же препараты и правила, что и боту."""
+    with open(SEDATION_DATA, encoding="utf-8") as f:
+        data = json.load(f)
+    os.makedirs(os.path.dirname(SEDATION_JS), exist_ok=True)
+    with open(SEDATION_JS, "w", encoding="utf-8") as f:
+        f.write("/* Файл создаётся автоматически: cheatsheets/build.py\n")
+        f.write("   Источник: cheatsheets/data/sedation.json — правьте его, не этот файл. */\n")
+        f.write("window.SEDATION_DATA = ")
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write(";\n")
+    return SEDATION_JS
+
+
 def main():
     ap = argparse.ArgumentParser(description="Сборка PDF-шпаргалок")
     ap.add_argument("only", nargs="*", help="собрать только эти id")
@@ -229,7 +247,9 @@ def main():
         write_manifest(entries, build_date)
         write_index(entries, build_date)
         write_scales_js()
-        print(f"\nГотово: {len(entries)} PDF, manifest.json, index.html, scales/scales.js")
+        write_sedation_js()
+        print(f"\nГотово: {len(entries)} PDF, manifest.json, index.html, "
+              f"scales/scales.js, sedation/sedation.js")
     else:
         print(f"\nГотово: {len(entries)} PDF (manifest не трогали)")
 

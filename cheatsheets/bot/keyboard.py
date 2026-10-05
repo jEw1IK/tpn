@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """Клавиатура бота: мини-приложения в один тап.
 
-Два мини-приложения, каждое своей кнопкой: парентеральное питание и шкалы
-оценки. Открываются в один тап, без промежуточного сообщения «нажмите здесь».
+Три мини-приложения, каждое своей кнопкой: парентеральное питание, седация
+и шкалы оценки. Открываются в один тап, без промежуточного сообщения
+«нажмите здесь».
 
     from cheatsheets.bot.keyboard import main_keyboard, scales_button
 
@@ -21,11 +22,13 @@ from aiogram.enums import ChatType
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 
 from .scales_router import WEBAPP_URL
+from .sedation_router import SEDATION_URL
 
 TPN_URL = os.environ.get("TPN_WEBAPP_URL", "https://jew1ik.github.io/tpn/")
 
 DEFAULT_TEXT = "📊 Шкалы"
 TPN_TEXT = "🧬 Парентеральное питание"
+SEDATION_TEXT = "💉 Седация"
 SEARCH_TEXT = "🔎 Найти рекомендации"
 SHEETS_TEXT = "📄 Шпаргалки"
 ABOUT_TEXT = "ℹ️ О проекте"
@@ -42,15 +45,22 @@ def tpn_button(text: str = TPN_TEXT, url: str = None) -> KeyboardButton:
     return KeyboardButton(text=text, web_app=WebAppInfo(url=url or TPN_URL))
 
 
+def sedation_button(text: str = SEDATION_TEXT, url: str = None) -> KeyboardButton:
+    """Кнопка калькулятора седации: до скольки развести мидазолам и фентанил."""
+    return KeyboardButton(text=text, web_app=WebAppInfo(url=url or SEDATION_URL))
+
+
 def main_keyboard(chat_type: str = ChatType.PRIVATE) -> ReplyKeyboardMarkup:
     """Основная клавиатура. В группах — без web_app, иначе Telegram её отклонит."""
     private = chat_type == ChatType.PRIVATE
     tpn = tpn_button() if private else KeyboardButton(text=TPN_TEXT)
+    sedation = sedation_button() if private else KeyboardButton(text=SEDATION_TEXT)
     scales = scales_button() if private else KeyboardButton(text=DEFAULT_TEXT)
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=SEARCH_TEXT)],
             [tpn],
+            [sedation],
             [KeyboardButton(text=SHEETS_TEXT), scales],
             [KeyboardButton(text=ABOUT_TEXT), KeyboardButton(text=HELP_TEXT_BTN)],
         ],
@@ -66,3 +76,7 @@ def scales_url() -> str:
 
 def tpn_url() -> str:
     return TPN_URL
+
+
+def sedation_url() -> str:
+    return SEDATION_URL

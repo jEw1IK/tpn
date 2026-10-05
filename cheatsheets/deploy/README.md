@@ -56,6 +56,7 @@ sudo systemctl disable <старый-сервис>
 BOT_TOKEN=123456:AA…                                  обязательно
 TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/          калькулятор питания
 SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/scales/  приложение шкал
+SEDATION_WEBAPP_URL=https://jew1ik.github.io/tpn/sedation/  калькулятор седации
 CHEATSHEET_FILE_ID_CACHE=/opt/postneo/file_id_cache.json
 CHANNEL_URL=https://t.me/…                            появится команда /channel
 ```

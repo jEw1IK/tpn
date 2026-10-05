@@ -60,6 +60,7 @@ else
 BOT_TOKEN=$TOKEN
 TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/
 SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/scales/
+SEDATION_WEBAPP_URL=https://jew1ik.github.io/tpn/sedation/
 CHEATSHEET_FILE_ID_CACHE=$TARGET/file_id_cache.json
 # Канал: адрес по умолчанию берётся из cheatsheets/data/brand.json,
 # эта переменная его перебивает — пригодится, если канал переедет.

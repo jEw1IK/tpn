@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Седация: разведение</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="sedation.js"></script>
+<script src="dilution.js"></script>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --text:#14181f; --muted:#6b7280; --line:#e3e6ea;
+  --accent:#2f7ad6; --accent-soft:#eaf2fc;
+  --ok:#1c7c50; --ok-soft:#e6f4ec;
+  --warn:#9a6300; --warn-soft:#fdf3e0;
+  --danger:#b3261e; --danger-soft:#fdecea;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15181d; --card:#1e232b; --text:#e8eaed; --muted:#9aa3af; --line:#2c333d;
+    --accent:#63a6f0; --accent-soft:#1d2c3d;
+    --ok:#5fd39b; --ok-soft:#163024;
+    --warn:#e2b464; --warn-soft:#332818;
+    --danger:#f2877f; --danger-soft:#3a1d1b;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:12px 12px 112px;
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg); color:var(--text);
+  -webkit-text-size-adjust:100%;
+}
+h1{font-size:19px; margin:4px 0 14px}
+h2{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 10px}
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:12px}
+.hint{font-size:12px; color:var(--muted); margin-top:6px}
+
+.seg{display:flex; flex-wrap:wrap; gap:6px}
+.seg button{
+  flex:1 1 90px; padding:9px 6px; font-size:13px; line-height:1.25; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--muted);
+  border:1px solid var(--line); border-radius:9px;
+}
+.seg button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600}
+
+.field{margin-top:14px}
+.field:first-child{margin-top:0}
+.lbl{font-size:13px; font-weight:600; margin-bottom:6px}
+.eq{display:flex; align-items:center; flex-wrap:wrap; gap:8px}
+.eq input{
+  width:92px; padding:9px 10px; font-family:inherit; font-size:16px;
+  color:var(--text); background:var(--bg);
+  border:1px solid var(--line); border-radius:9px;
+  font-variant-numeric:tabular-nums;
+}
+.eq input.wide{width:120px}
+.eq input:focus{outline:none; border-color:var(--accent); background:var(--card)}
+.eq .unit{font-size:13px; color:var(--muted)}
+.eq .is{font-size:16px; color:var(--muted)}
+.chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.chips button{
+  padding:6px 10px; font-size:12px; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:999px;
+}
+.chips button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600}
+
+.big{font-size:24px; font-weight:700; line-height:1.2; font-variant-numeric:tabular-nums}
+.big small{display:block; font-size:13px; font-weight:400; color:var(--muted); margin-top:4px}
+.kv{display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--line); font-size:14px}
+.kv:last-child{border-bottom:none}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font-variant-numeric:tabular-nums; font-weight:600; text-align:right}
+.recipe{margin-top:12px}
+
+.msg{padding:9px 11px; border-radius:10px; font-size:13px; margin-top:8px; border:1px solid transparent}
+.msg.danger{background:var(--danger-soft); color:var(--danger); border-color:currentColor}
+.msg.warn{background:var(--warn-soft); color:var(--warn); border-color:currentColor}
+.msg.ok{background:var(--ok-soft); color:var(--ok); border-color:currentColor}
+.msg.info{background:var(--accent-soft); color:var(--accent); border-color:currentColor}
+.msg b{display:block; margin-bottom:2px}
+.msg button{
+  margin-top:8px; padding:7px 12px; font-size:13px; font-family:inherit; cursor:pointer;
+  background:var(--card); color:var(--accent); border:1px solid currentColor; border-radius:8px;
+}
+
+table{width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums}
+th{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; text-align:left; padding:0 6px 6px}
+td{padding:7px 6px; border-top:1px solid var(--line)}
+td:nth-child(2), th:nth-child(2){font-weight:600}
+td:last-child, th:last-child{text-align:right; color:var(--muted)}
+tr.typ td{background:var(--accent-soft)}
+tr.typ td:nth-child(2){color:var(--accent)}
+tr.over td:nth-child(2){color:var(--warn)}
+tr.cur td:first-child{font-weight:700}
+tr.cur td:first-child::after{content:" ◀"; color:var(--accent)}
+
+ul.notes{margin:0; padding-left:18px; font-size:13px}
+ul.notes li{margin-bottom:6px}
+.disclaimer{font-size:11px; color:var(--muted); line-height:1.5; margin:10px 0 0}
+
+.bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:10;
+  display:flex; gap:2px; align-items:center;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  background:var(--card); border-top:1px solid var(--line);
+}
+.bar div{flex:1; text-align:center; min-width:0}
+.bar b{display:block; font-size:18px; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.bar small{display:block; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+.bar .flag-warn b{color:var(--warn)}
+.bar .flag-danger b{color:var(--danger)}
+</style>
+</head>
+<body>
+
+<h1>Седация · разведение</h1>
+
+<div class="card">
+  <div class="seg" id="drugs"></div>
+  <div class="hint" id="form"></div>
+  <div class="field">
+    <div class="lbl"><label for="weight">Масса ребёнка</label></div>
+    <div class="eq">
+      <input id="weight" class="wide" type="text" inputmode="decimal" autocomplete="off" placeholder="1200">
+      <span class="unit">г</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="seg" id="modes"></div>
+
+  <div class="field" id="ruleBox">
+    <div class="lbl">Правило: какая скорость какой дозе</div>
+    <div class="eq">
+      <input id="rate" type="text" inputmode="decimal" autocomplete="off">
+      <span class="unit">мл/ч</span><span class="is">=</span>
+      <input id="dose" type="text" inputmode="decimal" autocomplete="off">
+      <span class="unit" data-dose-unit></span>
+    </div>
+    <div class="chips" id="rulePresets"></div>
+  </div>
+
+  <div class="field" id="amountBox">
+    <div class="lbl" id="amountLbl">Сколько препарата беру</div>
+    <div class="eq">
+      <input id="amount" type="text" inputmode="decimal" autocomplete="off">
+      <span class="unit" data-unit></span>
+      <span class="unit" id="amountMl"></span>
+    </div>
+    <div class="chips" id="amountChips"></div>
+  </div>
+
+  <div class="field" id="volumeBox">
+    <div class="lbl" id="volumeLbl">Объём шприца</div>
+    <div class="eq">
+      <input id="volume" type="text" inputmode="decimal" autocomplete="off">
+      <span class="unit">мл</span>
+    </div>
+    <div class="chips" id="volumeChips"></div>
+  </div>
+
+  <div class="field" id="checkBox">
+    <div class="lbl">Скорость сейчас — или доза, которая нужна</div>
+    <div class="eq">
+      <input id="cur" type="text" inputmode="decimal" autocomplete="off" placeholder="0,2">
+      <span class="unit">мл/ч</span>
+    </div>
+    <div class="eq" style="margin-top:8px">
+      <input id="target" type="text" inputmode="decimal" autocomplete="off">
+      <span class="unit" data-dose-unit></span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Результат</h2>
+  <div id="result"></div>
+</div>
+
+<div class="card" id="tableCard">
+  <h2>Скорость → доза</h2>
+  <table>
+    <thead><tr><th>мл/ч</th><th id="doseHead"></th><th>хватит</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="hint" id="tableHint"></div>
+</div>
+
+<div class="card">
+  <h2>Важно</h2>
+  <ul class="notes" id="notes"></ul>
+  <p class="disclaimer">Расчёт для быстрой сверки у постели пациента. Не заменяет назначение врача
+  и инструкцию к препарату. Скорость и дозу титруют по клинике и шкалам боли и седации
+  (N-PASS, NIPS — в приложении «Шкалы»).</p>
+</div>
+
+<div class="bar">
+  <div id="bar1"><b>—</b><small></small></div>
+  <div id="bar2"><b>—</b><small></small></div>
+  <div id="bar3"><b>—</b><small></small></div>
+</div>
+
+<script>
+'use strict';
+const E = Dilution.makeEngine(window.SEDATION_DATA);
+const S = E.data;
+const $ = id => document.getElementById(id);
+const num = E.num;
+
+const MODES = [
+  ['dilute', 'До скольки развести'],
+  ['draw', 'Сколько набрать'],
+  ['check', 'Проверить шприц'],
+];
+
+const state = {drug: S.drugs[0].id, mode: 'dilute'};
+
+/* Поля, которые меняются при смене препарата, — заполняем значениями по умолчанию. */
+function defaults(){
+  const d = E.drugs[state.drug];
+  $('rate').value = num(d.rule[0]);
+  $('dose').value = E.doseText(d, d.rule[1]);
+  $('amount').value = num(E.ampAmount(d), 2);
+  $('volume').value = '20';
+  $('cur').value = '';
+  $('target').value = '';
+}
+
+function parse(id){
+  const raw = ($(id).value || '').trim().replace(',', '.').replace(/\s+/g, '');
+  if (!raw) return null;
+  const v = parseFloat(raw);
+  return isFinite(v) && v > 0 ? v : NaN;
+}
+
+function weightGrams(){
+  const v = parse('weight');
+  if (v === null || isNaN(v)) return v;
+  return v < 20 ? Math.round(v * 1000) : Math.round(v);   // «1,2» — это килограммы
+}
+
+function plural(n, one, few, many){
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b > 1 && b < 5) return few;
+  if (b === 1) return one;
+  return many;
+}
+
+/* «1 ампула (5 мг = 1 мл)» или «0,2 мл (1 мг)» — как врач это и говорит. */
+function amountPhrase(d, amount, drawMl){
+  const amp = E.ampAmount(d);
+  const n = amount / amp;
+  const whole = Math.abs(n - Math.round(n)) < 1e-6 && Math.round(n) >= 1;
+  const units = `${E.amountText(d, amount)} ${d.unit}`;
+  if (whole){
+    const k = Math.round(n);
+    return `${k} ${plural(k, 'ампула', 'ампулы', 'ампул')} (${units} = ${num(drawMl)} мл)`;
+  }
+  return `${num(drawMl)} мл (${units})`;
+}
+
+function hoursText(h){
+  if (!h || !isFinite(h)) return '—';
+  return h >= 72 ? `${num(h / 24, 0)} сут` : `${num(h, 0)} ч`;
+}
+
+/* ---------- построение интерфейса ---------- */
+function renderDrugs(){
+  $('drugs').innerHTML = '';
+  S.drugs.forEach(d => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = d.name;
+    b.setAttribute('aria-pressed', String(d.id === state.drug));
+    b.onclick = () => { state.drug = d.id; defaults(); renderStatic(); calc(); };
+    $('drugs').appendChild(b);
+  });
+}
+
+function renderModes(){
+  $('modes').innerHTML = '';
+  MODES.forEach(([id, label]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.setAttribute('aria-pressed', String(id === state.mode));
+    b.onclick = () => { state.mode = id; renderStatic(); calc(); };
+    $('modes').appendChild(b);
+  });
+}
+
+function chip(container, label, pressed, onclick){
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = label;
+  b.setAttribute('aria-pressed', String(!!pressed));
+  b.onclick = onclick;
+  container.appendChild(b);
+}
+
+function renderChips(){
+  const d = E.drugs[state.drug];
+  const rate = parse('rate'), dose = parse('dose'), amount = parse('amount'), volume = parse('volume');
+
+  $('rulePresets').innerHTML = '';
+  d.presets.forEach(([r, x]) => {
+    chip($('rulePresets'), `${num(r)} мл/ч = ${E.doseText(d, x)}`,
+      Math.abs(r - rate) < 1e-9 && Math.abs(x - dose) < 1e-9,
+      () => { $('rate').value = num(r); $('dose').value = E.doseText(d, x); calc(); });
+  });
+
+  $('amountChips').innerHTML = '';
+  d.amounts.forEach(a => {
+    const n = a / E.ampAmount(d);
+    const whole = Math.abs(n - Math.round(n)) < 1e-6 && n >= 1;
+    const label = whole
+      ? `${Math.round(n)} амп. · ${E.amountText(d, a)} ${d.unit}`
+      : `${E.amountText(d, a)} ${d.unit}`;
+    chip($('amountChips'), label, Math.abs(a - amount) < 1e-9,
+      () => { $('amount').value = num(a, 2); calc(); });
+  });
+
+  $('volumeChips').innerHTML = '';
+  if (state.mode === 'draw'){
+    [5, 10, 20, 50].forEach(v => chip($('volumeChips'), `${v} мл`, Math.abs(v - volume) < 1e-9,
+      () => { $('volume').value = String(v); calc(); }));
+  }
+}
+
+function renderStatic(){
+  const d = E.drugs[state.drug];
+  renderDrugs();
+  renderModes();
+  $('form').textContent = d.form;
+  document.querySelectorAll('[data-unit]').forEach(el => el.textContent = d.unit);
+  document.querySelectorAll('[data-dose-unit]').forEach(el => el.textContent = d.dose_unit);
+  $('doseHead').textContent = d.dose_unit;
+  $('target').placeholder = E.doseText(d, d.typical[0]);
+  $('ruleBox').hidden = state.mode === 'check';
+  $('amountBox').hidden = state.mode === 'draw';
+  $('volumeBox').hidden = state.mode === 'dilute';
+  $('checkBox').hidden = state.mode !== 'check';
+  $('amountLbl').textContent = state.mode === 'check' ? 'Сколько препарата в шприце' : 'Сколько препарата беру';
+  $('volumeLbl').textContent = state.mode === 'check' ? 'Развели до' : 'Хочу шприц на';
+  $('notes').innerHTML = d.notes.map(n => `<li>${n}</li>`).join('');
+}
+
+/* ---------- расчёт ---------- */
+function kv(label, value){
+  return `<div class="kv"><span>${label}</span><span>${value}</span></div>`;
+}
+function msg(kind, title, text){
+  return `<div class="msg ${kind}">${title ? `<b>${title}</b>` : ''}${text || ''}</div>`;
+}
+function setBar(i, value, label, flag){
+  const el = $('bar' + i);
+  el.className = flag ? 'flag-' + flag : '';
+  el.querySelector('b').textContent = value;
+  el.querySelector('small').textContent = label;
+}
+function clearOutput(text, kind){
+  $('result').innerHTML = msg(kind || 'info', '', text);
+  $('rows').innerHTML = '';
+  $('tableCard').hidden = true;
+  setBar(1, '—', ''); setBar(2, '—', ''); setBar(3, '—', '');
+}
+
+function calc(){
+  renderChips();
+  const d = E.drugs[state.drug];
+  const w = weightGrams();
+  if (w === null) return clearOutput('Введите массу ребёнка в граммах — например, 1200.');
+  if (isNaN(w) || w < 300 || w > 7000) return clearOutput('Масса — от 300 до 7000 г.', 'warn');
+
+  const rate = parse('rate'), dose = parse('dose');
+  const amount = parse('amount'), volume = parse('volume');
+  const cur = parse('cur'), target = parse('target');
+  const rule = [rate, dose];
+  const needRule = state.mode !== 'check';
+  if (needRule && (!rate || !dose || isNaN(rate) || isNaN(dose))) {
+    return clearOutput('Задайте правило: какая скорость (мл/ч) какой дозе соответствует.');
+  }
+
+  let p;
+  if (state.mode === 'dilute'){
+    if (!amount || isNaN(amount)) return clearOutput('Сколько препарата берёте?');
+    p = E.dilute(d, w, amount, rule);
+  } else if (state.mode === 'draw'){
+    if (!volume || isNaN(volume)) return clearOutput('На сколько мл шприц?');
+    p = E.draw(d, w, volume, rule);
+  } else {
+    if (!amount || isNaN(amount) || !volume || isNaN(volume)) {
+      return clearOutput('Сколько препарата в шприце и до скольки развели?');
+    }
+    p = E.check(d, w, amount, volume, isNaN(cur) ? null : cur, isNaN(target) ? null : target);
+  }
+
+  if (!p.ok){
+    clearOutput(p.error, 'danger');
+    return;
+  }
+
+  const kg = num(w / 1000, 3);
+  let html = '';
+  if (p.mode === 'dilute'){
+    html += `<div class="big">Развести до ${num(p.volume, 2)} мл<small>${amountPhrase(d, p.amount, p.draw_ml)} + ${num(p.diluent_ml, 2)} мл ${S.diluent}</small></div>`;
+  } else if (p.mode === 'draw'){
+    html += `<div class="big">Набрать ${num(p.draw_ml)} мл<small>Это ${E.amountText(d, p.amount)} ${d.unit}. Довести ${S.diluent} до ${num(p.volume, 2)} мл</small></div>`;
+  } else if (cur && !isNaN(cur)) {
+    /* Спросили про скорость, что стоит сейчас, — её и отвечаем первой, как в чате. */
+    html += `<div class="big">${num(cur)} мл/ч = ${E.doseText(d, E.doseAt(p, cur))} ${d.dose_unit}<small>${E.amountText(d, p.amount)} ${d.unit} в ${num(p.volume, 2)} мл · 1 мл/ч = ${E.doseText(d, p.per_rate)} ${d.dose_unit}</small></div>`;
+  } else {
+    html += `<div class="big">1 мл/ч = ${E.doseText(d, p.per_rate)} ${d.dose_unit}<small>${E.amountText(d, p.amount)} ${d.unit} в ${num(p.volume, 2)} мл, масса ${kg} кг</small></div>`;
+  }
+
+  html += '<div class="recipe">';
+  html += kv('Концентрация', `${num(p.conc, p.conc < 1 ? 3 : p.conc < 10 ? 2 : 1)} ${d.unit}/мл`);
+  if (p.rule){
+    const ok = Math.abs(p.rule_dose_actual - p.rule[1]) / p.rule[1] < 0.02;
+    html += kv('Проверка', `${num(p.rule[0])} мл/ч → ${E.doseText(d, p.rule_dose_actual)} ${d.dose_unit}${ok ? ' ✓' : ''}`);
+  }
+  if (p.mode === 'check'){
+    if (target && !isNaN(target)) html += kv(`Для ${E.doseText(d, target)} ${d.dose_unit}`, `${num(E.rateFor(p, target))} мл/ч`);
+  }
+  html += kv('Хватит на', `${hoursText(p.hours)} при ${num(p.work_rate)} мл/ч`);
+  html += kv('Шприц', p.syringe_ml ? `${p.syringe_ml} мл` : 'не влезает');
+  html += '</div>';
+
+  p.warnings.forEach(t => { html += msg('warn', '', t); });
+  if (p.alternative){
+    const a = p.alternative;
+    html += `<div class="msg info"><b>Удобнее: ${amountPhrase(d, a.amount, a.draw_ml)} до ${num(a.volume, 2)} мл</b>`
+      + `Та же концентрация, хватит на ${hoursText(a.hours)}. ${p.alternative_why}`
+      + `<br><button type="button" id="takeAlt">Взять этот вариант</button></div>`;
+  }
+  $('result').innerHTML = html;
+  const take = $('takeAlt');
+  if (take){
+    take.onclick = () => {
+      state.mode = 'dilute';
+      $('amount').value = num(p.alternative.amount, 2);
+      renderStatic(); calc();
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    };
+  }
+
+  /* таблица */
+  $('tableCard').hidden = false;
+  $('rows').innerHTML = p.rows.map(r => {
+    const cls = [r.typical ? 'typ' : '', r.over ? 'over' : '', r.current ? 'cur' : ''].join(' ').trim();
+    return `<tr class="${cls}"><td>${num(r.rate)}</td><td>${E.doseText(d, r.dose)}${r.over ? ' ⚠' : ''}</td><td>${hoursText(r.hours)}</td></tr>`;
+  }).join('');
+  $('tableHint').textContent =
+    `Подсвечен обычный диапазон: ${E.doseText(d, d.typical[0])}–${E.doseText(d, d.typical[1])} ${d.dose_unit}. `
+    + `⚠ — выше ${E.doseText(d, d.warn_above)}. «Хватит» — на сколько хватит шприца на этой скорости.`;
+
+  /* нижняя панель */
+  if (p.mode === 'dilute') setBar(1, `${num(p.volume, 2)} мл`, 'развести до', p.syringe_ml ? '' : 'warn');
+  else if (p.mode === 'draw') setBar(1, `${num(p.draw_ml)} мл`, 'набрать', p.draw_ml < S.min_draw_ml ? 'warn' : '');
+  else setBar(1, E.doseText(d, p.per_rate), '1 мл/ч =');
+  if (p.mode === 'check'){
+    const r = (cur && !isNaN(cur)) ? cur : p.work_rate;
+    const v = E.doseAt(p, r);
+    setBar(2, E.doseText(d, v), `на ${num(r)} мл/ч`, v > d.warn_above + 1e-9 ? 'warn' : '');
+  } else {
+    setBar(2, `${num(p.rule[0])} = ${E.doseText(d, p.rule[1])}`, d.dose_unit);
+  }
+  setBar(3, hoursText(p.hours), 'хватит на', p.hours < S.change_h / 2 ? 'warn' : '');
+}
+
+/* ---------- старт ---------- */
+['weight', 'rate', 'dose', 'amount', 'volume', 'cur', 'target'].forEach(id => $(id).addEventListener('input', calc));
+
+/* Параметры из ссылки бота: ?drug=fentanyl&w=1180&rate=0.1&dose=1&amount=100 */
+function fromQuery(){
+  const q = new URLSearchParams(location.search);
+  if (q.get('drug') && E.drugs[q.get('drug')]) state.drug = q.get('drug');
+  if (MODES.some(m => m[0] === q.get('mode'))) state.mode = q.get('mode');
+  defaults();
+  const put = (key, id) => { const v = q.get(key); if (v) $(id).value = v.replace('.', ','); };
+  put('w', 'weight'); put('rate', 'rate'); put('dose', 'dose'); put('amount', 'amount');
+  put('vol', 'volume'); put('cur', 'cur'); put('target', 'target');
+}
+
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg){
+  tg.ready();
+  tg.expand();
+  const p = tg.themeParams || {};
+  const set = (name, v) => v && document.documentElement.style.setProperty(name, v);
+  set('--bg',   p.secondary_bg_color);
+  set('--card', p.bg_color);
+  set('--text', p.text_color);
+  set('--muted', p.hint_color);
+  set('--accent', p.link_color);
+}
+
+fromQuery();
+renderStatic();
+calc();
+</script>
+</body>
+</html>
