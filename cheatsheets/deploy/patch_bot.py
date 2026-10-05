@@ -11,8 +11,9 @@
     2. меняет кнопку «🟡 Билирубин» на кнопку шкал;
     3. подключает scales_router ДО роутера, который ловит свободный текст;
     4. убирает /bili и /ozpk из меню команд и добавляет /scales;
-    5. ставит на клавиатуру кнопку «💉 Седация» под питанием, добавляет
-       /sed в меню команд и строку про седацию в стартовое сообщение.
+    5. ставит кнопку «💉 Седация» в ряд к кнопке шкал — к остальным
+       мини-приложениям, добавляет /sed в меню команд и строку про седацию
+       в стартовое сообщение.
        Сам калькулятор подключать не нужно: он вложен в cheatsheets_router.
 
 Чего НЕ делает: не трогает тексты справки и не удаляет твои обработчики.
@@ -43,12 +44,9 @@ SEDATION_MENU = ("💉 <b>Седация</b> · до скольки развес
                  "<code>/sed</code>\\n\\n")
 SEDATION_COMMAND = 'description="Седация: мидазолам, фентанил"'
 
-# Ряд клавиатуры с кнопкой питания — одной строкой: [KeyboardButton(...)],
+# Ряд клавиатуры с кнопкой питания, записанный одной строкой: [KeyboardButton(...)],
 RE_TPN_ROW = re.compile(
-    r"^(\s*)\[\s*(?:KeyboardButton\([^\]]*Парентеральное питание[^\]]*\)|tpn_button\([^\]]*\))\s*\]\s*,\s*$"
-)
-RE_SHEETS_ROW = re.compile(
-    r"^(\s*)\[\s*KeyboardButton\(\s*(?:text\s*=\s*)?[\"']📄 Шпаргалки[\"']\s*\).*\]\s*,\s*$"
+    r"^(\s*)\[.*(?:Парентеральное питание|tpn_button\().*\]\s*,?\s*(?:#.*)?$"
 )
 RE_STRING_LINE = re.compile(r'^\s*"[^"]*"\s*$')
 
@@ -274,31 +272,86 @@ def add_import(out: list, imp: str) -> None:
     note("✓", f"добавлен импорт: {imp}")
 
 
+def _call_end(line: str, open_paren: int) -> int | None:
+    """Индекс сразу за скобкой, закрывающей вызов, открытый в open_paren."""
+    depth = 0
+    for i in range(open_paren, len(line)):
+        if line[i] == "(":
+            depth += 1
+        elif line[i] == ")":
+            depth -= 1
+            if depth == 0:
+                return i + 1
+    return None
+
+
+def scales_slot(line: str) -> int | None:
+    """Позиция сразу за scales_button(...), если вызов стоит в ряду клавиатуры.
+
+    Ряд — это список [...], вызов builder.row(...)/.add(...) или отдельный
+    элемент многострочного списка. Присваивание «btn = scales_button()» не
+    трогаем: дописанная запятая превратила бы кнопку в кортеж.
+    """
+    m = re.search(r"\bscales_button\(", line)
+    if not m:
+        return None
+    end = _call_end(line, m.end() - 1)
+    if end is None or line[end:].lstrip()[:1] not in (",", "]", ")"):
+        return None
+    before = line[:m.start()]
+    in_list = before.rfind("[") > before.rfind("]")
+    in_call = (before.count("(") > before.count(")")
+               and re.search(r"\.(?:row|add|insert)\(", before) is not None)
+    alone = before.strip() == ""
+    return end if (in_list or in_call or alone) else None
+
+
 def patch_sedation(out: list) -> list:
-    """Кнопка калькулятора седации на клавиатуре."""
-    if any("sedation_button(" in l or SEDATION_LABEL in l for l in out):
-        note("·", f"кнопка «{SEDATION_LABEL}» уже на клавиатуре")
-    else:
-        spot = None
-        for i, line in enumerate(out):
-            m = RE_TPN_ROW.match(line)
-            if m:
-                spot = (i + 1, m.group(1), "под кнопкой питания")
-                break
-        if spot is None:
-            for i, line in enumerate(out):
-                m = RE_SHEETS_ROW.match(line)
-                if m:
-                    spot = (i, m.group(1), "над шпаргалками")
-                    break
-        if spot:
-            i, indent, where = spot
-            out.insert(i, f"{indent}[sedation_button()],\n")
-            note("✓", f"строка {i + 1}: кнопка «{SEDATION_LABEL}» поставлена {where}")
+    """Кнопка калькулятора седации — в ряд к кнопке шкал, к остальным приложениям.
+
+    Ряд со шкалами в файле есть наверняка: его ставит этот же скрипт.
+    Если его всё же нет — новым рядом под кнопкой питания.
+    """
+    rows = [i for i, line in enumerate(out) if scales_slot(line) is not None]
+    placed = [i for i, line in enumerate(out)
+              if "sedation_button(" in line and not RE_TOP_IMPORT.match(line.lstrip())]
+
+    if rows:
+        i = rows[0]
+        near = [j for j in placed if abs(j - i) <= 8]
+        if near:
+            note("·", f"кнопка «{SEDATION_LABEL}» уже среди приложений (строка {near[0] + 1})")
+            return out
+        if placed:
+            note("·", f"кнопка седации нашлась в строке {placed[0] + 1}, но не в той "
+                      "клавиатуре, что у /start, — ставлю и туда")
+        pos = scales_slot(out[i])
+        out[i] = out[i][:pos] + ", sedation_button()" + out[i][pos:]
+        note("✓", f"строка {i + 1}: кнопка «{SEDATION_LABEL}» встала в ряд к «{SCALES_LABEL}»")
+        add_import(out, SEDATION_IMPORT)
+        return out
+
+    if placed:
+        note("·", f"кнопка «{SEDATION_LABEL}» уже на клавиатуре (строка {placed[0] + 1})")
+        return out
+
+    for i, line in enumerate(out):
+        m = RE_TPN_ROW.match(line)
+        if m:
+            out.insert(i + 1, f"{m.group(1)}[sedation_button()],\n")
+            note("✓", f"строка {i + 2}: кнопка «{SEDATION_LABEL}» поставлена под кнопкой питания")
             add_import(out, SEDATION_IMPORT)
-        else:
-            note("!", f"не нашёл ряд клавиатуры для кнопки «{SEDATION_LABEL}» — "
-                      "калькулятор всё равно работает: /sed и «мидазолам 1200» в чате")
+            return out
+
+    note("!", f"не нашёл, куда поставить кнопку «{SEDATION_LABEL}». Калькулятор всё равно "
+              "работает: /sed и «мидазолам 1200» в чате. Пришли строки ниже — поставлю точечно:")
+    shown = 0
+    for i, line in enumerate(out):
+        if shown >= 15:
+            break
+        if any(k in line for k in ("KeyboardButton", "ReplyKeyboard", "Keyboard", "Шкалы", "Парентеральное")):
+            note(" ", f"{i + 1:>5}: {line.rstrip()}")
+            shown += 1
     return out
 
 

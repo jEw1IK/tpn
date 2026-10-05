@@ -60,8 +60,7 @@ def main_keyboard(chat_type: str = ChatType.PRIVATE) -> ReplyKeyboardMarkup:
         keyboard=[
             [KeyboardButton(text=SEARCH_TEXT)],
             [tpn],
-            [sedation],
-            [KeyboardButton(text=SHEETS_TEXT), scales],
+            [KeyboardButton(text=SHEETS_TEXT), scales, sedation],
             [KeyboardButton(text=ABOUT_TEXT), KeyboardButton(text=HELP_TEXT_BTN)],
         ],
         resize_keyboard=True,
