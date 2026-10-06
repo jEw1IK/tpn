@@ -15,6 +15,7 @@
     /shpory     15 шпаргалок в PDF
     /scales     мини-приложение со шкалами (nSOFA, NIPS, N-PASS)
     /tpn        калькулятор парентерального питания
+    /enteral    энтеральное питание: ккал, белок, углеводы на смесях
     /sed        седация: до скольки развести мидазолам и фентанил
     /materials  список шпаргалок ссылками
     /about      о проекте
@@ -26,6 +27,7 @@
     TPN_WEBAPP_URL      адрес калькулятора питания
     SCALES_WEBAPP_URL   адрес вкладки со шкалами
     SEDATION_WEBAPP_URL адрес калькулятора седации
+    ENTERAL_WEBAPP_URL  адрес анализа энтерального питания
     CHANNEL_URL         ссылка на канал; без неё команда /channel скрыта
 """
 from __future__ import annotations
@@ -77,6 +79,7 @@ COMMANDS = [
     BotCommand(command="shpory", description="Шпаргалки в PDF"),
     BotCommand(command="scales", description="Шкалы оценки"),
     BotCommand(command="tpn", description="Парентеральное питание"),
+    BotCommand(command="enteral", description="Энтеральное питание: ккал, белок"),
     BotCommand(command="sed", description="Седация: мидазолам, фентанил"),
     BotCommand(command="materials", description="Список шпаргалок"),
     BotCommand(command="about", description="О проекте"),
@@ -100,7 +103,7 @@ ABOUT = (
     "в каждой шпаргалке указан ID рекомендации и дата размещения, "
     "чтобы можно было проверить источник.\n\n"
     "{count} шпаргалки в PDF · {kr} рекомендаций в поиске · "
-    "калькулятор парентерального питания · разведение мидазолама и фентанила · "
+    "калькулятор парентерального питания · анализ энтерального питания · разведение мидазолама и фентанила · "
     "семь шкал: nSOFA, NEOMOD, Сарнат, NIPS, N-PASS, VIS.\n\n"
     "{credit}\n\n"
     "<i>Материалы для быстрой сверки у постели пациента. Не заменяют "

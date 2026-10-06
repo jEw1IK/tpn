@@ -85,11 +85,20 @@ async def main() -> None:
     check("📊 Шкалы" in labels, "на клавиатуре есть «Шкалы»")
     check(not any("илирубин" in b for b in labels), "билирубина на клавиатуре нет")
     web = [b for row in markup.keyboard for b in row if b.web_app]
-    check(len(web) == 3, "три кнопки открывают мини-приложения")
+    check(len(web) == 4, "четыре кнопки открывают мини-приложения")
     check(any(b.web_app.url.rstrip("/").endswith("scales") for b in web),
           "одна из них — приложение шкал")
     check(any(b.web_app.url.rstrip("/").endswith("sedation") for b in web),
           "и калькулятор седации")
+    check(any(b.web_app.url.rstrip("/").endswith("enteral") for b in web),
+          "и анализ энтерального питания")
+
+    await send(dp, bot, text_update("/enteral"))
+    out = bot.texts()
+    check(bool(out) and "Пепти Гастро" in out[0] and "ГА 1" in out[0],
+          "/enteral показывает состав четырёх смесей")
+    check(bot.calls[0].reply_markup.inline_keyboard[0][0].web_app is not None,
+          "/enteral открывает приложение кнопкой web_app")
 
     await send(dp, bot, text_update("/help"))
     out = bot.texts()
@@ -240,7 +249,7 @@ async def main() -> None:
     print("\nМеню команд")
     names = [c.command for c in COMMANDS]
     check("bili" not in names and "ozpk" not in names, "в меню нет удалённых команд")
-    check({"start", "search", "kr", "doza", "shpory", "scales", "tpn", "sed", "help"} <= set(names),
+    check({"start", "search", "kr", "doza", "shpory", "scales", "tpn", "sed", "enteral", "help"} <= set(names),
           "все основные команды в меню")
 
     print(f"\nПроверок: {checks}, провалов: {len(failures)}")

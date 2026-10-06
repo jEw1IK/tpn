@@ -27,7 +27,8 @@ cheatsheets/
 │   ├── vitals.json       ← среднее АД и другие референсы
 │   ├── ventilation.json  ← стартовые параметры ИВЛ
 │   ├── scales.json       ← nSOFA, NEOMOD, Сарнат, NIPS, N-PASS, VIS
-│   └── sedation.json     ← мидазолам и фентанил: ампулы, правила, диапазоны
+│   ├── sedation.json     ← мидазолам и фентанил: ампулы, правила, диапазоны
+│   └── enteral.json      ← смеси Нутрилон на 100 мл и нормы ESPGHAN / МР
 │
 ├── content/              ← ЗДЕСЬ ЖИВЁТ МЕДИЦИНСКИЙ ТЕКСТ
 │   ├── __init__.py       ← список модулей MODULES
@@ -52,6 +53,7 @@ cheatsheets/
 │   └── nginx-webapp.conf
 │
 ├── tests/
+│   ├── test_enteral.py      ← анализ энтерального питания на контрольных примерах
 │   ├── fake_bot.py          ← подставной Bot: ловит вызовы API
 │   ├── test_bot.py          ← прогон всех команд без сети и токена
 │   ├── test_dilution.py     ← разведения: бот и мини-приложение на одних примерах
@@ -69,6 +71,7 @@ cheatsheets/
     ├── search_router.py     ← роутер: /search, /kr, /doza, свободный текст
     ├── scales_router.py     ← роутер: /scales
     ├── sedation_router.py   ← роутер: /sed и «мидазолам 1200» (вложен в шпаргалки)
+    ├── enteral_router.py    ← роутер: /enteral (вложен в шпаргалки)
     ├── keyboard.py          ← клавиатура и кнопки мини-приложений
     ├── help_text.py         ← текст справки для /help
     └── standalone_bot.py    ← минимальный бот для проверки шпаргалок
@@ -79,6 +82,8 @@ cheatsheets/
 ../sedation/index.html    ← мини-приложение: до скольки развести мидазолам и фентанил
 ../sedation/dilution.js   ← тот же расчёт, что bot/dilution.py
 ../sedation/sedation.js   ← генерируется сборкой из data/sedation.json
+../enteral/index.html     ← мини-приложение: ккал, белок, углеводы на смесях
+../enteral/enteral.js     ← генерируется сборкой из data/enteral.json
 ```
 
 ---
@@ -352,6 +357,7 @@ python -m cheatsheets.bot.app
 | `/shpory` | разделы → шпаргалка PDF в чат |
 | `/scales`, `/tpn` | мини-приложение на нужной вкладке |
 | `/sed`, `мидазолам 468 0,1=0,03` | до скольки развести; без команды — тоже |
+| `/enteral` | анализ энтерального питания: ккал, белок, углеводы |
 | `/materials`, `/about`, `/help` | список ссылок, о проекте, справка |
 
 Переменные окружения: `BOT_TOKEN`, `TPN_WEBAPP_URL`, `SCALES_WEBAPP_URL`,

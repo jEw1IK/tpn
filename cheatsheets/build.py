@@ -31,6 +31,8 @@ SCALES_DATA = os.path.join(HERE, "data", "scales.json")
 SCALES_JS = os.path.join(REPO_ROOT, "scales", "scales.js")
 SEDATION_DATA = os.path.join(HERE, "data", "sedation.json")
 SEDATION_JS = os.path.join(REPO_ROOT, "sedation", "sedation.js")
+ENTERAL_DATA = os.path.join(HERE, "data", "enteral.json")
+ENTERAL_JS = os.path.join(REPO_ROOT, "enteral", "enteral.js")
 MANIFEST = os.path.join(HERE, "manifest.json")
 INDEX = os.path.join(HERE, "index.html")
 
@@ -196,6 +198,8 @@ footer{{color:var(--muted);font-size:11px;margin-top:26px;border-top:1px solid v
 <ul><li><a href="../scales/">📊 Шкалы: nSOFA, NEOMOD, Сарнат, NIPS, N-PASS, VIS</a>
 <div class='s'>Полиорганная дисфункция, стадия ГИЭ, боль и глубина седации —
 с подсчётом суммы и трактовкой.</div></li>
+<li><a href="../enteral/">🍼 Энтеральное питание: Нутрилон Пре 0, Пре 1, Пепти Гастро, ГА 1</a>
+<div class='s'>Калории, белок и углеводы на кг в сутки — и сравнение смесей на том же объёме.</div></li>
 <li><a href="../sedation/">💉 Седация: мидазолам и фентанил</a>
 <div class='s'>До скольки развести ампулу, чтобы нужная скорость давала нужную дозу.</div></li></ul>
 {"".join(rows)}
@@ -235,6 +239,20 @@ def write_sedation_js():
     return SEDATION_JS
 
 
+def write_enteral_js():
+    """Мини-приложению «Энтеральное питание» — состав смесей и нормы."""
+    with open(ENTERAL_DATA, encoding="utf-8") as f:
+        data = json.load(f)
+    os.makedirs(os.path.dirname(ENTERAL_JS), exist_ok=True)
+    with open(ENTERAL_JS, "w", encoding="utf-8") as f:
+        f.write("/* Файл создаётся автоматически: cheatsheets/build.py\n")
+        f.write("   Источник: cheatsheets/data/enteral.json — правьте его, не этот файл. */\n")
+        f.write("window.ENTERAL_DATA = ")
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write(";\n")
+    return ENTERAL_JS
+
+
 def main():
     ap = argparse.ArgumentParser(description="Сборка PDF-шпаргалок")
     ap.add_argument("only", nargs="*", help="собрать только эти id")
@@ -248,8 +266,9 @@ def main():
         write_index(entries, build_date)
         write_scales_js()
         write_sedation_js()
+        write_enteral_js()
         print(f"\nГотово: {len(entries)} PDF, manifest.json, index.html, "
-              f"scales/scales.js, sedation/sedation.js")
+              f"scales/scales.js, sedation/sedation.js, enteral/enteral.js")
     else:
         print(f"\nГотово: {len(entries)} PDF (manifest не трогали)")
 

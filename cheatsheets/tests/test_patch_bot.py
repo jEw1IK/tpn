@@ -13,7 +13,7 @@
 3. Второй прогон патча не должен менять ничего.
 
 Живой bot.py мог быть написан по-разному, поэтому всё это повторяется на
-пяти вариантах записи клавиатуры (VARIANTS).
+шести вариантах записи клавиатуры (VARIANTS).
 """
 from __future__ import annotations
 
@@ -69,7 +69,7 @@ async def main():
     kb = fake.calls[0].reply_markup.keyboard
     out["start_text"] = fake.texts()[0]
     out["buttons"] = [[b.text, b.web_app.url if b.web_app else None] for row in kb for b in row]
-    for text in ("мидазолам 1200", "фентанил 1180 0,1=1", "/sed", "желтуха"):
+    for text in ("мидазолам 1200", "фентанил 1180 0,1=1", "/sed", "/enteral", "желтуха"):
         fake.reset()
         await dp.feed_update(fake, update(text))
         out[text] = fake.texts()
@@ -145,7 +145,29 @@ def v_misplaced(text: str) -> str:
     return text.replace("MENU = (", "def old_kb():\n    return [\n        [sedation_button()],\n    ]\n\n\nMENU = (", 1)
 
 
+def v_rows_append(text: str) -> str:
+    """Как у живого бота сейчас: rows.append, седация уже стоит, /sed и строка в /start есть."""
+    text = text.replace("from cheatsheets.bot.keyboard import scales_button",
+                        "from cheatsheets.bot.keyboard import scales_button\n"
+                        "from cheatsheets.bot.keyboard import sedation_button")
+    text = text.replace(
+        '    "📊 <b>Шкалы</b> · nSOFA, NEOMOD, Сарнат, VIS: <code>/scales</code>\\n\\n"\n',
+        '    "📊 <b>Шкалы</b> · nSOFA, NEOMOD, Сарнат, VIS: <code>/scales</code>\\n\\n"\n'
+        '    "💉 <b>Седация</b> · до скольки развести мидазолам и фентанил: <code>/sed</code>\\n\\n"\n')
+    text = text.replace(
+        '        BotCommand(command="scales", description="Шкалы: nSOFA, NEOMOD, Сарнат, VIS"),\n',
+        '        BotCommand(command="scales", description="Шкалы: nSOFA, NEOMOD, Сарнат, VIS"),\n'
+        '        BotCommand(command="sed", description="Седация: мидазолам, фентанил"),\n')
+    return _swap_kb(text, """    rows = []
+    rows.append([KeyboardButton(text="🔎 Найти рекомендации")])
+    rows.append([KeyboardButton(text="🧬 Парентеральное питание", web_app=WebAppInfo(url=TPN_URL))])
+    rows.append([KeyboardButton(text="📄 Шпаргалки"), scales_button(), sedation_button()])
+    rows.append([KeyboardButton(text="ℹ️ О проекте"), KeyboardButton(text="❓ Помощь")])
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)""")
+
+
 VARIANTS = [
+    ("rows.append — как у живого бота сейчас", v_rows_append),
     ("как модель живого бота", lambda t: t),
     ("комментарии и «]» в адресе", v_comments),
     ("многострочные ряды", v_multiline),
@@ -178,6 +200,9 @@ def run_variant(name: str, transform) -> None:
         ok("from cheatsheets.bot.keyboard import sedation_button" in text, f"{name}: импорт кнопки")
         ok('command="sed"' in text, f"{name}: /sed в меню команд")
         ok("💉 <b>Седация</b>" in text, f"{name}: строка про седацию в /start")
+        ok("from cheatsheets.bot.keyboard import enteral_button" in text, f"{name}: импорт кнопки питания")
+        ok('command="enteral"' in text, f"{name}: /enteral в меню команд")
+        ok("🍼 <b>Энтеральное питание</b>" in text, f"{name}: строка про энтеральное питание в /start")
         ok("include_router(sedation_router)" not in text,
            f"{name}: sedation_router отдельно не подключается")
 
@@ -200,6 +225,20 @@ def run_variant(name: str, transform) -> None:
         ok(apps.index("💉 Седация") > apps.index("📊 Шкалы") if "💉 Седация" in apps and "📊 Шкалы" in apps else False,
            f"{name}: седация стоит среди приложений, рядом со шкалами")
         ok("💉" in res["start_text"] and "/sed" in res["start_text"], f"{name}: в /start есть седация")
+        ent = [b for b in res["buttons"] if b[0] == "🍼 Энтеральное питание"]
+        ok(len(ent) == 1 and bool(ent[0][1]) and ent[0][1].rstrip("/").endswith("enteral"),
+           f"{name}: ровно одна кнопка «🍼 Энтеральное питание», открывает приложение")
+        names = [b[0] for b in res["buttons"]]
+        tpn = next((i for i, n in enumerate(names) if "Парентеральное" in n), None)
+        if name == "многострочные ряды":
+            # Ряд с питанием разбит на строки — скопировать его нельзя, кнопка уходит к шкалам.
+            ok("📊 Шкалы" in names and names.index("🍼 Энтеральное питание") > names.index("📊 Шкалы"),
+               f"{name}: энтеральное встало в ряд к шкалам")
+        else:
+            ok(tpn is not None and names.index("🍼 Энтеральное питание") == tpn + 1,
+               f"{name}: энтеральное стоит сразу после парентерального")
+        ok(bool(res["/enteral"]) and "Пре 0" in res["/enteral"][0] and "79" in res["/enteral"][0],
+           f"{name}: /enteral показывает состав смесей")
         mid = res["мидазолам 1200"]
         ok(bool(mid) and "Развести до 41,7 мл" in mid[0],
            f"{name}: «мидазолам 1200» отвечает калькулятор, а не поиск")
@@ -207,7 +246,7 @@ def run_variant(name: str, transform) -> None:
         ok(bool(fen) and "Развести до 8,5 мл" in fen[0], f"{name}: «фентанил 1180 0,1=1» → до 8,5 мл")
         ok(bool(res["/sed"]) and "до скольки развести" in res["/sed"][0], f"{name}: /sed работает")
         ok(res["желтуха"] == ["KR: желтуха"], f"{name}: остальной текст уходит в поиск бота")
-        ok("sed" in res["commands"] and "scales" in res["commands"], f"{name}: /sed в меню при запуске")
+        ok({"sed", "scales", "enteral"} <= set(res["commands"]), f"{name}: /sed и /enteral в меню при запуске")
 
 
 def main() -> int:

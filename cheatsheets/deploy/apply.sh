@@ -71,6 +71,7 @@ rm -rf "$BOT_DIR/webapp"; mkdir -p "$BOT_DIR/webapp"
 cp -a "$STAGE/tpn/index.html" "$BOT_DIR/webapp/"
 cp -a "$STAGE/tpn/scales" "$BOT_DIR/webapp/scales"
 cp -a "$STAGE/tpn/sedation" "$BOT_DIR/webapp/sedation"
+cp -a "$STAGE/tpn/enteral" "$BOT_DIR/webapp/enteral"
 
 step "5. Правка bot.py"
 "$PY" "$BOT_DIR/cheatsheets/deploy/patch_bot.py" "$BOT_FILE" || {

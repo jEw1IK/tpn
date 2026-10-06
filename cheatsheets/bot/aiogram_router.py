@@ -182,6 +182,8 @@ async def cb_get(call: CallbackQuery) -> None:
 # --------------------------------------------------------------------------
 # Калькулятор седации — вложенный роутер
 # --------------------------------------------------------------------------
+from .enteral_router import enteral_router  # noqa: E402
 from .sedation_router import sedation_router  # noqa: E402
 
 cheatsheets_router.include_router(sedation_router)
+cheatsheets_router.include_router(enteral_router)

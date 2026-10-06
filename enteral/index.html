@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Энтеральное питание</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="enteral.js"></script>
+<script src="enteral-calc.js"></script>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --text:#14181f; --muted:#6b7280; --line:#e3e6ea;
+  --accent:#2f7ad6; --accent-soft:#eaf2fc;
+  --ok:#1c7c50; --ok-soft:#e6f4ec;
+  --warn:#9a6300; --warn-soft:#fdf3e0;
+  --danger:#b3261e; --danger-soft:#fdecea;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15181d; --card:#1e232b; --text:#e8eaed; --muted:#9aa3af; --line:#2c333d;
+    --accent:#63a6f0; --accent-soft:#1d2c3d;
+    --ok:#5fd39b; --ok-soft:#163024;
+    --warn:#e2b464; --warn-soft:#332818;
+    --danger:#f2877f; --danger-soft:#3a1d1b;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:12px 12px 112px;
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg); color:var(--text);
+  -webkit-text-size-adjust:100%;
+}
+h1{font-size:19px; margin:4px 0 14px}
+h2{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 10px}
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:12px}
+.hint{font-size:12px; color:var(--muted); margin-top:6px}
+
+.seg{display:flex; flex-wrap:wrap; gap:6px}
+.seg button{
+  flex:1 1 90px; padding:9px 6px; font-size:13px; line-height:1.25; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--muted);
+  border:1px solid var(--line); border-radius:9px;
+}
+.seg button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600}
+
+.field{margin-top:14px}
+.field:first-child{margin-top:0}
+.lbl{font-size:13px; font-weight:600; margin-bottom:6px}
+.eq{display:flex; align-items:center; flex-wrap:wrap; gap:8px}
+.eq input{
+  width:92px; padding:9px 10px; font-family:inherit; font-size:16px;
+  color:var(--text); background:var(--bg);
+  border:1px solid var(--line); border-radius:9px;
+  font-variant-numeric:tabular-nums;
+}
+.eq input.wide{width:120px}
+.eq input:focus{outline:none; border-color:var(--accent); background:var(--card)}
+.eq .unit{font-size:13px; color:var(--muted)}
+.eq .is{font-size:16px; color:var(--muted)}
+.chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.chips button{
+  padding:6px 10px; font-size:12px; font-family:inherit; cursor:pointer;
+  background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:999px;
+}
+.chips button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600}
+
+.big{font-size:24px; font-weight:700; line-height:1.2; font-variant-numeric:tabular-nums}
+.big small{display:block; font-size:13px; font-weight:400; color:var(--muted); margin-top:4px}
+.kv{display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--line); font-size:14px}
+.kv:last-child{border-bottom:none}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font-variant-numeric:tabular-nums; font-weight:600; text-align:right}
+.recipe{margin-top:12px}
+
+.msg{padding:9px 11px; border-radius:10px; font-size:13px; margin-top:8px; border:1px solid transparent}
+.msg.danger{background:var(--danger-soft); color:var(--danger); border-color:currentColor}
+.msg.warn{background:var(--warn-soft); color:var(--warn); border-color:currentColor}
+.msg.ok{background:var(--ok-soft); color:var(--ok); border-color:currentColor}
+.msg.info{background:var(--accent-soft); color:var(--accent); border-color:currentColor}
+.msg b{display:block; margin-bottom:2px}
+.msg button{
+  margin-top:8px; padding:7px 12px; font-size:13px; font-family:inherit; cursor:pointer;
+  background:var(--card); color:var(--accent); border:1px solid currentColor; border-radius:8px;
+}
+
+table{width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums}
+th{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; text-align:left; padding:0 6px 6px}
+td{padding:7px 6px; border-top:1px solid var(--line)}
+td:nth-child(2), th:nth-child(2){font-weight:600}
+td:last-child, th:last-child{text-align:right; color:var(--muted)}
+tr.typ td{background:var(--accent-soft)}
+tr.typ td:nth-child(2){color:var(--accent)}
+tr.over td:nth-child(2){color:var(--warn)}
+tr.cur td:first-child{font-weight:700}
+tr.cur td:first-child::after{content:" ◀"; color:var(--accent)}
+
+ul.notes{margin:0; padding-left:18px; font-size:13px}
+ul.notes li{margin-bottom:6px}
+.disclaimer{font-size:11px; color:var(--muted); line-height:1.5; margin:10px 0 0}
+
+.bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:10;
+  display:flex; gap:2px; align-items:center;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  background:var(--card); border-top:1px solid var(--line);
+}
+.bar div{flex:1; text-align:center; min-width:0}
+.bar b{display:block; font-size:18px; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.bar small{display:block; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+.bar .flag-warn b{color:var(--warn)}
+.bar .flag-danger b{color:var(--danger)}
+
+.mac{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px}
+.tile{border:1px solid var(--line); border-radius:12px; padding:10px 11px; background:var(--bg)}
+.tile .n{font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.15}
+.tile .u{font-size:12px; color:var(--muted)}
+.tile .t{font-size:11px; color:var(--muted); margin-top:4px}
+.tile .d{font-size:12px; margin-top:2px; font-variant-numeric:tabular-nums}
+.tile.ok{border-color:var(--ok)} .tile.ok .n{color:var(--ok)}
+.tile.low{border-color:var(--warn)} .tile.low .n{color:var(--warn)}
+.tile.high{border-color:var(--danger)} .tile.high .n{color:var(--danger)}
+.tile.key{grid-column:span 1}
+.sub{font-size:12px; color:var(--muted)}
+tr.sel td{background:var(--accent-soft)}
+td.low{color:var(--warn); font-weight:600} td.ok{color:var(--ok); font-weight:600} td.high{color:var(--danger); font-weight:600}
+.scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
+.scroll table{min-width:420px}
+</style>
+</head>
+<body>
+
+<h1>Энтеральное питание</h1>
+
+<div class="card">
+  <div class="lbl">Смесь</div>
+  <div class="seg" id="formulas"></div>
+  <div class="hint" id="formulaFor"></div>
+  <div class="field">
+    <div class="lbl"><label for="weight">Масса ребёнка</label></div>
+    <div class="eq"><input id="weight" class="wide" type="text" inputmode="decimal" autocomplete="off" placeholder="1200"><span class="unit">г</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="lbl">Объём</div>
+  <div class="eq">
+    <input id="feed" type="text" inputmode="decimal" autocomplete="off" placeholder="25"><span class="unit">мл ×</span>
+    <input id="feeds" type="text" inputmode="numeric" autocomplete="off" value="8"><span class="unit">кормлений</span>
+  </div>
+  <div class="eq" style="margin-top:8px">
+    <span class="unit">или сразу</span>
+    <input id="mlkg" type="text" inputmode="decimal" autocomplete="off" placeholder="150"><span class="unit">мл/кг/сут</span>
+  </div>
+  <div class="chips" id="volChips"></div>
+  <div class="field">
+    <div class="lbl">С чем сравнивать</div>
+    <div class="seg" id="targets"></div>
+    <div class="hint" id="targetSource"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Результат</h2>
+  <div id="result"></div>
+</div>
+
+<div class="card" id="analysisCard">
+  <h2>Анализ</h2>
+  <div id="analysis"></div>
+</div>
+
+<div class="card">
+  <h2 id="cmpTitle">Все смеси на этом объёме</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Смесь</th><th>ккал/кг</th><th>белок г/кг</th><th>углев. г/кг</th><th>белок г/100 ккал</th></tr></thead>
+    <tbody id="cmp"></tbody>
+  </table></div>
+  <div class="hint">Строка выбранной смеси подсвечена. Цвет — попадание в норму: зелёный — в норме, жёлтый — ниже, красный — выше.</div>
+</div>
+
+<div class="card">
+  <h2>Состав на 100 мл</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Смесь</th><th>ккал</th><th>белок</th><th>углев.</th><th>жиры</th></tr></thead>
+    <tbody id="per100"></tbody>
+  </table></div>
+  <div class="hint" id="per100Note"></div>
+  <p class="disclaimer">Цифры — по инструкциям производителя. Рецептуры обновляются: при расхождении
+  верна этикетка банки. Расчёт для сверки у постели, не заменяет назначение врача.</p>
+</div>
+
+<div class="bar">
+  <div id="bar1"><b>—</b><small>ккал/кг</small></div>
+  <div id="bar2"><b>—</b><small>белок г/кг</small></div>
+  <div id="bar3"><b>—</b><small>углев. г/кг</small></div>
+</div>
+
+<script>
+'use strict';
+const D = window.ENTERAL_DATA;
+const $ = id => document.getElementById(id);
+const fixed = (v, d) => (Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d).replace('.', ',');
+const num = (v, d = 1) => {
+  let t = (Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d);
+  if (t.indexOf('.') >= 0) t = t.replace(/0+$/, '').replace(/\.$/, '');
+  return t.replace('.', ',');
+};
+const state = {formula: D.formulas[0].id, target: null, volFrom: 'feed'};
+const F = () => D.formulas.find(f => f.id === state.formula);
+
+function parse(id){
+  const raw = ($(id).value || '').trim().replace(',', '.');
+  if (!raw) return null;
+  const v = parseFloat(raw);
+  return isFinite(v) && v > 0 ? v : NaN;
+}
+function weight(){
+  const v = parse('weight');
+  if (v === null || isNaN(v)) return v;
+  return v < 20 ? Math.round(v * 1000) : Math.round(v);
+}
+function seg(container, items, current, onPick){
+  container.innerHTML = '';
+  items.forEach(([id, label]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = label;
+    b.setAttribute('aria-pressed', String(id === current));
+    b.onclick = () => onPick(id);
+    container.appendChild(b);
+  });
+}
+function renderStatic(){
+  seg($('formulas'), D.formulas.map(f => [f.id, f.short]), state.formula,
+      id => { state.formula = id; renderStatic(); calc(); });
+  const f = F();
+  $('formulaFor').textContent = f.for + '. ' + f.protein_type + '.';
+  const tgt = state.target || autoTarget();
+  seg($('targets'), Object.entries(D.targets).map(([id, t]) => [id, t.label]), tgt,
+      id => { state.target = id; renderStatic(); calc(); });
+  $('targetSource').textContent = D.targets[tgt].source + (state.target ? '' : ' · выбрано по массе');
+  $('volChips').innerHTML = '';
+  [120, 150, 160, 180].forEach(v => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = v + ' мл/кг';
+    b.onclick = () => { $('mlkg').value = v; state.volFrom = 'mlkg'; calc(); };
+    $('volChips').appendChild(b);
+  });
+  $('per100').innerHTML = D.formulas.map(x =>
+    `<tr class="${x.id === state.formula ? 'sel' : ''}"><td>${x.short}</td><td>${num(x.kcal,0)}</td><td>${fixed(x.protein, 1)}</td><td>${fixed(x.carbs, 1)}</td><td>${fixed(x.fat, 1)}</td></tr>`).join('');
+  $('per100Note').textContent = `${f.name}: ${f.dilution}. Осмоляльность ${f.osmolality} мОсм/кг. ${f.source}.`;
+}
+function autoTarget(){
+  const w = weight();
+  return (w && !isNaN(w) && w >= 1800) ? 'term' : 'preterm';
+}
+
+const LABEL = {low: 'ниже нормы', ok: 'в норме', high: 'выше нормы'};
+function range(r, d = 1){ return r[0] === r[1] ? num(r[0], d) : `${num(r[0], d)}–${num(r[1], d)}`; }
+function tile(title, perKg, unit, dayText, key, t, digits){
+  const st = t.checks[key];
+  return `<div class="tile ${st}"><div class="t">${title}</div>
+    <div class="n">${key === 'protein' ? fixed(perKg, 1) : num(perKg, digits)}</div><div class="u">${unit}</div>
+    <div class="d">${dayText}</div>
+    <div class="t">норма ${range(t.target[key], digits)} · ${LABEL[st]}</div></div>`;
+}
+function setBar(i, value, st){
+  const el = $('bar' + i);
+  el.className = st === 'ok' ? '' : (st === 'low' ? 'flag-warn' : 'flag-danger');
+  el.querySelector('b').textContent = value;
+}
+function empty(text){
+  $('result').innerHTML = `<div class="msg info">${text}</div>`;
+  $('analysis').innerHTML = ''; $('cmp').innerHTML = '';
+  [1, 2, 3].forEach(i => setBar(i, '—', 'ok'));
+}
+
+function calc(){
+  renderStatic();
+  const w = weight();
+  if (w === null) return empty('Введите массу ребёнка в граммах.');
+  if (isNaN(w) || w < 300 || w > 7000) return empty('Масса — от 300 до 7000 г.');
+  const feeds = parse('feeds') || 8;
+  let perDay;
+  if (state.volFrom === 'mlkg') {
+    const mk = parse('mlkg');
+    if (!mk || isNaN(mk)) return empty('Укажите объём: разовый × кормлений или мл/кг/сут.');
+    perDay = mk * w / 1000;
+    $('feed').value = num(perDay / feeds, 1);
+  } else {
+    const one = parse('feed');
+    if (!one || isNaN(one)) return empty('Укажите объём: разовый × кормлений или мл/кг/сут.');
+    perDay = one * feeds;
+    $('mlkg').value = num(perDay / (w / 1000), 0);
+  }
+  const tgtId = state.target || autoTarget();
+  const T = D.targets[tgtId];
+  const r = Enteral.analyze(F(), w, perDay, T);
+  r.target = T;
+  const kg = w / 1000;
+
+  $('result').innerHTML =
+    `<div class="sub">${F().name} · ${num(perDay, 0)} мл/сут = ${num(r.per_kg.volume, 0)} мл/кг · ${num(perDay / feeds, 1)} мл × ${feeds}</div>
+     <div class="mac">
+       ${tile('Калории', r.per_kg.kcal, 'ккал/кг/сут', `${num(r.day.kcal, 0)} ккал в сутки`, 'kcal', r, 0)}
+       ${tile('Белок', r.per_kg.protein, 'г/кг/сут', `${fixed(r.day.protein, 1)} г в сутки`, 'protein', r, 1)}
+       ${tile('Углеводы', r.per_kg.carbs, 'г/кг/сут', `${num(r.day.carbs, 1)} г в сутки`, 'carbs', r, 1)}
+       ${tile('Жиры', r.per_kg.fat, 'г/кг/сут', `${num(r.day.fat, 1)} г в сутки`, 'fat', r, 1)}
+     </div>`;
+
+  /* анализ: что не так и как это исправить на этой смеси */
+  const out = [];
+  const need = r.need_ml_kg;
+  out.push(`<div class="kv"><span>Белок на 100 ккал</span><span>${num(r.protein_per_100kcal, 2)} г</span></div>`);
+  out.push(`<div class="kv"><span>Для ${num(T.kcal[0], 0)} ккал/кг нужно</span><span>${num(need.kcal, 0)} мл/кг</span></div>`);
+  out.push(`<div class="kv"><span>Для ${num(T.protein[0], 1)} г/кг белка нужно</span><span>${num(need.protein, 0)} мл/кг</span></div>`);
+  out.push(`<div class="kv"><span>Для ${num(T.carbs[0], 0)} г/кг углеводов нужно</span><span>${num(need.carbs, 0)} мл/кг</span></div>`);
+  const maxVol = T.volume[1];
+  if (r.checks.protein === 'low') {
+    if (need.protein > maxVol) {
+      const better = D.formulas.filter(x => x.protein / x.kcal * 100 > r.protein_per_100kcal + 0.2 && T.protein[0] / x.protein * 100 <= maxVol);
+      out.push(`<div class="msg warn"><b>Белка не хватит даже на ${maxVol} мл/кг</b>Нужно ${num(need.protein, 0)} мл/кг.`
+        + (better.length ? ` На смеси ${better.map(x => x.short).join(', ')} норма достигается в пределах ${maxVol} мл/кг.` : ' Нужна обогащённая смесь или фортификатор.')
+        + `</div>`);
+    } else {
+      out.push(`<div class="msg warn"><b>Белок ниже нормы</b>Поднимите объём до ${num(need.protein, 0)} мл/кг/сут (${num(need.protein * kg / feeds, 1)} мл × ${feeds}).</div>`);
+    }
+  }
+  if (r.checks.kcal === 'low' && r.checks.protein !== 'low') {
+    out.push(`<div class="msg warn"><b>Калорий меньше нормы</b>Для ${num(T.kcal[0], 0)} ккал/кг нужно ${num(need.kcal, 0)} мл/кг/сут (${num(need.kcal * kg / feeds, 1)} мл × ${feeds}).</div>`);
+  }
+  if (r.checks.volume === 'high') out.push(`<div class="msg danger"><b>Объём выше ${maxVol} мл/кг</b>Проверьте переносимость и водную нагрузку.</div>`);
+  if (r.checks.protein === 'high') out.push(`<div class="msg danger"><b>Белок выше нормы</b>Верхняя граница — ${num(T.protein[1], 1)} г/кг/сут.</div>`);
+  if (['kcal', 'protein', 'carbs'].every(k => r.checks[k] === 'ok')) out.push(`<div class="msg ok"><b>Калории, белок и углеводы в норме</b>${T.label}, ${T.source}.</div>`);
+  if (tgtId === 'preterm' && F().id === 'ha1') out.push(`<div class="msg info">ГА 1 рассчитана на доношенных: для недоношенного &lt; 1800 г белка в ней мало.</div>`);
+  if (tgtId === 'preterm' && F().id === 'pre1' && w < 1800) out.push(`<div class="msg info">По инструкции Пре 1 — для массы от 1800 г, до неё — Пре 0.</div>`);
+  $('analysis').innerHTML = out.join('');
+
+  /* сравнение всех смесей на этом объёме */
+  $('cmp').innerHTML = D.formulas.map(x => {
+    const a = Enteral.analyze(x, w, perDay, T);
+    return `<tr class="${x.id === state.formula ? 'sel' : ''}"><td>${x.short}</td>
+      <td class="${a.checks.kcal}">${num(a.per_kg.kcal, 0)}</td>
+      <td class="${a.checks.protein}">${fixed(a.per_kg.protein, 1)}</td>
+      <td class="${a.checks.carbs}">${num(a.per_kg.carbs, 1)}</td>
+      <td>${num(a.protein_per_100kcal, 2)}</td></tr>`;
+  }).join('');
+  $('cmpTitle').textContent = `Все смеси на ${num(r.per_kg.volume, 0)} мл/кг`;
+
+  setBar(1, num(r.per_kg.kcal, 0), r.checks.kcal);
+  setBar(2, fixed(r.per_kg.protein, 1), r.checks.protein);
+  setBar(3, num(r.per_kg.carbs, 1), r.checks.carbs);
+}
+
+$('feed').addEventListener('input', () => { state.volFrom = 'feed'; calc(); });
+$('mlkg').addEventListener('input', () => { state.volFrom = 'mlkg'; calc(); });
+['weight', 'feeds'].forEach(id => $(id).addEventListener('input', calc));
+
+const q = new URLSearchParams(location.search);
+if (q.get('f') && D.formulas.some(f => f.id === q.get('f'))) state.formula = q.get('f');
+if (q.get('w')) $('weight').value = q.get('w');
+if (q.get('mlkg')) { $('mlkg').value = q.get('mlkg'); state.volFrom = 'mlkg'; }
+
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg){
+  tg.ready(); tg.expand();
+  const p = tg.themeParams || {};
+  const set = (n, v) => v && document.documentElement.style.setProperty(n, v);
+  set('--bg', p.secondary_bg_color); set('--card', p.bg_color); set('--text', p.text_color);
+  set('--muted', p.hint_color); set('--accent', p.link_color);
+}
+calc();
+</script>
+</body>
+</html>

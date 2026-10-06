@@ -13,7 +13,9 @@
     4. убирает /bili и /ozpk из меню команд и добавляет /scales;
     5. ставит кнопку «💉 Седация» в ряд к кнопке шкал — к остальным
        мини-приложениям, добавляет /sed в меню команд и строку про седацию
-       в стартовое сообщение.
+       в стартовое сообщение;
+    6. ставит кнопку «🍼 Энтеральное питание» отдельным рядом под кнопкой
+       парентерального питания, добавляет /enteral в меню и строку в /start.
        Сам калькулятор подключать не нужно: он вложен в cheatsheets_router.
 
 Чего НЕ делает: не трогает тексты справки и не удаляет твои обработчики.
@@ -43,6 +45,11 @@ SEDATION_LABEL = "💉 Седация"
 SEDATION_MENU = ("💉 <b>Седация</b> · до скольки развести мидазолам и фентанил: "
                  "<code>/sed</code>\\n\\n")
 SEDATION_COMMAND = 'description="Седация: мидазолам, фентанил"'
+ENTERAL_IMPORT = "from cheatsheets.bot.keyboard import enteral_button"
+ENTERAL_LABEL = "🍼 Энтеральное питание"
+ENTERAL_MENU = ("🍼 <b>Энтеральное питание</b> · ккал, белок и углеводы на смесях: "
+                "<code>/enteral</code>\\n\\n")
+ENTERAL_COMMAND = 'description="Энтеральное питание: ккал, белок"'
 
 # Ряд клавиатуры с кнопкой питания, записанный одной строкой: [KeyboardButton(...)],
 RE_TPN_ROW = re.compile(
@@ -244,7 +251,7 @@ def patch(lines: list, menu_only: bool = False) -> list:
                   f"строках {', '.join(map(str, used))} — импорт не трогаю")
         note("!", "пока эти строки не убраны вручную, старый модуль должен "
                   "остаться на месте, иначе бот не запустится")
-        return patch_sedation_text(patch_texts(patch_rest(out, skip_imports=True)))
+        return patch_enteral_text(patch_sedation_text(patch_texts(patch_rest(out, skip_imports=True))))
 
     kept = []
     for i, line in enumerate(out, 1):
@@ -257,7 +264,7 @@ def patch(lines: list, menu_only: bool = False) -> list:
         kept.append(line)
     out = kept
 
-    return patch_sedation_text(patch_texts(patch_rest(out)))
+    return patch_enteral_text(patch_sedation_text(patch_texts(patch_rest(out))))
 
 
 def add_import(out: list, imp: str) -> None:
@@ -355,6 +362,71 @@ def patch_sedation(out: list) -> list:
     return out
 
 
+def tpn_row_copy(line: str) -> str | None:
+    """Копия однострочного ряда с кнопкой питания, где вместо неё — enteral_button().
+
+    Подходит для «[KeyboardButton(...)],», «rows.append([KeyboardButton(...)])»
+    и «kb.row(KeyboardButton(...))». Если ряд разбит на строки — None.
+    """
+    if "Парентеральное питание" not in line and "tpn_button(" not in line:
+        return None
+    span = None
+    for m in re.finditer(r"\b(?:KeyboardButton|tpn_button)\(", line):
+        end = _call_end(line, m.end() - 1)
+        if end and ("Парентеральное питание" in line[m.start():end]
+                    or line[m.start():].startswith("tpn_button(")):
+            span = (m.start(), end)
+            break
+    if not span:
+        return None
+    new = line[:span[0]] + "enteral_button()" + line[span[1]:]
+    new = re.sub(r"\s*#.*$", "", new.rstrip("\n")) + "\n"
+    if not re.search(r"[\[(]\s*enteral_button\(\)\s*[\])]", new):
+        return None
+    return new
+
+
+def patch_enteral(out: list) -> list:
+    """Кнопка энтерального питания — отдельным рядом под парентеральным."""
+    if any("enteral_button(" in l and not RE_TOP_IMPORT.match(l.lstrip()) for l in out):
+        note("·", f"кнопка «{ENTERAL_LABEL}» уже на клавиатуре")
+        return out
+    for i, line in enumerate(out):
+        copy = tpn_row_copy(line)
+        if copy:
+            out.insert(i + 1, copy)
+            note("✓", f"строка {i + 2}: кнопка «{ENTERAL_LABEL}» встала под парентеральным питанием")
+            add_import(out, ENTERAL_IMPORT)
+            return out
+    rows = [i for i, l in enumerate(out) if scales_slot(l) is not None]
+    if rows:
+        i = rows[0]
+        m = re.search(r"\bsedation_button\(\)", out[i])
+        pos = m.end() if m else scales_slot(out[i])
+        out[i] = out[i][:pos] + ", enteral_button()" + out[i][pos:]
+        note("✓", f"строка {i + 1}: кнопка «{ENTERAL_LABEL}» встала в ряд к шкалам")
+        add_import(out, ENTERAL_IMPORT)
+        return out
+    note("!", f"не нашёл, куда поставить кнопку «{ENTERAL_LABEL}» — приложение открывается "
+              "командой /enteral")
+    return out
+
+
+def patch_enteral_text(out: list) -> list:
+    """Строка про энтеральное питание в /start — под седацией или под шкалами."""
+    if any("🍼 <b>Энтеральное питание</b>" in l for l in out):
+        note("·", "строка про энтеральное питание в стартовом сообщении уже есть")
+        return out
+    for marker in ("💉 <b>Седация</b>", "📊 <b>Шкалы</b>"):
+        for i, line in enumerate(out):
+            if marker in line and RE_STRING_LINE.match(line.rstrip("\n")):
+                out.insert(i + 1, replace_inner(line, ENTERAL_MENU))
+                note("✓", f"строка {i + 2}: в стартовое сообщение добавлено энтеральное питание")
+                return out
+    note("·", "место для строки про энтеральное питание в /start не нашёл — не трогаю")
+    return out
+
+
 def patch_sedation_text(out: list) -> list:
     """Строка про седацию в стартовом сообщении — под строкой про шкалы.
 
@@ -446,6 +518,7 @@ def patch_rest(out: list, skip_imports: bool = False) -> list:
             note("✓", f"добавлен импорт: {imp}")
 
     out = patch_sedation(out)
+    out = patch_enteral(out)
     return patch_menu(out)
 
 
@@ -492,6 +565,24 @@ def patch_menu(out: list) -> list:
             note("✓", f"строка {idx + 2}: в меню добавлена команда /sed")
         else:
             note("!", "меню команд не нашёл — /sed добавь сам")
+
+    if any(re.search(r"[\"']enteral[\"']", l) for l in out):
+        note("·", "/enteral в меню уже есть")
+    else:
+        anchor = None
+        for key in ("sed", "scales", "tpn"):
+            anchor = next((l for l in out if "BotCommand" in l
+                           and re.search(rf"[\"']{key}[\"']", l)), None)
+            if anchor:
+                break
+        if anchor:
+            new = re.sub(r"([\"'])(sed|scales|tpn)\1", r"\1enteral\1", anchor, count=1)
+            new = re.sub(r'description\s*=\s*(["\']).*?\1', ENTERAL_COMMAND, new)
+            idx = out.index(anchor)
+            out.insert(idx + 1, new)
+            note("✓", f"строка {idx + 2}: в меню добавлена команда /enteral")
+        else:
+            note("!", "меню команд не нашёл — /enteral добавь сам")
 
     return out
 
