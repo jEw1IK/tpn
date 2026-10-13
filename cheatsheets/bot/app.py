@@ -14,7 +14,6 @@
     /doza       доза препарата, при желании — сразу в мг на массу
     /shpory     15 шпаргалок в PDF
     /scales     мини-приложение со шкалами (nSOFA, NIPS, N-PASS)
-    /tpn        калькулятор парентерального питания
     /enteral    энтеральное питание: ккал, белок, углеводы на смесях
     /sed        седация: до скольки развести мидазолам и фентанил
     /materials  список шпаргалок ссылками
@@ -24,7 +23,6 @@
 Настройки — через переменные окружения:
 
     BOT_TOKEN           токен от @BotFather (обязательно)
-    TPN_WEBAPP_URL      адрес калькулятора питания
     SCALES_WEBAPP_URL   адрес вкладки со шкалами
     SEDATION_WEBAPP_URL адрес калькулятора седации
     ENTERAL_WEBAPP_URL  адрес анализа энтерального питания
@@ -39,14 +37,13 @@ import sys
 
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ChatType, ParseMode
+from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandStart
 from aiogram.types import (
     BotCommand,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
-    WebAppInfo,
 )
 
 # Запуск как `python -m cheatsheets.bot.app` из любой директории.
@@ -58,7 +55,7 @@ from cheatsheets.bot.aiogram_router import (  # noqa: E402
 from cheatsheets.bot.brand import channel_url, credit_line  # noqa: E402
 from cheatsheets.bot.help_text import HELP_TEXT  # noqa: E402
 from cheatsheets.bot.keyboard import (  # noqa: E402
-    ABOUT_TEXT, HELP_TEXT_BTN, SEARCH_TEXT, SHEETS_TEXT, TPN_TEXT, TPN_URL,
+    ABOUT_TEXT, HELP_TEXT_BTN, SEARCH_TEXT, SHEETS_TEXT, TPN_TEXT,
     main_keyboard,
 )
 from cheatsheets.bot.scales_router import scales_router  # noqa: E402
@@ -78,7 +75,6 @@ COMMANDS = [
     BotCommand(command="doza", description="Доза препарата"),
     BotCommand(command="shpory", description="Шпаргалки в PDF"),
     BotCommand(command="scales", description="Шкалы оценки"),
-    BotCommand(command="tpn", description="Парентеральное питание"),
     BotCommand(command="enteral", description="Энтеральное питание: ккал, белок"),
     BotCommand(command="sed", description="Седация: мидазолам, фентанил"),
     BotCommand(command="materials", description="Список шпаргалок"),
@@ -103,7 +99,7 @@ ABOUT = (
     "в каждой шпаргалке указан ID рекомендации и дата размещения, "
     "чтобы можно было проверить источник.\n\n"
     "{count} шпаргалки в PDF · {kr} рекомендаций в поиске · "
-    "калькулятор парентерального питания · анализ энтерального питания · разведение мидазолама и фентанила · "
+    "анализ энтерального питания · разведение мидазолама и фентанила · "
     "семь шкал: nSOFA, NEOMOD, Сарнат, NIPS, N-PASS, VIS.\n\n"
     "{credit}\n\n"
     "<i>Материалы для быстрой сверки у постели пациента. Не заменяют "
@@ -160,23 +156,17 @@ async def cmd_channel(message: Message) -> None:
     )
 
 
+# Калькулятор ПП из бота убран. Команда и старая кнопка в уже открытых чатах
+# остаются без калькулятора: короткий ответ вместо случайного результата поиска.
 @main_router.message(Command("tpn", "pp", "питание"))
 @main_router.message(F.text == TPN_TEXT)
 async def cmd_tpn(message: Message) -> None:
-    # web_app работает только в личке; в группе даём обычную ссылку.
-    button = (
-        InlineKeyboardButton(text="🧬 Открыть калькулятор", web_app=WebAppInfo(url=TPN_URL))
-        if message.chat.type == ChatType.PRIVATE
-        else InlineKeyboardButton(text="🧬 Открыть калькулятор", url=TPN_URL)
-    )
     await message.answer(
-        "<b>Парентеральное питание</b>\n\n"
-        "Объёмы растворов, GIR, калораж и осмолярность по массе, "
-        "суткам жизни и заданной дотации. Предупреждает, если доза "
-        "вышла за рекомендованный диапазон.\n\n"
-        "Шкалы оценки — отдельной кнопкой: /scales.",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[button]]),
-        parse_mode=ParseMode.HTML,
+        "Калькулятор парентерального питания из бота убран. "
+        "Расчёт ПП будет в версии ПОСТ·НЕО для компьютера.\n\n"
+        "В боте остались шпаргалки (/shpory), шкалы (/scales), "
+        "энтеральное питание (/enteral) и разведение седации (/sed).",
+        reply_markup=main_keyboard(message.chat.type),
     )
 
 

@@ -78,6 +78,11 @@ async def main() -> None:
 
     print("\nКоманды")
     await send(dp, bot, text_update("/start"))
+    start_buttons = [b.text for row in bot.calls[0].reply_markup.keyboard for b in row]
+    check(not any("Парентеральное" in t for t in start_buttons),
+          "в клавиатуре /start нет калькулятора ПП")
+    check({"🍼 Энтеральное питание", "📊 Шкалы", "💉 Седация"} <= set(start_buttons),
+          "мини-приложения на клавиатуре остались")
     out = bot.texts()
     check(bool(out) and "ПОСТ·НЕО" in out[0], "/start отвечает приветствием")
     markup = bot.calls[0].reply_markup
@@ -85,7 +90,7 @@ async def main() -> None:
     check("📊 Шкалы" in labels, "на клавиатуре есть «Шкалы»")
     check(not any("илирубин" in b for b in labels), "билирубина на клавиатуре нет")
     web = [b for row in markup.keyboard for b in row if b.web_app]
-    check(len(web) == 4, "четыре кнопки открывают мини-приложения")
+    check(len(web) == 3, "три кнопки открывают мини-приложения: энтеральное, шкалы, седация")
     check(any(b.web_app.url.rstrip("/").endswith("scales") for b in web),
           "одна из них — приложение шкал")
     check(any(b.web_app.url.rstrip("/").endswith("sedation") for b in web),
@@ -113,8 +118,12 @@ async def main() -> None:
     check("jew1ik.github.io" in bot.texts()[0], "/materials даёт ссылки")
 
     await send(dp, bot, text_update("/tpn"))
-    check(bot.calls[0].reply_markup.inline_keyboard[0][0].web_app is not None,
-          "/tpn открывает калькулятор кнопкой web_app")
+    out = bot.texts()
+    check(bool(out) and "убран" in out[0] and "/scales" in out[0],
+          "/tpn отвечает, что калькулятора ПП больше нет, и показывает, что осталось")
+    tpn_kb = bot.calls[0].reply_markup
+    check(not any("Парентеральное" in b.text for row in getattr(tpn_kb, "keyboard", []) for b in row),
+          "/tpn не возвращает кнопку калькулятора")
 
     await send(dp, bot, text_update("/scales"))
     check("nSOFA" in bot.texts()[0], "/scales рассказывает про шкалы")
@@ -224,7 +233,7 @@ async def main() -> None:
         ("📊 Шкалы", "nSOFA"),
         ("ℹ️ О проекте", "ПОСТ·НЕО"),
         ("❓ Помощь", "ПОСТ·НЕО"),
-        ("🧬 Парентеральное питание", "Парентеральное питание"),
+        ("🧬 Парентеральное питание", "из бота убран"),  # старая кнопка в открытых чатах
     ]:
         await send(dp, bot, text_update(label))
         out = bot.texts()
@@ -249,8 +258,9 @@ async def main() -> None:
     print("\nМеню команд")
     names = [c.command for c in COMMANDS]
     check("bili" not in names and "ozpk" not in names, "в меню нет удалённых команд")
-    check({"start", "search", "kr", "doza", "shpory", "scales", "tpn", "sed", "enteral", "help"} <= set(names),
+    check({"start", "search", "kr", "doza", "shpory", "scales", "sed", "enteral", "help"} <= set(names),
           "все основные команды в меню")
+    check("tpn" not in names, "/tpn убран из меню команд")
 
     print(f"\nПроверок: {checks}, провалов: {len(failures)}")
     for f in failures:

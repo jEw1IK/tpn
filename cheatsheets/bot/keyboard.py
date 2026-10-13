@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Клавиатура бота: мини-приложения в один тап.
 
-Четыре мини-приложения, каждое своей кнопкой: парентеральное и энтеральное
-питание, седация и шкалы оценки. Открываются в один тап, без промежуточного сообщения
+Три мини-приложения, каждое своей кнопкой: энтеральное питание, седация
+и шкалы оценки. Калькулятор парентерального питания из бота убран. Открываются в один тап, без промежуточного сообщения
 «нажмите здесь».
 
     from cheatsheets.bot.keyboard import main_keyboard, scales_button
@@ -25,6 +25,8 @@ from .scales_router import WEBAPP_URL
 from .enteral_router import ENTERAL_URL
 from .sedation_router import SEDATION_URL
 
+# Калькулятор ПП убран. Адрес теперь ведёт на страницу со списком мини-приложений;
+# имя и tpn_button() оставлены, чтобы чужой bot.py с их импортом не упал на старте.
 TPN_URL = os.environ.get("TPN_WEBAPP_URL", "https://jew1ik.github.io/tpn/")
 
 DEFAULT_TEXT = "📊 Шкалы"
@@ -43,7 +45,10 @@ def scales_button(text: str = DEFAULT_TEXT, url: str = None) -> KeyboardButton:
 
 
 def tpn_button(text: str = TPN_TEXT, url: str = None) -> KeyboardButton:
-    """Кнопка, открывающая калькулятор парентерального питания."""
+    """Устарело: калькулятора ПП больше нет, кнопка открывает список мини-приложений.
+
+    Оставлена только для совместимости — в main_keyboard() её нет.
+    """
     return KeyboardButton(text=text, web_app=WebAppInfo(url=url or TPN_URL))
 
 
@@ -60,14 +65,12 @@ def enteral_button(text: str = ENTERAL_TEXT, url: str = None) -> KeyboardButton:
 def main_keyboard(chat_type: str = ChatType.PRIVATE) -> ReplyKeyboardMarkup:
     """Основная клавиатура. В группах — без web_app, иначе Telegram её отклонит."""
     private = chat_type == ChatType.PRIVATE
-    tpn = tpn_button() if private else KeyboardButton(text=TPN_TEXT)
     sedation = sedation_button() if private else KeyboardButton(text=SEDATION_TEXT)
     enteral = enteral_button() if private else KeyboardButton(text=ENTERAL_TEXT)
     scales = scales_button() if private else KeyboardButton(text=DEFAULT_TEXT)
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=SEARCH_TEXT)],
-            [tpn],
             [enteral],
             [KeyboardButton(text=SHEETS_TEXT), scales, sedation],
             [KeyboardButton(text=ABOUT_TEXT), KeyboardButton(text=HELP_TEXT_BTN)],
