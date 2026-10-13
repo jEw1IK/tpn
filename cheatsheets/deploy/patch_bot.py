@@ -16,9 +16,14 @@
        в стартовое сообщение;
     6. ставит кнопку «🍼 Энтеральное питание» отдельным рядом под кнопкой
        парентерального питания, добавляет /enteral в меню и строку в /start.
-       Сам калькулятор подключать не нужно: он вложен в cheatsheets_router.
+       Сам калькулятор подключать не нужно: он вложен в cheatsheets_router;
+    7. убирает кнопку «🧬 Парентеральное питание» с клавиатуры, /tpn из меню
+       команд и строки про калькулятор ПП из стартового сообщения и справки —
+       калькулятора ПП в боте больше нет. Если кнопки энтерального питания
+       ещё не было, она встаёт на место кнопки ПП.
 
-Чего НЕ делает: не трогает тексты справки и не удаляет твои обработчики.
+Чего НЕ делает: не переписывает справку целиком и не удаляет твои обработчики
+(в том числе обработчик старой кнопки ПП и константу с её адресом).
 Вместо этого показывает их в конце — чтобы решение принимал человек.
 
 Сначала снимает копию файла. Если после правок Python перестанет
@@ -73,6 +78,8 @@ RE_BUTTON = re.compile(r"KeyboardButton\(\s*(?:text\s*=\s*)?[\"']🟡\s*Били
 RE_INCLUDE_ANY = re.compile(r"^(\s*)(\w+)\.include_router\(\s*(\w+)\s*\)")
 RE_CMD_DROP = re.compile(r"[\"'](bili|ozpk)[\"']")
 RE_CMD_SHPORY = re.compile(r"[\"']shpory[\"']")
+RE_CMD_TPN = re.compile(r"[\"']tpn[\"']")
+TPN_LABEL = "🧬 Парентеральное питание"
 RE_TOP_IMPORT = re.compile(r"^(import|from)\s")
 
 # Роутеры, которые ловят свободный текст: scales_router должен идти раньше них,
@@ -107,6 +114,11 @@ TEXT_RULES = [
     ("inner", "🟡 <b>Билирубин</b>",
               "📊 <b>Шкалы</b> · nSOFA, NEOMOD, Сарнат, VIS: <code>/scales</code>\\n\\n"),
     ("sub", "калькулятор билирубина (/bili, /ozpk)", "шкалы оценки (/scales)"),
+    # Калькулятор ПП убран. "drop_str" удаляет строку, только если она — отдельная
+    # строковая константа: кусок большой строки скрипт не режет, а показывает в конце.
+    ("drop_str", "🧬 <b>Питание</b>"),
+    ("drop_str", "<b>4. Питание</b>"),
+    ("drop_str", "Калькулятор ПП."),
 ]
 
 
@@ -132,6 +144,14 @@ def patch_texts(out: list) -> list:
                 skip = True
                 dropped += 1
                 break
+            if kind == "drop_str":
+                if RE_STRING_LINE.match(new.rstrip("\n")):
+                    note("✓", f"строка {i}: убрана строка текста «{needle}»")
+                    skip = True
+                    dropped += 1
+                    break
+                note("!", f"строка {i}: «{needle}» внутри длинного текста — поправь сам")
+                continue
             if kind == "sub":
                 new = new.replace(needle, rule[2])
                 note("✓", f"строка {i}: текст «{needle[:40]}…» обновлён")
@@ -412,6 +432,104 @@ def patch_enteral(out: list) -> list:
     return out
 
 
+def _close(text: str, i: int) -> int | None:
+    """Индекс сразу за скобкой, закрывающей ту, что стоит в text[i]. Строки пропускаются."""
+    pairs = {"(": ")", "[": "]", "{": "}"}
+    stack, quote, j = [], None, i
+    while j < len(text):
+        c = text[j]
+        if quote:
+            if c == "\\":
+                j += 2
+                continue
+            if c == quote:
+                quote = None
+        elif c in "\"'":
+            quote = c
+        elif c == "#":
+            nl = text.find("\n", j)
+            j = len(text) if nl < 0 else nl
+            continue
+        elif c in pairs:
+            stack.append(pairs[c])
+        elif c in ")]}":
+            if not stack or stack.pop() != c:
+                return None
+            if not stack:
+                return j + 1
+        j += 1
+    return None
+
+
+def _line_bounds(text: str, start: int, end: int) -> tuple | None:
+    """Целые строки [start, end), если до start и после end на них только пробелы,
+    запятая, закрывающие скобки вызова и комментарий. Иначе None."""
+    ls = text.rfind("\n", 0, start) + 1
+    if text[ls:start].strip():
+        return None
+    le = text.find("\n", end)
+    le = len(text) if le < 0 else le + 1
+    tail = text[end:le].strip()
+    if not re.fullmatch(r"[,)]*\s*(#.*)?", tail):
+        return None
+    return ls, le
+
+
+def drop_tpn_button(out: list) -> list:
+    """Шаг 7: кнопки калькулятора ПП на клавиатуре быть не должно."""
+    text = "".join(out)
+    spans = []
+    for m in re.finditer(r"\b(?:KeyboardButton|tpn_button)\(", text):
+        end = _close(text, m.end() - 1)
+        if not end:
+            continue
+        call = text[m.start():end]
+        if "Парентеральное питание" not in call and not call.startswith("tpn_button("):
+            continue
+        spans.append((m.start(), end))
+    if not spans:
+        note("·", f"кнопки «{TPN_LABEL}» на клавиатуре нет")
+        return out
+
+    for start, end in reversed(spans):
+        lineno = text.count("\n", 0, start) + 1
+        left = text[:start].rstrip()
+        # 1) единственная кнопка ряда: [CALL] / rows.append([CALL]) / kb.row(CALL)
+        whole = None
+        if left.endswith("["):
+            lb = len(left) - 1
+            rb = _close(text, lb)
+            if rb and text[lb + 1:rb - 1].strip().rstrip(",").strip() == text[start:end]:
+                head = text[:lb].rstrip()
+                if head.endswith("append(") or head.endswith(".row("):
+                    stmt = head.rfind("\n") + 1
+                    whole = _line_bounds(text, stmt, rb) if text[stmt:lb].strip() else None
+                else:
+                    whole = _line_bounds(text, lb, rb)
+        elif re.search(r"\.(?:row|add)\($", left):
+            lp = len(left) - 1
+            rp = _close(text, lp)
+            if rp and text[lp + 1:rp - 1].strip().rstrip(",").strip() == text[start:end]:
+                stmt = text.rfind("\n", 0, lp) + 1
+                whole = _line_bounds(text, stmt, rp)
+        if whole:
+            text = text[:whole[0]] + text[whole[1]:]
+            note("✓", f"строка {lineno}: убран ряд с кнопкой «{TPN_LABEL}»")
+            continue
+        # 2) кнопка в ряду с другими — убираем её и соседнюю запятую
+        after = re.match(r"\s*,\s*", text[end:])
+        before = re.search(r",\s*$", text[:start])
+        if after:
+            text = text[:start] + text[end + after.end():]
+        elif before:
+            text = text[:before.start()] + text[end:]
+        else:
+            note("!", f"строка {lineno}: кнопку «{TPN_LABEL}» убрать не смог — убери сам")
+            continue
+        note("✓", f"строка {lineno}: кнопка «{TPN_LABEL}» убрана из ряда")
+    return text.splitlines(keepends=True)
+
+
 def patch_enteral_text(out: list) -> list:
     """Строка про энтеральное питание в /start — под седацией или под шкалами."""
     if any("🍼 <b>Энтеральное питание</b>" in l for l in out):
@@ -519,6 +637,7 @@ def patch_rest(out: list, skip_imports: bool = False) -> list:
 
     out = patch_sedation(out)
     out = patch_enteral(out)
+    out = drop_tpn_button(out)
     return patch_menu(out)
 
 
@@ -584,7 +703,12 @@ def patch_menu(out: list) -> list:
         else:
             note("!", "меню команд не нашёл — /enteral добавь сам")
 
-    return out
+    kept = [l for l in out if not (RE_CMD_TPN.search(l) and "BotCommand" in l)]
+    if len(kept) != len(out):
+        note("✓", f"из меню команд убрана /tpn (строк: {len(out) - len(kept)})")
+    else:
+        note("·", "/tpn в меню команд нет")
+    return kept
 
 
 def show_fragments(lines: list) -> None:
@@ -592,14 +716,15 @@ def show_fragments(lines: list) -> None:
     marks = []
     for i, line in enumerate(lines, 1):
         low = line.lower()
-        if "билирубин" in low or "/bili" in low or "/ozpk" in low or "озпк" in low:
+        if ("билирубин" in low or "/bili" in low or "/ozpk" in low or "озпк" in low
+                or "парентерал" in low or "tpn" in low or "калькулятор пп" in low):
             marks.append(i)
     if not marks:
-        print("\nУпоминаний билирубина в файле не осталось.")
+        print("\nУпоминаний билирубина и калькулятора ПП в файле не осталось.")
         return
 
     print("\n" + "─" * 60)
-    print("ОСТАЛОСЬ В ТЕКСТАХ — это правит человек, не скрипт:")
+    print("ОСТАЛОСЬ В ТЕКСТАХ И КОДЕ — это правит человек, не скрипт:")
     print("─" * 60)
     printed = set()
     for n in marks:
