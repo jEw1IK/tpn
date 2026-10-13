@@ -90,7 +90,7 @@ cat <<'TXT'
 
    Кнопки мини-приложений для реплай-клавиатуры:
 
-       from cheatsheets.bot.keyboard import scales_button, tpn_button
+       from cheatsheets.bot.keyboard import scales_button, sedation_button, enteral_button
 
    Справка /help — готовым текстом:
 
@@ -101,8 +101,9 @@ cat <<'TXT'
 
 Адреса мини-приложений задаются переменными окружения:
 
-    TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/
     SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/scales/
+    SEDATION_WEBAPP_URL=https://jew1ik.github.io/tpn/sedation/
+    ENTERAL_WEBAPP_URL=https://jew1ik.github.io/tpn/enteral/
 
 После этого перезапусти бота. Проверка: /shpory, /scales, /search желтуха
 ────────────────────────────────────────────────────────────

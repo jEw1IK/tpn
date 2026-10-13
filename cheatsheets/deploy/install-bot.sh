@@ -58,7 +58,6 @@ else
     umask 077
     cat > "$ENV_FILE" <<ENV
 BOT_TOKEN=$TOKEN
-TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/
 SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/scales/
 SEDATION_WEBAPP_URL=https://jew1ik.github.io/tpn/sedation/
 ENTERAL_WEBAPP_URL=https://jew1ik.github.io/tpn/enteral/
