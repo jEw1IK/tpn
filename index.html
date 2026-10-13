@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Парентеральное питание</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="enteral/enteral.js"></script>
+<script src="pn-calc.js"></script>
 <style>
 :root{
   --bg:#f4f5f7; --card:#ffffff; --text:#14181f; --muted:#6b7280; --line:#e3e6ea;
@@ -90,6 +92,7 @@ td.sub{color:var(--muted); font-size:12px; padding-top:0; border-bottom:none}
 details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px 0}
 .mix{font-size:13px; margin-top:8px; padding:9px 11px; background:var(--accent-soft); border-radius:10px; color:var(--text)}
 .mix b{font-variant-numeric:tabular-nums}
+.target-only{opacity:.55}
 </style>
 </head>
 <body>
@@ -145,13 +148,7 @@ details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px
   <div class="row">
     <div class="f">
       <label for="entType">Чем кормим</label>
-      <select id="entType">
-        <option value="breast">Грудное молоко</option>
-        <option value="fortified">Грудное молоко + фортификатор</option>
-        <option value="preterm">Смесь для недоношенных</option>
-        <option value="standard">Стандартная смесь</option>
-        <option value="custom">Своё значение</option>
-      </select>
+      <select id="entType"></select>
     </div>
     <div class="f">
       <label for="enteral">Объём, мл/кг/сут</label>
@@ -168,7 +165,8 @@ details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px
       <input id="entKcal" type="number" inputmode="decimal" step="1" min="0" max="120" value="68">
     </div>
   </div>
-  <div class="hint">Значения подставляются по выбору, но их можно править — состав продуктов различается.</div>
+  <div class="hint" id="entSource"></div>
+  <div class="hint">Состав подставляется из общего справочника (тот же, что в разделе «Энтеральное питание»). Правка вручную переводит выбор на пользовательский состав.</div>
 </div>
 
 <div class="card">
@@ -258,7 +256,7 @@ details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px
       <label for="kSol">Препарат</label>
       <select id="kSol">
         <option value="1.0">KCl 7,5 % (1,0 ммоль/мл)</option>
-        <option value="0.53">KCl 4 % (0,53 ммоль/мл)</option>
+        <option value="0.537">KCl 4 % (0,54 ммоль/мл)</option>
       </select>
     </div>
   </div>
@@ -275,6 +273,7 @@ details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px
       </select>
     </div>
   </div>
+  <div class="hint">ммоль/мл зависит от формы соли в инструкции к ампуле: CaCl₂·2H₂O 100 мг/мл ≈ 0,68; CaCl₂·6H₂O 100 мг/мл ≈ 0,46. Расчёт идёт по значению в скобках — сверьте с ампулой.</div>
 </div>
 
 <div class="card">
@@ -285,7 +284,7 @@ details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px
     </thead>
     <tbody id="volumes"></tbody>
     <tfoot>
-      <tr><td>Итого ПП</td><td class="num" id="totalMl">—</td><td class="num" id="totalRate">—</td></tr>
+      <tr><td id="totalLabel">Итого ПП</td><td class="num" id="totalMl">—</td><td class="num" id="totalRate">—</td></tr>
     </tfoot>
   </table>
   <div class="hint" style="margin-top:8px">Скорость — из расчёта равномерной инфузии за 24 часа.</div>
@@ -300,6 +299,11 @@ details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px
 <div class="card" id="checksCard">
   <h2>Проверки</h2>
   <div id="checks"></div>
+  <div class="hint" style="margin-top:10px; line-height:1.5" id="limitsNote">
+    <b>Ограничения расчёта.</b> Фосфаты, магний, микроэлементы, витамины и гепарин в расчёт не входят;
+    совместимость Ca–P калькулятор не проверяет — проверьте её отдельно по протоколу отделения.
+    Осмолярность — расчётная оценка по коэффициентам, не измерение и не подтверждение безопасности смеси.
+  </div>
 </div>
 
 <details class="card">
@@ -323,42 +327,66 @@ details summary{cursor:pointer; font-size:13px; color:var(--accent); padding:4px
 <script>
 "use strict";
 
-/* ---------- Пороговые значения (правьте под протокол отделения) ---------- */
-const LIMITS = {
-  gir:        { min: 4,   max: 12,  hardMax: 14 },   // мг/кг/мин
-  protein:    { min: 1.5, max: 4.0 },                // г/кг/сут, суммарно
-  lipid:      { max: 4.0 },                          // г/кг/сут
-  kcalPerKg:  { min: 90,  max: 120 },                // ккал/кг/сут, суммарно
-  gluPeriph:  12.5,                                  // % глюкозы в периферию
-  gluStockMax: 40,                                   // % — самый концентрированный раствор
-  osmPeriph:  900,                                   // мосм/л в периферию
-  npcPerN:    { min: 100, max: 200 }                 // небелковые ккал на 1 г азота
-};
-
-/* ---------- Состав энтерального питания, на 100 мл ---------- */
-const ENTERAL = {
-  breast:    { protein: 1.0, kcal: 68, label: 'Грудное молоко' },
-  fortified: { protein: 2.0, kcal: 81, label: 'Грудное молоко + фортификатор' },
-  preterm:   { protein: 2.4, kcal: 80, label: 'Смесь для недоношенных' },
-  standard:  { protein: 1.4, kcal: 67, label: 'Стандартная смесь' }
-};
-
-/* ---------- Энергетические коэффициенты ---------- */
-const KCAL_AA = 4.0;          // ккал/г аминокислот
-const KCAL_GLU = 3.4;         // ккал/г глюкозы (моногидрат)
-const KCAL_ML_LIPID = { 20: 2.0, 10: 1.1 };  // ккал/мл эмульсии
-const N_PER_PROTEIN = 6.25;   // г белка на 1 г азота
-const HOURS = 24;             // инфузия рассчитана на сутки
-
-/* Осмолярный вклад, мосм на единицу */
-const OSM = { gluPerGram: 5.55, aaPerGram: 10, na: 2, k: 2, ca: 3 };
-
+/* Расчёт — pn-calc.js, состав питания — enteral/enteral.js (из cheatsheets/data/enteral.json).
+   Здесь только чтение полей и отрисовка. */
 const $ = id => document.getElementById(id);
-const val = id => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : 0; };
-const fmt = (v, d = 1) => Number.isFinite(v) ? v.toFixed(d).replace('.', ',') : '—';
+const fmt = PN.fmt;
+const L = PN.LIMITS;
 
 let access = 'central';
 let gluMode = 'gir';
+
+/* ---------- Справочник энтерального питания ---------- */
+const ENT = PN.enteralOptions(window.ENTERAL_DATA);
+const entById = id => ENT.find(e => e.id === id);
+(function buildEntSelect(){
+  const sel = $('entType');
+  const group = (label, items) => {
+    if (!items.length) return;
+    const g = document.createElement('optgroup');
+    g.label = label;
+    items.forEach(e => g.append(new Option(e.name, e.id)));
+    sel.append(g);
+  };
+  group('Смеси — справочник', ENT.filter(e => e.kind === 'product'));
+  group('Ориентиры — не конкретный продукт', ENT.filter(e => e.kind === 'generic'));
+  sel.append(new Option('Своё значение — пользовательский состав', 'custom'));
+  sel.value = entById('breast') ? 'breast' : 'custom';
+})();
+
+function showEntSource(){
+  const e = entById($('entType').value);
+  let t;
+  if (!window.ENTERAL_DATA) t = 'Справочник состава не загрузился — доступен только пользовательский состав.';
+  else if (!e) t = 'Пользовательский состав: значения введены вручную и ни с каким продуктом не сверены.';
+  else {
+    const v = e.verified || {};
+    const when = v.date ? ' ' + v.date.split('-').reverse().join('.') : '';
+    t = (e.kind === 'product'
+          ? `${e.name} · на 100 мл готовой смеси${e.dilution ? ' · ' + e.dilution : ''}`
+          : `${e.name}: обобщённое значение, не конкретный продукт`) +
+        ` · сверка${when}: ${v.status || 'нет данных'}`;
+  }
+  $('entSource').textContent = t;
+}
+
+/* Выбор продукта подставляет его состав */
+$('entType').addEventListener('change', () => {
+  const e = entById($('entType').value);
+  if (e){ $('entProtein').value = e.protein; $('entKcal').value = e.kcal; }
+  showEntSource();
+});
+/* Ручная правка состава — это уже не продукт из справочника */
+['entProtein', 'entKcal'].forEach(id => $(id).addEventListener('input', () => {
+  const e = entById($('entType').value);
+  if (!e) return;
+  const p = PN.parseNumber($('entProtein').value), k = PN.parseNumber($('entKcal').value);
+  if (!(p.ok && k.ok && Math.abs(p.value - e.protein) < 1e-9 && Math.abs(k.value - e.kcal) < 1e-9)){
+    $('entType').value = 'custom';
+    showEntSource();
+  }
+}));
+showEntSource();
 
 /* ---------- Сегментированные переключатели ---------- */
 function initSeg(containerId, onChange){
@@ -379,247 +407,141 @@ initSeg('gluMode', v => {
   calc();
 });
 
-/* Выбор продукта подставляет типовой состав, дальше его можно править вручную */
-$('entType').addEventListener('change', () => {
-  const preset = ENTERAL[$('entType').value];
-  if (preset){
-    $('entProtein').value = preset.protein;
-    $('entKcal').value = preset.kcal;
-  }
-  calc();
-});
-
-/* ---------- Ориентир по объёму жидкости ---------- */
-function fluidHint(ga, dol){
-  const preterm = ga < 37;
-  let range;
-  if (dol <= 0)      range = preterm ? '70–90'   : '60–80';
-  else if (dol === 1) range = preterm ? '90–110' : '70–90';
-  else if (dol === 2) range = preterm ? '110–130': '80–100';
-  else if (dol === 3) range = preterm ? '130–150': '100–120';
-  else if (dol <= 6)  range = preterm ? '140–160': '120–150';
-  else                range = '140–170';
-  return `Ориентир для ${preterm ? 'недоношенного' : 'доношенного'} на ${dol} сут: ${range} мл/кг/сут`;
+/* ---------- Чтение полей ---------- */
+function readRaw(){
+  const raw = { access, gluMode };
+  Object.keys(PN.FIELDS).forEach(name => {
+    const el = $(name);
+    raw[name] = { value: el.value, badInput: !!(el.validity && el.validity.badInput) };
+  });
+  Object.keys(PN.SOLUTIONS).forEach(name => { raw[name] = $(name).value; });
+  return raw;
 }
 
-/* ---------- Подбор смеси из двух исходных растворов глюкозы ---------- */
-function glucoseMix(volume, targetPct){
-  const stocks = [[5, 40], [10, 40], [5, 20], [10, 20]];
-  for (const [low, high] of stocks){
-    if (targetPct >= low && targetPct <= high){
-      const vHigh = volume * (targetPct - low) / (high - low);
-      return { low, high, vLow: volume - vHigh, vHigh };
-    }
-  }
-  return null;
+const kv = (rows, totalIdx) => rows.map(([k, v], i) =>
+  `<div class="kv${i === totalIdx ? ' total' : ''}"><span>${k}</span><span>${v}</span></div>`).join('');
+const msgs = list => list.map(c => `<div class="msg ${c.level}">${c.text}</div>`).join('');
+
+function setBar(id, value, level){
+  const el = $(id);
+  el.querySelector('b').textContent = value;
+  el.className = level ? 'flag-' + level : '';
+}
+
+/* Некорректный ввод: прежние результаты убираются целиком */
+function clearResults(errors){
+  $('proteinSplit').innerHTML = '';
+  $('volumes').innerHTML = '';
+  $('volumes').closest('table').classList.remove('target-only');
+  $('totalLabel').textContent = 'Итого ПП';
+  $('totalMl').textContent = '—';
+  $('totalRate').textContent = '—';
+  $('mixBox').innerHTML = '';
+  $('energy').innerHTML = '';
+  $('energy').classList.remove('target-only');
+  ['barKcal', 'barGir', 'barGlu', 'barOsm'].forEach(id => setBar(id, '—', null));
+  $('checks').innerHTML = msgs([{ level: 'danger',
+      text: 'Расчёт не выполнен — исправьте ввод. Результаты не показываются, пока данные некорректны.' }]
+    .concat(errors.map(e => ({ level: 'danger', text: e.text }))));
 }
 
 /* ---------- Основной расчёт ---------- */
 function calc(){
-  const weightG = val('weight');
-  const weight  = weightG / 1000;              // кг
-  const ga      = val('ga');
-  const dol     = val('dol');
-  $('fluidHint').textContent = fluidHint(ga, dol);
+  const val = PN.validate(readRaw());
+  const ga = val.values.ga, dol = val.values.dol;
+  $('fluidHint').textContent = PN.fluidHint(ga, dol) ||
+    (val.notes.length ? val.notes.map(n => n.text).join('; ') : '');
+  if (!val.ok){ clearResults(val.errors); return; }
 
-  if (weight <= 0) return;
+  const r = PN.compute(val.values);
+  const ok = r.status === 'ok';
+  const tag = ok ? '' : ' (цель)';
 
-  const totalMl   = val('fluid')   * weight;
-  const enteralMl = val('enteral') * weight;
-  const otherMl   = val('other')   * weight;
-  const pnBudget  = totalMl - enteralMl - otherMl;   // объём, доступный для ПП
-
-  /* Энтеральный вклад */
-  const entProteinG = enteralMl * val('entProtein') / 100;   // г/сут
-  const entKcal     = enteralMl * val('entKcal') / 100;      // ккал/сут
-  const entProteinPerKg = entProteinG / weight;
-
-  /* Белок: цель общая, аминокислоты добирают недостающее */
-  const targetProtein = val('proteinTarget');
-  const aaPerKg = Math.max(targetProtein - entProteinPerKg, 0);
-  const aaG  = aaPerKg * weight;
-  const aaConc = val('aaConc');
-  const aaMl = aaConc > 0 ? aaG / (aaConc / 100) : 0;
-  const totalProteinPerKg = entProteinPerKg + aaPerKg;
-
-  $('proteinSplit').innerHTML = [
-    ['Из энтерального питания', `${fmt(entProteinPerKg, 2)} г/кг/сут · ${fmt(entProteinG, 1)} г/сут`],
-    ['Добираем аминокислотами', `${fmt(aaPerKg, 2)} г/кг/сут · ${fmt(aaG, 1)} г/сут`],
-    ['Объём раствора аминокислот', `${fmt(aaMl, 1)} мл/сут · ${fmt(aaMl / HOURS, 2)} мл/ч`],
-  ].map(([k, v]) => `<div class="kv"><span>${k}</span><span>${v}</span></div>`).join('');
-
-  /* Липиды */
-  const lipDose = val('lipDose'), lipConc = val('lipConc');
-  const lipG  = lipDose * weight;
-  const lipMl = lipConc > 0 ? lipG / (lipConc / 100) : 0;
-  const lipKcal = lipMl * (KCAL_ML_LIPID[lipConc] ?? 2.0);
-
-  /* Электролиты */
-  const naMmol = val('naDose') * weight, naMl = naMmol / val('naSol');
-  const kMmol  = val('kDose')  * weight, kMl  = kMmol  / val('kSol');
-  const caMmol = val('caDose') * weight, caMl = caMmol / val('caSol');
-  const elecMl = naMl + kMl + caMl;
-
-  /* Глюкоза занимает остаток объёма */
-  const aqueousMl = pnBudget - aaMl - lipMl - elecMl;
-
-  let gluG, gir, gluPct;
-  if (gluMode === 'gir'){
-    gir    = val('gir');
-    gluG   = gir * weight * 1.44;                       // г/сут
-    gluPct = aqueousMl > 0 ? gluG / aqueousMl * 100 : NaN;
-  } else {
-    gluPct = val('gluConc');
-    gluG   = aqueousMl > 0 ? aqueousMl * gluPct / 100 : 0;
-    gir    = gluG / (weight * 1.44);
-  }
-
-  const usedMl = aaMl + lipMl + elecMl + Math.max(aqueousMl, 0);
+  $('proteinSplit').innerHTML = kv([
+    ['Из энтерального питания', `${fmt(r.entProteinPerKg, 2)} г/кг/сут · ${fmt(r.entProteinG, 1)} г/сут`],
+    ['Добираем аминокислотами' + tag, `${fmt(r.aaPerKg, 2)} г/кг/сут · ${fmt(r.aaG, 1)} г/сут`],
+    ['Объём раствора аминокислот' + tag, `${fmt(r.aaMl, 1)} мл/сут · ${fmt(r.aaMl / PN.COEF.HOURS, 2)} мл/ч`],
+  ]);
 
   /* ---- Таблица объёмов ---- */
+  const v = val.values;
   const rows = [
-    [`Аминокислоты ${fmt(aaConc, 0)} %`, aaMl, `${fmt(aaG, 1)} г/сут`],
-    [`Жировая эмульсия ${fmt(lipConc, 0)} %`, lipMl, `${fmt(lipG, 1)} г/сут`],
-    ['Глюкоза (водная часть)', Math.max(aqueousMl, 0), `${fmt(gluG, 1)} г/сут, ${fmt(gluPct, 1)} %`],
-    ['NaCl', naMl, `${fmt(naMmol, 1)} ммоль/сут`],
-    ['KCl', kMl, `${fmt(kMmol, 1)} ммоль/сут`],
-    ['Кальций', caMl, `${fmt(caMmol, 2)} ммоль/сут`],
+    [`Аминокислоты ${fmt(v.aaConc, 0)} %`, r.aaMl, `${fmt(r.aaG, 1)} г/сут`],
+    [`Жировая эмульсия ${fmt(v.lipConc, 0)} %`, r.lipMl, `${fmt(r.lipG, 1)} г/сут`],
+    ['Глюкоза (водная часть)', Math.max(r.aqueousMl, 0), `${fmt(r.gluG, 1)} г/сут, ${fmt(r.gluPct, 1)} %`],
+    ['NaCl', r.na.ml, `${fmt(r.na.mmol, 1)} ммоль/сут`],
+    ['KCl', r.k.ml, `${fmt(r.k.mmol, 1)} ммоль/сут`],
+    ['Кальций', r.ca.ml, `${fmt(r.ca.mmol, 2)} ммоль/сут`],
   ];
   $('volumes').innerHTML = rows.map(([name, ml, sub]) => `
-    <tr><td>${name}</td><td class="num">${fmt(ml, 1)}</td><td class="num">${fmt(ml / HOURS, 2)}</td></tr>
+    <tr><td>${name}</td><td class="num">${fmt(ml, 1)}</td><td class="num">${fmt(ml / PN.COEF.HOURS, 2)}</td></tr>
     <tr><td class="sub" colspan="3">${sub}</td></tr>`).join('');
-  $('totalMl').textContent   = fmt(usedMl, 1);
-  $('totalRate').textContent = fmt(usedMl / HOURS, 2);
+  $('volumes').closest('table').classList.toggle('target-only', !ok);
+  $('totalLabel').textContent = ok ? 'Итого ПП' : 'Требуется (не приготовить)';
+  $('totalMl').textContent   = fmt(r.usedMl, 1);
+  $('totalRate').textContent = fmt(r.rateMlH, 2);
 
   /* ---- Подбор исходных растворов глюкозы ---- */
-  const mix = (aqueousMl > 0 && Number.isFinite(gluPct)) ? glucoseMix(aqueousMl, gluPct) : null;
-  $('mixBox').innerHTML = mix
-    ? `<div class="mix">Чтобы получить <b>${fmt(aqueousMl, 0)} мл</b> раствора
-       <b>${fmt(gluPct, 1)} %</b>: глюкоза ${mix.low} % — <b>${fmt(mix.vLow, 1)} мл</b>
-       + глюкоза ${mix.high} % — <b>${fmt(mix.vHigh, 1)} мл</b>
+  $('mixBox').innerHTML = r.mix
+    ? `<div class="mix">Чтобы получить <b>${fmt(r.aqueousMl, 0)} мл</b> раствора
+       <b>${fmt(r.gluPct, 1)} %</b>: глюкоза ${r.mix.low} % — <b>${fmt(r.mix.vLow, 1)} мл</b>
+       + глюкоза ${r.mix.high} % — <b>${fmt(r.mix.vHigh, 1)} мл</b>
        <span class="hint">(объём аминокислот и электролитов уже учтён отдельно)</span></div>`
-    : '';
+    : (ok ? '' : '<div class="msg danger">Расчёт невыполним — объёмы выше показывают, что требует назначение. Причины — в «Проверках».</div>');
 
   /* ---- Энергия ---- */
-  const aaKcal  = aaG * KCAL_AA;
-  const gluKcal = gluG * KCAL_GLU;
-  const pnKcal  = aaKcal + lipKcal + gluKcal;
-  const totalKcal = pnKcal + entKcal;
-  const kcalKg  = totalKcal / weight;
-  const proteinG = aaG + entProteinG;
-  const nitrogen = proteinG / N_PER_PROTEIN;
-  const npcPerN = nitrogen > 0 ? (lipKcal + gluKcal + entKcal - entProteinG * KCAL_AA) / nitrogen : 0;
-
-  const osm = aqueousMl > 0
-    ? (gluG * OSM.gluPerGram + aaG * OSM.aaPerGram +
-       naMmol * OSM.na + kMmol * OSM.k + caMmol * OSM.ca)
-      / ((aqueousMl + aaMl + elecMl) / 1000)
-    : NaN;
-
-  $('energy').innerHTML = [
-    ['Белок', `${fmt(aaKcal + entProteinG * KCAL_AA, 0)} ккал · ${fmt(totalProteinPerKg, 2)} г/кг/сут`],
-    ['Жиры', `${fmt(lipKcal, 0)} ккал · ${fmt(lipDose, 1)} г/кг/сут`],
-    ['Углеводы', `${fmt(gluKcal, 0)} ккал · GIR ${fmt(gir, 1)} мг/кг/мин`],
-    ['Парентерально', `${fmt(pnKcal, 0)} ккал · ${fmt(pnKcal / weight, 0)} ккал/кг/сут`],
-    ['Энтерально', `${fmt(entKcal, 0)} ккал · ${fmt(entKcal / weight, 0)} ккал/кг/сут`],
-    ['Всего', `${fmt(totalKcal, 0)} ккал · <b>${fmt(kcalKg, 0)} ккал/кг/сут</b>`],
-    ['Небелковые ккал / г азота', `${fmt(npcPerN, 0)} : 1`],
-    ['Осмолярность раствора ПП', `${fmt(osm, 0)} мосм/л`],
-    ['Скорость инфузии за 24 ч', `${fmt(usedMl / HOURS, 2)} мл/ч`],
-  ].map(([k, v], i) =>
-    `<div class="kv${i === 5 ? ' total' : ''}"><span>${k}</span><span>${v}</span></div>`).join('');
+  const E = r.energy;
+  $('energy').innerHTML = (ok ? '' :
+      '<div class="msg danger" style="margin:0 0 8px">Расчёт невыполним: ниже цель назначения, она не обеспечивается.</div>') +
+    kv([
+      ['Белок' + tag, `${fmt(E.proteinKcal, 0)} ккал · ${fmt(r.totalProteinPerKg, 2)} г/кг/сут`],
+      ['Жиры' + tag, `${fmt(E.lipKcal, 0)} ккал · ${fmt(v.lipDose, 1)} г/кг/сут`],
+      ['Углеводы' + tag, `${fmt(E.gluKcal, 0)} ккал · GIR ${fmt(r.gir, 1)} мг/кг/мин`],
+      ['Парентерально' + tag, `${fmt(E.pnKcal, 0)} ккал · ${fmt(E.pnKcal / r.kg, 0)} ккал/кг/сут`],
+      ['Энтерально', `${fmt(E.entKcal, 0)} ккал · ${fmt(E.entKcal / r.kg, 0)} ккал/кг/сут`],
+      ['Всего' + tag, `${fmt(E.totalKcal, 0)} ккал · <b>${fmt(E.kcalPerKg, 0)} ккал/кг/сут</b>`],
+      ['Небелковые ккал / г азота', `${fmt(r.npcPerN, 0)} : 1`],
+      ['Осмолярность раствора ПП, расчётная оценка', `${fmt(r.osm, 0)} мосм/л`],
+      ['Скорость инфузии за 24 ч', `${fmt(r.rateMlH, 2)} мл/ч`],
+    ], 5);
+  $('energy').classList.toggle('target-only', !ok);
 
   /* ---- Проверки ---- */
-  const checks = [];
-  const add = (level, text) => checks.push({ level, text });
+  $('checks').innerHTML = msgs(r.checks);
 
-  if (pnBudget <= 0)
-    add('danger', `Энтеральное питание и прочие инфузии уже занимают весь суточный объём (${fmt(totalMl, 1)} мл) — на парентеральное питание не остаётся ничего.`);
-  else if (aqueousMl < 0)
-    add('danger', `Объёма не хватает: компоненты превышают доступный объём на ${fmt(-aqueousMl, 1)} мл. Уменьшите дозы или увеличьте общий объём.`);
-  else if (aqueousMl < 5 && gluG > 0)
-    add('danger', 'На глюкозу почти не остаётся объёма — пересмотрите распределение.');
-
-  if (gluPct > LIMITS.gluStockMax)
-    add('danger', `Требуется глюкоза ${fmt(gluPct, 1)} % — крепче исходного раствора ${LIMITS.gluStockMax} %, такую смесь не приготовить. Снизьте GIR или увеличьте объём ПП.`);
-
-  if (entProteinPerKg >= targetProtein && targetProtein > 0)
-    add('info', `Энтеральное питание уже даёт ${fmt(entProteinPerKg, 2)} г/кг/сут белка — цель закрыта, аминокислоты не нужны.`);
-
-  if (gir > LIMITS.gir.hardMax)
-    add('danger', `GIR ${fmt(gir, 1)} мг/кг/мин выше предела ${LIMITS.gir.hardMax} — риск гипергликемии и липогенеза.`);
-  else if (gir > LIMITS.gir.max)
-    add('warn', `GIR ${fmt(gir, 1)} мг/кг/мин выше обычного максимума ${LIMITS.gir.max}.`);
-  else if (gir > 0 && gir < LIMITS.gir.min)
-    add('warn', `GIR ${fmt(gir, 1)} мг/кг/мин ниже ${LIMITS.gir.min} — риск гипогликемии.`);
-
-  if (totalProteinPerKg > LIMITS.protein.max)
-    add('danger', `Общий белок ${fmt(totalProteinPerKg, 2)} г/кг/сут выше максимума ${fmt(LIMITS.protein.max, 1)}.`);
-  else if (totalProteinPerKg > 0 && totalProteinPerKg < LIMITS.protein.min)
-    add('warn', `Общий белок ${fmt(totalProteinPerKg, 2)} г/кг/сут ниже минимума ${fmt(LIMITS.protein.min, 1)} — не покрывается катаболизм.`);
-
-  if (lipDose > LIMITS.lipid.max)
-    add('danger', `Жиры ${fmt(lipDose, 1)} г/кг/сут выше максимума ${fmt(LIMITS.lipid.max, 1)}.`);
-
-  if (access === 'peripheral'){
-    if (gluPct > LIMITS.gluPeriph)
-      add('danger', `Глюкоза ${fmt(gluPct, 1)} % в периферическую вену (предел ${fmt(LIMITS.gluPeriph, 1)} %) — нужен центральный доступ.`);
-    if (osm > LIMITS.osmPeriph)
-      add('danger', `Осмолярность ${fmt(osm, 0)} мосм/л выше ${LIMITS.osmPeriph} — риск флебита, нужен центральный доступ.`);
+  /* ---- Нижняя панель: только выполнимый расчёт ---- */
+  if (!ok){
+    ['barKcal', 'barGir', 'barGlu', 'barOsm'].forEach(id => setBar(id, '—', 'danger'));
+    return;
   }
-
-  if (kcalKg > 0 && kcalKg < LIMITS.kcalPerKg.min)
-    add('warn', `${fmt(kcalKg, 0)} ккал/кг/сут суммарно — ниже целевых ${LIMITS.kcalPerKg.min}–${LIMITS.kcalPerKg.max}.`);
-  else if (kcalKg > LIMITS.kcalPerKg.max)
-    add('warn', `${fmt(kcalKg, 0)} ккал/кг/сут суммарно — выше целевых ${LIMITS.kcalPerKg.min}–${LIMITS.kcalPerKg.max}.`);
-
-  if (nitrogen > 0 && npcPerN < LIMITS.npcPerN.min)
-    add('warn', `Небелковых калорий ${fmt(npcPerN, 0)} на 1 г азота (норма ${LIMITS.npcPerN.min}–${LIMITS.npcPerN.max}) — белок пойдёт в энергию.`);
-
-  if (caMmol > 0 && aqueousMl > 0)
-    add('warn', 'Проверьте совместимость кальция и фосфатов в этом объёме — риск преципитации.');
-
-  if (!checks.some(c => c.level === 'danger' || c.level === 'warn'))
-    add('ok', 'Значения в пределах заданных диапазонов.');
-
-  const order = { danger: 0, warn: 1, info: 2, ok: 3 };
-  checks.sort((a, b) => order[a.level] - order[b.level]);
-  $('checks').innerHTML = checks
-    .map(c => `<div class="msg ${c.level}">${c.text}</div>`).join('');
-
-  /* ---- Нижняя панель ---- */
-  const setBar = (id, value, level) => {
-    const el = $(id);
-    el.querySelector('b').textContent = value;
-    el.className = level ? 'flag-' + level : '';
-  };
-  setBar('barKcal', fmt(kcalKg, 0),
-    kcalKg < LIMITS.kcalPerKg.min || kcalKg > LIMITS.kcalPerKg.max ? 'warn' : null);
-  setBar('barGir', fmt(gir, 1),
-    gir > LIMITS.gir.hardMax ? 'danger' : (gir > LIMITS.gir.max || gir < LIMITS.gir.min ? 'warn' : null));
-  setBar('barGlu', Number.isFinite(gluPct) ? fmt(gluPct, 1) + '%' : '—',
-    access === 'peripheral' && gluPct > LIMITS.gluPeriph ? 'danger' : null);
-  setBar('barOsm', fmt(osm, 0),
-    access === 'peripheral' && osm > LIMITS.osmPeriph ? 'danger' : null);
+  setBar('barKcal', fmt(E.kcalPerKg, 0),
+    E.kcalPerKg < L.kcalPerKg.min || E.kcalPerKg > L.kcalPerKg.max ? 'warn' : null);
+  setBar('barGir', fmt(r.gir, 1),
+    r.gir > L.gir.hardMax ? 'danger' : (r.gir > L.gir.max || r.gir < L.gir.min ? 'warn' : null));
+  setBar('barGlu', Number.isFinite(r.gluPct) ? fmt(r.gluPct, 1) + '%' : '—',
+    access === 'peripheral' && r.gluPct > L.gluPeriph ? 'danger' : null);
+  setBar('barOsm', fmt(r.osm, 0),
+    access === 'peripheral' && r.osm > L.osmPeriph ? 'danger' : null);
 }
 
 /* ---------- Справка ---------- */
+const C = PN.COEF;
 $('thresholds').innerHTML = `
-  GIR: ${LIMITS.gir.min}–${LIMITS.gir.max} мг/кг/мин (жёсткий предел ${LIMITS.gir.hardMax})<br>
-  Общий белок: ${fmt(LIMITS.protein.min, 1)}–${fmt(LIMITS.protein.max, 1)} г/кг/сут<br>
-  Жиры: до ${fmt(LIMITS.lipid.max, 1)} г/кг/сут<br>
-  Энергия: ${LIMITS.kcalPerKg.min}–${LIMITS.kcalPerKg.max} ккал/кг/сут<br>
-  Глюкоза в периферию: до ${fmt(LIMITS.gluPeriph, 1)} %<br>
-  Максимум концентрации смеси: ${LIMITS.gluStockMax} % (крепче исходного раствора)<br>
-  Осмолярность в периферию: до ${LIMITS.osmPeriph} мосм/л<br>
-  Небелковые ккал / г азота: ${LIMITS.npcPerN.min}–${LIMITS.npcPerN.max}<br><br>
-  Состав энтерального питания на 100 мл:<br>
-  ${Object.values(ENTERAL).map(e =>
-    `&nbsp;&nbsp;${e.label} — белок ${fmt(e.protein, 1)} г, ${e.kcal} ккал`).join('<br>')}<br><br>
-  Коэффициенты: белок ${KCAL_AA} ккал/г · глюкоза ${KCAL_GLU} ккал/г ·
+  GIR: ${L.gir.min}–${L.gir.max} мг/кг/мин (жёсткий предел ${L.gir.hardMax})<br>
+  Общий белок: ${fmt(L.protein.min, 1)}–${fmt(L.protein.max, 1)} г/кг/сут<br>
+  Жиры: до ${fmt(L.lipid.max, 1)} г/кг/сут<br>
+  Энергия: ${L.kcalPerKg.min}–${L.kcalPerKg.max} ккал/кг/сут<br>
+  Глюкоза в периферию: до ${fmt(L.gluPeriph, 1)} %<br>
+  Исходные растворы глюкозы: ${L.gluStockMin}–${L.gluStockMax} % (вне этого — не приготовить без разбавителя)<br>
+  Осмолярность в периферию: до ${L.osmPeriph} мосм/л (расчётная)<br>
+  Небелковые ккал / г азота: ${L.npcPerN.min}–${L.npcPerN.max}<br><br>
+  Состав энтерального питания на 100 мл (общий справочник):<br>
+  ${ENT.map(e =>
+    `&nbsp;&nbsp;${e.name} — белок ${fmt(e.protein, 1)} г, ${e.kcal} ккал · ${(e.verified || {}).status || 'нет данных'}`).join('<br>')}<br><br>
+  Коэффициенты: белок ${fmt(C.KCAL_AA, 1)} ккал/г · глюкоза ${fmt(C.KCAL_GLU, 1)} ккал/г ·
   эмульсия 20 % — 2,0 ккал/мл, 10 % — 1,1 ккал/мл.<br>
-  Изменить пороги и составы можно в блоках <code>LIMITS</code> и
-  <code>ENTERAL</code> в начале скрипта.`;
+  Пороги и коэффициенты — в <code>pn-calc.js</code>, состав питания — в
+  <code>cheatsheets/data/enteral.json</code>.`;
 
 /* ---------- Интеграция с Telegram ---------- */
 const tg = window.Telegram?.WebApp;
