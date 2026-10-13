@@ -475,6 +475,44 @@ def _line_bounds(text: str, start: int, end: int) -> tuple | None:
     return ls, le
 
 
+def _indent(line: str) -> int:
+    return len(line) - len(line.lstrip(" \t"))
+
+
+def _code(line: str) -> str:
+    """Строка без комментария в конце — грубо, но для заголовков блоков хватает."""
+    return line.split("#", 1)[0].rstrip()
+
+
+def _cut_lines(text: str, ls: int, le: int) -> tuple:
+    """Убирает строки [ls, le) и не оставляет после себя пустой блок.
+
+    Если убранный оператор был единственным телом «if …:», заголовок уходит вместе
+    с ним; если у такого if есть elif/else, на месте оператора остаётся pass.
+    Для других блоков (for, with, def…) — тоже pass. Возвращает (текст, пояснение).
+    """
+    before, removed, after = text[:ls], text[ls:le], text[le:]
+    body_indent = _indent(removed)
+    prev = before.splitlines(keepends=True)
+    k = len(prev) - 1
+    while k >= 0 and (not prev[k].strip() or prev[k].lstrip().startswith("#")):
+        k -= 1
+    if k < 0 or not _code(prev[k]).endswith(":") or body_indent <= _indent(prev[k]):
+        return before + after, ""
+    head = prev[k]
+    nxt = next((l for l in after.splitlines(keepends=True)
+                if l.strip() and not l.lstrip().startswith("#")), None)
+    if nxt is not None and _indent(nxt) > _indent(head):
+        return before + after, ""          # в блоке остались другие строки
+    continues = (nxt is not None and _indent(nxt) == _indent(head)
+                 and re.match(r"(elif|else|except|finally)\b", nxt.lstrip()))
+    if head.lstrip().startswith("if ") and not continues:
+        return "".join(prev[:k]) + "".join(prev[k + 1:]) + after, \
+            f"заодно убран опустевший «{head.strip()}»"
+    return before + " " * body_indent + "pass\n" + after, \
+        f"в опустевший блок «{head.strip()}» поставлен pass"
+
+
 def drop_tpn_button(out: list) -> list:
     """Шаг 7: кнопки калькулятора ПП на клавиатуре быть не должно."""
     text = "".join(out)
@@ -513,8 +551,8 @@ def drop_tpn_button(out: list) -> list:
                 stmt = text.rfind("\n", 0, lp) + 1
                 whole = _line_bounds(text, stmt, rp)
         if whole:
-            text = text[:whole[0]] + text[whole[1]:]
-            note("✓", f"строка {lineno}: убран ряд с кнопкой «{TPN_LABEL}»")
+            text, extra = _cut_lines(text, whole[0], whole[1])
+            note("✓", f"строка {lineno}: убран ряд с кнопкой «{TPN_LABEL}»" + (f"; {extra}" if extra else ""))
             continue
         # 2) кнопка в ряду с другими — убираем её и соседнюю запятую
         after = re.match(r"\s*,\s*", text[end:])

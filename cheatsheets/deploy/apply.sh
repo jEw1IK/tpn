@@ -76,7 +76,13 @@ cp -a "$STAGE/tpn/enteral" "$BOT_DIR/webapp/enteral"
 step "5. Правка bot.py"
 "$PY" "$BOT_DIR/cheatsheets/deploy/patch_bot.py" "$BOT_FILE" || {
     cp -a "$BOT_BACKUP" "$BOT_FILE"
-    die "патч не применился, bot.py возвращён из копии"
+    # Модуль тоже назад: иначе после случайного перезапуска старый bot.py
+    # встретится с новым модулем, а такое сочетание никто не проверял.
+    if [ -d "$MOD_BACKUP" ]; then
+        rm -rf "$BOT_DIR/cheatsheets"
+        cp -a "$MOD_BACKUP" "$BOT_DIR/cheatsheets"
+    fi
+    die "патч не применился: bot.py и модуль возвращены из копий, бот не перезапускался"
 }
 
 if [ "$SKIP_RESTART" = "1" ]; then

@@ -166,7 +166,48 @@ def v_rows_append(text: str) -> str:
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)""")
 
 
+def v_live_if(text: str) -> str:
+    """Как живой bot.py 13.10.2026: кнопка ПП внутри «if WEBAPP_URL:», многострочный
+    rows.append со style="primary"; седация и энтеральное уже стоят в ряду со шкалами."""
+    text = v_rows_append(text)
+    text = text.replace("from cheatsheets.bot.keyboard import sedation_button",
+                        "from cheatsheets.bot.keyboard import sedation_button\n"
+                        "from cheatsheets.bot.keyboard import enteral_button")
+    text = text.replace('TPN_URL = "https://jew1ik.github.io/tpn/"',
+                        'TPN_URL = "https://jew1ik.github.io/tpn/"\nWEBAPP_URL = TPN_URL')
+    pn = '    rows.append([KeyboardButton(text="🧬 Парентеральное питание", web_app=WebAppInfo(url=TPN_URL))])\n'
+    assert pn in text
+    text = text.replace(pn,
+        '    if WEBAPP_URL:\n'
+        '        rows.append([KeyboardButton(text="🧮 Парентеральное питание", style="primary",\n'
+        '                                    web_app=WebAppInfo(url=WEBAPP_URL))])\n')
+    text = text.replace('scales_button(), sedation_button()])', 'scales_button(), sedation_button(), enteral_button()])')
+    text = text.replace(
+        '        BotCommand(command="sed", description="Седация: мидазолам, фентанил"),\n',
+        '        BotCommand(command="sed", description="Седация: мидазолам, фентанил"),\n'
+        '        BotCommand(command="enteral", description="Энтеральное питание: ккал, белок"),\n')
+    text = text.replace(
+        '    "💉 <b>Седация</b> · до скольки развести мидазолам и фентанил: <code>/sed</code>\\n\\n"\n',
+        '    "💉 <b>Седация</b> · до скольки развести мидазолам и фентанил: <code>/sed</code>\\n\\n"\n'
+        '    "🍼 <b>Энтеральное питание</b> · ккал, белок и углеводы на смесях: <code>/enteral</code>\\n\\n"\n')
+    return text
+
+
+def v_live_if_else(text: str) -> str:
+    """То же, но у if есть else — опустевшую ветку нельзя выбросить, нужен pass."""
+    text = v_live_if(text)
+    return text.replace("web_app=WebAppInfo(url=WEBAPP_URL))])\n",
+                        "web_app=WebAppInfo(url=WEBAPP_URL))])\n"
+                        "    else:\n"
+                        "        logging.info(\"мини-приложения выключены\")\n", 1)
+
+
+# Варианты, где энтеральное уже стояло в ряду со шкалами ещё до правки.
+ENTERAL_ALREADY = {"кнопка ПП внутри if — как живой бот", "if с else"}
+
 VARIANTS = [
+    ("кнопка ПП внутри if — как живой бот", v_live_if),
+    ("if с else", v_live_if_else),
     ("rows.append — как у живого бота сейчас", v_rows_append),
     ("как модель живого бота", lambda t: t),
     ("комментарии и «]» в адресе", v_comments),
@@ -203,6 +244,13 @@ def run_variant(name: str, transform) -> None:
         ok("from cheatsheets.bot.keyboard import enteral_button" in text, f"{name}: импорт кнопки питания")
         ok('command="enteral"' in text, f"{name}: /enteral в меню команд")
         ok("🍼 <b>Энтеральное питание</b>" in text, f"{name}: строка про энтеральное питание в /start")
+        ok("if WEBAPP_URL:\n    rows.append([KeyboardButton(text=\"📄" not in text
+           and "if WEBAPP_URL:\n\n" not in text,
+           f"{name}: после правки не осталось пустого if")
+        if name == "if с else":
+            ok("    if WEBAPP_URL:\n        pass\n    else:" in text, f"{name}: в опустевшую ветку if поставлен pass")
+        if name == "кнопка ПП внутри if — как живой бот":
+            ok("if WEBAPP_URL:" not in text, f"{name}: опустевший if WEBAPP_URL убран целиком")
         ok("include_router(sedation_router)" not in text,
            f"{name}: sedation_router отдельно не подключается")
 
@@ -232,7 +280,10 @@ def run_variant(name: str, transform) -> None:
         ok(not any("Парентеральное" in n for n in names), f"{name}: кнопки калькулятора ПП на клавиатуре нет")
         ok("Парентеральное питание" not in "".join(l for l in text.splitlines(True) if "KeyboardButton(" in l),
            f"{name}: в коде клавиатуры кнопки ПП не осталось")
-        if name == "многострочные ряды":
+        if name in ENTERAL_ALREADY:
+            ok(names.index("🍼 Энтеральное питание") > names.index("📊 Шкалы"),
+               f"{name}: энтеральное осталось в ряду со шкалами")
+        elif name == "многострочные ряды":
             # Ряд с питанием разбит на строки — скопировать его нельзя, кнопка уходит к шкалам.
             ok("📊 Шкалы" in names and names.index("🍼 Энтеральное питание") > names.index("📊 Шкалы"),
                f"{name}: энтеральное встало в ряд к шкалам")
