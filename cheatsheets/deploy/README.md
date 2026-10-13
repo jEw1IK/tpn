@@ -8,7 +8,7 @@
 ## Быстрый путь: готовый бот одной командой
 
 В репозитории лежит собранный бот: поиск по 57 клиническим рекомендациям,
-15 шпаргалок в PDF, дозы препаратов, шкалы и калькулятор питания. Свой код
+30 шпаргалок в PDF, дозы препаратов, шкалы, седация и энтеральное питание. Свой код
 писать не нужно.
 
 ```bash
@@ -54,7 +54,6 @@ sudo systemctl disable <старый-сервис>
 
 ```
 BOT_TOKEN=123456:AA…                                  обязательно
-TPN_WEBAPP_URL=https://jew1ik.github.io/tpn/          калькулятор питания
 SCALES_WEBAPP_URL=https://jew1ik.github.io/tpn/scales/  приложение шкал
 SEDATION_WEBAPP_URL=https://jew1ik.github.io/tpn/sedation/  калькулятор седации
 ENTERAL_WEBAPP_URL=https://jew1ik.github.io/tpn/enteral/    анализ энтерального питания
@@ -91,8 +90,8 @@ sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d ДОМЕН
 ```
 
-Затем в `.env`: `SCALES_WEBAPP_URL=https://ДОМЕН/scales/` и
-`TPN_WEBAPP_URL=https://ДОМЕН/`.
+Затем в `.env`: `SCALES_WEBAPP_URL=https://ДОМЕН/scales/`,
+`SEDATION_WEBAPP_URL=https://ДОМЕН/sedation/` и `ENTERAL_WEBAPP_URL=https://ДОМЕН/enteral/`.
 
 ---
 
@@ -111,7 +110,7 @@ sudo certbot --nginx -d ДОМЕН
 from cheatsheets.bot.aiogram_router import cheatsheets_router
 from cheatsheets.bot.scales_router import scales_router
 from cheatsheets.bot.search_router import search_router
-from cheatsheets.bot.keyboard import main_keyboard, scales_button, tpn_button
+from cheatsheets.bot.keyboard import main_keyboard, scales_button, sedation_button, enteral_button
 from cheatsheets.bot.help_text import HELP_TEXT
 
 dp.include_router(scales_router)        # ловит кнопку «📊 Шкалы»
@@ -196,7 +195,7 @@ cd cheatsheets && python tests/test_bot.py
 чате и только по HTTPS. В группе бот отдаёт обычную ссылку.
 
 **PDF приходит с ошибкой.** Проверь, что `pdf/*.pdf` на месте:
-`ls /opt/postneo/app/cheatsheets/pdf | wc -l` — должно быть 15.
+`ls /opt/postneo/app/cheatsheets/pdf | wc -l` — должно быть 30.
 
 **Изменения не видны.** Код на сервере обновляется только `install-bot.sh`.
 Правки в GitHub сами туда не доезжают.
