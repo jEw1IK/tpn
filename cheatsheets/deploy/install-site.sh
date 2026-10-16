@@ -134,7 +134,7 @@ cat <<EOF
   Калькулятор:  $URL/postneo/calculator.html
   Шкалы:        $URL/scales/   Седация: $URL/sedation/   Энтерально: $URL/enteral/
 
-  Обновить:     sudo $0 ${DOMAIN}
+  Обновить:     curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/cheatsheets/deploy/install-site.sh | sudo bash${DOMAIN:+ -s -- $DOMAIN}
   Конфиг:       $CONF
 EOF
 [ -z "$DOMAIN" ] && cat <<'EOF'
