@@ -65,6 +65,33 @@ CHANNEL_URL=https://t.me/…                            появится ком�
 
 ---
 
+## Сайт на этом же сервере: POSTNEO и мини-приложения
+
+Калькулятор питания POSTNEO (`postneo/`), шкалы, седация, энтеральное
+питание и шпаргалки раздаются nginx из того же клона `/opt/postneo/app`,
+что использует бот. Одна команда ставит nginx, обновляет код и включает
+конфиг; повторный запуск — обновление:
+
+```bash
+ssh root@89.169.32.9
+curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/cheatsheets/deploy/install-site.sh | sudo bash
+```
+
+После этого сайт открывается по `http://89.169.32.9/`, калькулятор — по
+`http://89.169.32.9/postneo/calculator.html`. Наружу отдаются только
+`postneo/`, `scales/`, `sedation/`, `enteral/`, `cheatsheets/index.html`,
+`cheatsheets/pdf/` и главная; код бота, данные и `.git` закрыты.
+
+С доменом, направленным на сервер, тот же скрипт выпустит сертификат
+Let's Encrypt и включит HTTPS:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/cheatsheets/deploy/install-site.sh | sudo bash -s -- мой.домен.ru
+```
+
+Конфиг: `/etc/nginx/sites-available/postneo-site`. Бот, его токен и сервис
+скрипт не трогает.
+
 ## Про кнопку мини-приложения
 
 **Telegram открывает Web App только по HTTPS с валидным сертификатом.**
