@@ -5,6 +5,8 @@
 
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
+# better-sqlite3 обычно берёт готовый бинарник, а без доступа к GitHub собирается из исходников: ставим компилятор на всякий случай
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
