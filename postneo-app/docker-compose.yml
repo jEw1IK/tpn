@@ -1,0 +1,19 @@
+# POSTNEO Карточки. Запуск:  docker compose up -d
+# Приложение слушает только 127.0.0.1:3000; наружу его выпускает ваш nginx/Caddy с HTTPS (см. deploy/README.md).
+services:
+  kart:
+    build:
+      context: .
+      args:
+        BASE_PATH: ${BASE_PATH:-}
+    image: postneo-kart:latest
+    container_name: postneo-kart
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PORT:-3000}:3000"
+    volumes:
+      - ./data:/data
+    environment:
+      # 1 — если приложение открывается по HTTPS (cookie только по защищённому каналу); 0 — для теста по http://
+      COOKIE_SECURE: ${COOKIE_SECURE:-1}
+      TZ: ${TZ:-Europe/Moscow}

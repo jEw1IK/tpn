@@ -1,0 +1,55 @@
+import {createHash,randomBytes,scryptSync,timingSafeEqual} from 'node:crypto';
+import type {Db} from './db.ts';
+
+import {type Role,type User,roleNames} from '../roles.ts';
+export type {Role,User};export {roleNames};
+export const cookieName='postneo_session';
+/** Сессия живёт 12 часов с последнего действия: смена закончилась — вход заново. */
+export const sessionHours=12;
+
+export function hashPassword(password:string):string{
+ const salt=randomBytes(16).toString('hex');
+ return salt+':'+scryptSync(password,salt,64).toString('hex');
+}
+export function verifyPassword(password:string,stored:string):boolean{
+ const [salt,hash]=stored.split(':');if(!salt||!hash)return false;
+ const a=Buffer.from(hash,'hex'),b=scryptSync(password,salt,64);
+ return a.length===b.length&&timingSafeEqual(a,b);
+}
+const hashToken=(token:string)=>createHash('sha256').update(token).digest('hex');
+
+export function countUsers(db:Db):number{return (db.prepare('select count(*) as c from users').get() as {c:number}).c;}
+export function createUser(db:Db,user:{login:string;name:string;role:Role;password:string}):User{
+ if(!/^[a-zA-Z0-9._-]{3,32}$/.test(user.login))throw new Error('Логин: 3–32 символа, латиница, цифры, точка, дефис');
+ if(user.password.length<8)throw new Error('Пароль не короче 8 символов');
+ const info=db.prepare('insert into users(login,name,role,password_hash) values (?,?,?,?)').run(user.login.toLowerCase(),user.name.trim()||user.login,user.role,hashPassword(user.password));
+ return getUser(db,Number(info.lastInsertRowid))!;
+}
+export function getUser(db:Db,id:number):User|null{return (db.prepare('select id,login,name,role,disabled,created_at from users where id=?').get(id) as User|undefined)??null;}
+export function listUsers(db:Db):User[]{return db.prepare('select id,login,name,role,disabled,created_at from users order by role,login').all() as User[];}
+export function setPassword(db:Db,id:number,password:string){if(password.length<8)throw new Error('Пароль не короче 8 символов');db.prepare('update users set password_hash=? where id=?').run(hashPassword(password),id);}
+export function setDisabled(db:Db,id:number,disabled:boolean){db.prepare('update users set disabled=? where id=?').run(disabled?1:0,id);if(disabled)db.prepare('delete from sessions where user_id=?').run(id);}
+
+export function login(db:Db,loginName:string,password:string,meta:{ip?:string;ua?:string}={}):{token:string;user:User}|null{
+ const row=db.prepare('select id,password_hash,disabled from users where login=?').get(loginName.trim().toLowerCase()) as {id:number;password_hash:string;disabled:number}|undefined;
+ if(!row||row.disabled||!verifyPassword(password,row.password_hash))return null;
+ const token=randomBytes(32).toString('hex');
+ const expires=new Date(Date.now()+sessionHours*3600000).toISOString();
+ db.prepare('insert into sessions(user_id,token_hash,expires_at,ip,ua) values (?,?,?,?,?)').run(row.id,hashToken(token),expires,meta.ip??null,(meta.ua??'').slice(0,200));
+ return {token,user:getUser(db,row.id)!};
+}
+/** Пользователь по cookie; каждое обращение продлевает сессию. */
+export function userByToken(db:Db,token:string|undefined|null):User|null{
+ if(!token)return null;
+ db.prepare("delete from sessions where expires_at<strftime('%Y-%m-%dT%H:%M:%fZ','now')").run();
+ const row=db.prepare('select s.id as sid,u.id,u.login,u.name,u.role,u.disabled,u.created_at from sessions s join users u on u.id=s.user_id where s.token_hash=?').get(hashToken(token)) as (User&{sid:number})|undefined;
+ if(!row||row.disabled)return null;
+ db.prepare('update sessions set expires_at=? where id=?').run(new Date(Date.now()+sessionHours*3600000).toISOString(),row.sid);
+ const {sid:_sid,...user}=row;return user;
+}
+export function logout(db:Db,token:string|undefined|null){if(token)db.prepare('delete from sessions where token_hash=?').run(hashToken(token));}
+
+export function audit(db:Db,user:User|null,action:string,entity:string,entityId:number|null,details='',ip?:string){
+ db.prepare('insert into audit(user_id,action,entity,entity_id,details,ip) values (?,?,?,?,?,?)').run(user?.id??null,action,entity,entityId,details.slice(0,500),ip??null);
+}
+export function listAudit(db:Db,limit=200){return db.prepare('select a.id,a.at,a.action,a.entity,a.entity_id,a.details,a.ip,u.login,u.name from audit a left join users u on u.id=a.user_id order by a.id desc limit ?').all(limit) as {id:number;at:string;action:string;entity:string;entity_id:number|null;details:string;ip:string|null;login:string|null;name:string|null}[];}
