@@ -95,7 +95,7 @@ export function buildNurseRows(p:Inputs,r:Result):NurseRow[]{
    `${lowSolutionLabel(p)}: ${show(r.lowMl)} мл; глюкоза ${entered(p.highGlucose)}%: ${show(r.highMl)} мл.`,
    `Глюконат кальция 10 %: ${entered(p.calciumMlPerKg)} мл/кг/сут → ${show(r.caMl)} мл; по ${entered(p.calciumContent)} ммоль/мл это ${show(r.calciumMmol)} ммоль (${show(r.calciumMmolPerKg,2)} ммоль/кг).`,
    ...electrolyteLines(p,r,show),
-   `Глюкоза в/в за сутки: ${show(r.glucoseGrams)} г${r.enteralSubtracted.carbohydrateG?` (общая ${show(r.glucoseTotal)} г минус ${show(r.enteralSubtracted.carbohydrateG)} г из смеси)`:''}; концентрация ${show(r.glucosePercent)}% в растворе глюкозы, ${show(r.mainLinePercent)}% во всей линии.`,
+   `Углеводная нагрузка ${show(r.girTotal)} мг/кг/мин общая: в/в ${show(r.girIv)}${r.enteralSubtracted.carbohydrateG?`, из смеси ${show(r.girEnteral)}`:''}. Глюкоза в/в за сутки: ${show(r.glucoseGrams)} г${r.enteralSubtracted.carbohydrateG?` (общая ${show(r.glucoseTotal)} г минус ${show(r.enteralSubtracted.carbohydrateG)} г из смеси)`:''}; концентрация ${show(r.glucosePercent)}% в растворе глюкозы, ${show(r.mainLinePercent)}% во всей линии.`,
    `Вводить за ${entered(p.baseHours)} ч; GIR за время введения ${show(r.actualGir)} мг/кг/мин. Гепарин ${entered(p.heparin)} Ед/мл → ${ready&&r.heparinUnits!==null?r.heparinUnits:'—'} Ед на линию с аминокислотами.`,
   ]}),
   make({id:'amino',kind:'amino',label:ready&&r.aaMl===0?'Аминокислоты в/в · не требуются':`Аминокислоты ${entered(p.aaPercent)}%`,volume:show(r.aaMl),rate:ready&&r.aaMl===0?'—':show(r.aaRate,1),details:ready&&r.aaMl===0?[

@@ -12,7 +12,7 @@ export function SidePanel({p,r,rs,pending,aaName,fatName,headerIssues}:{p:Inputs
  const lowName=p.lowSolution==='water'?'воды':p.lowSolution==='nacl'?'NaCl 0,9 %':'глюкозы '+ru(p.lowGlucose)+' %';
  const rows:[string,string,string,string?][]=[
   ['Глюкоза '+v(rs.glucosePercent,1)+' %',v(rs.mixVolume,1)+' мл',v(rs.glucoseGrams,2)+' г'],
-  ['  из '+lowName+' + глюкозы '+ru(p.highGlucose)+' %',v(rs.lowMl,1)+' + '+v(rs.highMl,1),'GIR '+v(rs.actualGir,1),'dim'],
+  ['  из '+lowName+' + глюкозы '+ru(p.highGlucose)+' %',v(rs.lowMl,1)+' + '+v(rs.highMl,1),'в/в '+v(rs.girIv,1)+' из '+v(rs.girTotal,1)+' мг/кг/мин','dim'],
   ['Ca глюконат 10 %',v(rs.caMl,1)+' мл',f(rs.calciumMmolPerKg,2)+' ммоль/кг'],
   ['MgSO₄ 25 %',v(e.mgMl,1)+' мл',''],['KCl 4 %',v(e.kclMl,1)+' мл',''],['NaCl 0,9 %',v(e.nacl09Ml,1)+' мл',''],
   ['NaCl 10 %',v(e.nacl10Ml,1)+' мл',v(rs.baseRate,1)+' мл/ч'],

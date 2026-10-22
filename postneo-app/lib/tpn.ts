@@ -537,6 +537,10 @@ export function calculate(p:Inputs){
  pumpCheck('Жировая эмульсия',fatRate,fatLineMl,fh);
  for(const m of medicines)if(m.valid&&m.kind==='continuous')pumpCheck(m.name,m.rate,null,null);
  const actualGir=glucoseGrams!==null&&kg!==null&&kg>0&&bh!==null?glucoseGrams*1000/kg/(bh*60):null;
+ // Углеводная нагрузка (мг/кг/мин за 24 ч, как «Глюкоза общ. / в/в»): общая задана врачом, энтеральная — углеводы учтённой смеси, в/в — остаток.
+ const perMin=(grams:number|null)=>grams===null||kg===null||kg<=0?null:grams/(kg*1.44);
+ const girTotal=gir,girEnteral=enteralSubtracted.carbohydrateG===null?null:enteralSubtracted.carbohydrateG===0?0:perMin(enteralSubtracted.carbohydrateG),girIv=perMin(glucoseGrams);
+ if(girTotal!==null&&girEnteral!==null&&girEnteral>girTotal)warnings.push('Углеводы смеси дают '+ru(girEnteral,1)+' мг/кг/мин — больше заданной общей нагрузки '+ru(girTotal,1)+': глюкозы в/в не будет');
  // Heparin (mytpn/КР): per ml of the main line including amino acids, electrolytes and carrier; never in the lipid line.
  // Component volumes are taken to 0.1 ml, as they are drawn up and printed, so the units match the sheet (and mytpn).
  const tenth=(value:number|null)=>value===null?null:Math.round(value*10)/10;
@@ -565,7 +569,7 @@ export function calculate(p:Inputs){
  const krTotal=krParenteral!==null&&krEnteral!==null?krParenteral+krEnteral:null;
  const kr={glucoseKcal:krGlucoseKcal,fatKcal:krFatKcal,parenteralKcal:krParenteral,enteralKcal:krEnteral,totalKcal:krTotal,perKg:krTotal!==null&&kg!==null&&kg>0?krTotal/kg:null};
  for(const [field,value] of [['fluid',total],['enteral',enteralMl],['aa',aaGrams],['aa',aaMl],['aaHours',aaRate],['fat',fatGrams],['fat',fatMl],['fatHours',fatRate],['gir',glucoseGrams],['calciumMlPerKg',caMl],['calciumContent',calciumMmol],['kcl',electrolytes.kclMl],['nacl10',electrolytes.nacl10Ml],['nacl09',electrolytes.nacl09Ml],['magnesium',electrolytes.mgMl],['soluvit',electrolytes.soluvitMl],['vitalipid',vitalipidMl],['dipeptiven',electrolytes.dipeptivenMl],['fluid',lineMl],['lowGlucose',lowMl],['highGlucose',highMl],['baseHours',baseRate],['gir',glucosePercent],['baseHours',actualGir],['heparin',heparinUnits],['insulin',insulinUnits],['fluid',ivTotal],['weightToday',receivedPerKg]] as [string,number|null][]){if(value!==null&&!Number.isFinite(value))error(field,'Расчёт превышает числовой диапазон');}
- return {valid:errors.length===0,errors,issues,warnings,kg,kgToday,dynamics,day,total,enteralMl,enteralCountedMl,enteralTrophicMl,enteralSubtracted,enteralNutrition,proteinPlan,aaGrams,aaMl,aaRate,aaPauses,aaInfusionHours,fatTotal,fatGrams,fatMl,vitalipidMl,fatLineMl,fatRate,glucoseTotal,glucoseGrams,calciumMmol,calciumMmolPerKg,caMl,electrolytes,carrierName,carrierMl,base:lineMl,overshootMl:overshoot,baseRate,glucosePercent,mainLinePercent,actualGir,mixVolume,lowMl,highMl,lowPercent:low,drugMl,drugsOnTop,insulinUnits,insulinMl,heparinUnits,ivTotal,allFluid,receivedPerKg,kr,medicines,other,flush,sodium};
+ return {valid:errors.length===0,errors,issues,warnings,kg,kgToday,dynamics,day,total,enteralMl,enteralCountedMl,enteralTrophicMl,enteralSubtracted,enteralNutrition,proteinPlan,aaGrams,aaMl,aaRate,aaPauses,aaInfusionHours,fatTotal,fatGrams,fatMl,vitalipidMl,fatLineMl,fatRate,glucoseTotal,glucoseGrams,calciumMmol,calciumMmolPerKg,caMl,electrolytes,carrierName,carrierMl,base:lineMl,overshootMl:overshoot,baseRate,glucosePercent,mainLinePercent,actualGir,girTotal,girEnteral,girIv,mixVolume,lowMl,highMl,lowPercent:low,drugMl,drugsOnTop,insulinUnits,insulinMl,heparinUnits,ivTotal,allFluid,receivedPerKg,kr,medicines,other,flush,sodium};
 }
 export type Result=ReturnType<typeof calculate>;
 

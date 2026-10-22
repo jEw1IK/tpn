@@ -279,3 +279,12 @@ test('непрерывная инфузия без исходной концен
  assert.ok(Math.abs(res.fluidVolume-2.4)<1e-9);assert.equal(res.stockMl,null);
  assert.ok(Math.abs(r.sodium.diluentMmol-2.4*0.154)<1e-9);
 });
+
+test('Углеводная нагрузка: общая задана врачом, смесь уменьшает в/в часть',()=>{
+ const p={...example(),weight:'2000',weightToday:'2000',gir:'7',enteralMode:'feeds8',formulaId:'nutrilon-pre-0',feeds:Array(8).fill('10'),medicines:[]};
+ const r=calculate(p);assert.equal(r.valid,true);near(r.girTotal,7);
+ const carbs=r.enteralSubtracted.carbohydrateG;assert.ok(carbs>0);near(r.girEnteral,carbs/(2*1.44));near(r.girIv,7-r.girEnteral);near(r.girIv+r.girEnteral,7);
+ const more=calculate({...p,feeds:Array(8).fill('20')});assert.ok(more.girIv<r.girIv);near(more.girTotal,7);
+ const trophic=calculate({...p,feeds:Array(8).fill('5')});assert.equal(trophic.girEnteral,0);near(trophic.girIv,7);// до 25 мл/кг смесь не учитывается
+ const over=calculate({...p,gir:'1',feeds:Array(8).fill('30')});assert.equal(over.girIv,0);assert.ok(over.warnings.some(w=>/больше заданной общей нагрузки/.test(w)));
+});

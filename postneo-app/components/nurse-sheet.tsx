@@ -72,7 +72,7 @@ export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}
   ['Получит в/в',<>{show(r.ivTotal,0)} мл <small>{show(r.ivTotal!==null&&kg?r.ivTotal/kg:null,0)} мл/кг</small></>],
   ['Энтерально',<>{show(r.enteralMl,0)} мл <small>{show(en.volumePerKg,0)} мл/кг{trophic?' троф.':''}</small></>],
   ['Основной раствор',<>{show(r.base,1)} мл <small>{show(r.mainLinePercent,1)} %</small></>],
-  ['Глюкоза',<>{f(numeric(p.gir),1)} <small>мг/кг/мин · {show(r.glucoseGrams,1)} г</small></>],
+  ['Глюкоза общ. / в/в',<>{f(numeric(p.gir),1)} / {show(r.girIv,1)} <small>мг/кг/мин · в/в {show(r.glucoseGrams,1)} г</small></>],
   ['Белок всего · АК в/в',<>{show(r.proteinPlan.achievedPerKg,1)} · {show(r.proteinPlan.requiredIvPerKg,1)} <small>г/кг</small></>],
   ['Жиры в/в',<>{show(kg&&r.fatGrams!==null?r.fatGrams/kg:null,1)} <small>г/кг · {show(r.fatGrams,2)} г</small></>],
   ['Энергия',<>{show(r.kr.perKg,0)} <small>ккал/кг · {show(r.kr.totalKcal,0)} ккал</small></>],

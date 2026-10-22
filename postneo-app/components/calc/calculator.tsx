@@ -100,11 +100,11 @@ export function Calculator({initial,initialUi,onChange,locked=false,lockedNote,f
         <FluidPop show={pop} weightGrams={numeric(p.weight)} day={numeric(p.day)} fluid={numeric(p.fluid)} onPick={value=>{update({fluid:String(value)});showPop(false);}} onTable={()=>{setPop(false);openRef('fluid');}}/>
        </Stp>
       </div>
-      <Stp id="gir" label="Глюкоза" unit="мг/кг/мин" step={0.5} value={p.gir} onChange={gir=>update({gir})} bad={r.issues.some(i=>i.field==='gir')}/>
+      <Stp id="gir" label="Глюкоза общая" unit="мг/кг/мин" step={0.5} value={p.gir} onChange={gir=>update({gir})} bad={r.issues.some(i=>i.field==='gir')}/>
       <Stp id="aa" label="Белки" unit="г/кг/сут" step={0.25} value={p.aa} onChange={aa=>update({aa})} bad={r.issues.some(i=>i.field==='aa')}/>
       <Stp id="fat" label="Жиры" unit="г/кг/сут" step={0.25} value={p.fat} onChange={fat=>update({fat})} bad={r.issues.some(i=>i.field==='fat')}/>
      </div>
-     <p className="out">в/в {v(rs.ivTotal,0)} мл · глюкоза <b>{v(rs.glucoseGrams,2)} г</b> → {v(rs.mixVolume,1)} мл {v(rs.glucosePercent,1)} % · <span className={high?'w':undefined}>{v(rs.mainLinePercent,1)} % в линии</span> · АК <b>{v(rs.aaMl,1)} мл</b> · жиры <b>{v(rs.fatLineMl,1)} мл</b>{fluidStatus&&<> · {fluidStatus}</>}</p>
+     <p className="out">углеводы <b>{v(rs.girTotal,1)}</b> общ. = в/в <b>{v(rs.girIv,1)}</b> + смесь {v(rs.girEnteral,1)} мг/кг/мин · в/в {v(rs.ivTotal,0)} мл · глюкоза <b>{v(rs.glucoseGrams,2)} г</b> → {v(rs.mixVolume,1)} мл {v(rs.glucosePercent,1)} % · <span className={high?'w':undefined}>{v(rs.mainLinePercent,1)} % в линии</span> · АК <b>{v(rs.aaMl,1)} мл</b> · жиры <b>{v(rs.fatLineMl,1)} мл</b>{fluidStatus&&<> · {fluidStatus}</>}</p>
     </Blk>
     <Blk id="ions" title="Электролиты" hint="в основной раствор">
      <div className="grid c3">
