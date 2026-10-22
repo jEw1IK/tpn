@@ -118,7 +118,7 @@ export function buildNurseRows(p:Inputs,r:Result):NurseRow[]{
  if(en.formula&&en.perKg)enteralDetails.push(`На кг/сут (все смеси): белок ${show(en.perKg.proteinG)} г; жиры ${show(en.perKg.fatG)} г; углеводы ${show(en.perKg.carbohydrateG)} г; энергия ${show(en.perKg.energyKcal)} ккал.`);
  rows.push({...make({id:'enteral',kind:'enteral',label:'Энтеральное питание',details:ready&&!en.formula&&r.enteralMl===0?[]:enteralDetails,volume:show(en.primaryMl),rate:'—',
   notes:en.formula?[formulaNote(en.formula)]:undefined}),marks:p.enteralMode==='feeds8'?feedingMarks(p.feeds,p.start):cells()});
- for(const row of p.extraFeeds){
+ for(const row of p.extraFeeds??[]){
   const res=en.rows.find(x=>x.id===row.id);
   rows.push({...make({id:'enteral-'+row.id,kind:'enteral',label:`Смесь: ${res?.formula?.name??'не выбрана'}`,volume:show(res?.volumeMl),rate:'—',details:[
    `Кормления (мл): ${feedingHours.map((hour,index)=>`${hour} — ${entered(row.feeds[index]??'')}`).join('; ')}${row.route?`; способ: ${row.route}`:''}.`,

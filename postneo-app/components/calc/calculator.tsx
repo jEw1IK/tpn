@@ -4,7 +4,7 @@ import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {BookOpen,Eraser,Printer,X} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogContent,DialogDescription,DialogTitle} from '@/components/ui/dialog';
-import {blank,calculate,enteralFormulas,example,numeric,trophicThresholdMlPerKg,type Inputs,type Result} from '@/lib/tpn';
+import {blank,calculate,enteralFormulas,example,newEnteralRow,numeric,trophicThresholdMlPerKg,type EnteralRow,type Inputs,type Result} from '@/lib/tpn';
 import {carriers,feedingHours,feedingRoutes} from '@/lib/directory';
 import {formatNumber as f} from '@/lib/format';
 import {patientHeader,sexNames} from '@/lib/patient-header';
@@ -53,6 +53,7 @@ export function Calculator({initial,initialUi,onChange,locked=false,lockedNote,f
  const hidePop=(delay=0)=>{if(popTimer.current)clearTimeout(popTimer.current);popTimer.current=setTimeout(()=>setPop(false),delay);};
  const openRef=(tab?:RefTab)=>{if(tab)setRefTab(tab);setRefOpen(true);};
  const kg=rs.kg;const en=rs.enteralNutrition;const trophic=rs.valid&&(rs.enteralMl??0)>0&&!en.counted;
+ const extraFeeds=p.extraFeeds??[];
  const dyn=r.dynamics;
  const fluidStatus=(()=>{const v=numeric(p.fluid);if(v===null)return '';return v<120?'ниже ориентира КР 120–130':v>130?'выше ориентира КР 120–130':'в пределах ориентира КР 120–130';})();
  const high=rs.valid&&rs.mainLinePercent!==null&&rs.mainLinePercent>12.5;
@@ -131,7 +132,8 @@ export function Calculator({initial,initialUi,onChange,locked=false,lockedNote,f
       <Inp id="carrierMl" label="Проводник" unit="мл" value={p.carrierMl} onChange={carrierMl=>update({carrierMl})}/>
       <Sel id="highGlucose" label="Больший %" value={p.highGlucose} onChange={highGlucose=>update({highGlucose})} options={[['40','Глюкоза 40 %'],['20','Глюкоза 20 %'],['10','Глюкоза 10 %']]} bad={r.issues.some(i=>i.field==='highGlucose')}/>
       <Sel id="lowGlucose" label="Меньший %" value={p.lowSolution==='glucose'?p.lowGlucose:p.lowSolution==='nacl'?'nacl':'0'} onChange={x=>update(x==='nacl'?{lowSolution:'nacl',lowGlucose:'0'}:x==='0'?{lowSolution:'water',lowGlucose:'0'}:{lowSolution:'glucose',lowGlucose:x})} options={[['10','Глюкоза 10 %'],['5','Глюкоза 5 %'],['0','Вода для инъекций'],['nacl','NaCl 0,9 %']]}/>
-      <Sel id="drugFluid" label="Растворители препаратов" value={p.drugFluid} onChange={x=>update({drugFluid:x as Inputs['drugFluid']})} options={[['extra','сверх объёма'],['included','в объёме (КР 2015)']]}/>
+      <Sel id="drugFluid" label="Растворители препаратов" value={p.drugFluid} onChange={x=>update({drugFluid:x as Inputs['drugFluid']})} options={[['extra','сверх суточного объёма'],['included','внутри объёма (КР 2015)']]}/>
+      <Ro label="Жидкость вне инфузии">{f(rs.drugMl,1)} мл · {p.drugFluid==='included'?'вычтена из основного раствора, глюкоза концентрированнее':'сверх расчёта: в/в = потребность + растворители'}</Ro>
      </div>
     </Blk>
     <Blk id="enteral" title="Смесь" hint={<>от {trophicThresholdMlPerKg} мл/кг вычитается из в/в</>}>
@@ -139,9 +141,23 @@ export function Calculator({initial,initialUi,onChange,locked=false,lockedNote,f
       <Sel id="formulaId" label="Смесь" value={p.formulaId} onChange={formulaId=>update({formulaId})} options={[['none','Не выбрана'],...enteralFormulas.map(x=>[x.id,x.name] as const)]} bad={r.issues.some(i=>i.field==='formulaId')}/>
       <Sel id="feedingRoute" label="Способ" value={p.feedingRoute} onChange={feedingRoute=>update({feedingRoute})} options={[['','Не указан'],...feedingRoutes.map(x=>[x,x] as const)]}/>
       <label className="f" htmlFor="fill-feeds"><span className="l">Во все кормления</span><span className="w"><input id="fill-feeds" inputMode="decimal" autoComplete="off" value={ru(fill)} placeholder="—" onChange={e=>{const x=dot(e.target.value);setFill(x);update({feeds:Array(8).fill(x)});}}/><em>мл × 8</em></span></label>
-      <Ro label="Энтерально">{f(rs.enteralMl,0)} мл · {f(en.volumePerKg,1)} мл/кг · {rs.enteralMl?(trophic?'трофическое, сверх объёма':'учтено, Б/Ж/У вычтены'):'нет'}</Ro>
+      <Ro label={extraFeeds.length?'Энтерально всего':'Энтерально'}>{f(rs.enteralMl,0)} мл · {f(en.volumePerKg,1)} мл/кг · {rs.enteralMl?(trophic?'трофическое, сверх объёма':'учтено, Б/Ж/У вычтены'):'нет'}</Ro>
      </div>
      <div className="feeds" role="group" aria-label="Объёмы по кормлениям">{feedingHours.map((hour,i)=><label key={hour} className={'cell'+(r.issues.some(x=>x.field==='feeds')?' bad':'')}><span>{hour.slice(0,2)}ʰ</span><input inputMode="decimal" autoComplete="off" value={ru(p.feeds[i]??'')} aria-label={'Кормление '+hour} onChange={e=>{const feeds=[...p.feeds];while(feeds.length<8)feeds.push('');feeds[i]=dot(e.target.value);update({feeds});}}/></label>)}</div>
+     {extraFeeds.map((row,index)=>{
+      const field='extraFeeds:'+row.id;const bad=r.issues.some(x=>x.field===field);const res=en.rows.find(x=>x.id===row.id);
+      const patch=(change:Partial<EnteralRow>)=>update({extraFeeds:extraFeeds.map(x=>x.id===row.id?{...x,...change}:x)});
+      const same=row.feeds.every(x=>(x??'')===(row.feeds[0]??''))?row.feeds[0]??'':'';
+      return <div key={row.id} className="feed-extra" role="group" aria-label={'Смесь '+(index+2)}>
+       <div className="grid c2">
+        <Sel id={'formula-'+row.id} label={'Смесь '+(index+2)} value={row.formulaId} onChange={formulaId=>patch({formulaId})} options={[['none','Не выбрана'],...enteralFormulas.map(x=>[x.id,x.name] as const)]} bad={bad}/>
+        <Sel id={'route-'+row.id} label="Способ" value={row.route} onChange={route=>patch({route})} options={[['','Как у первой'],...feedingRoutes.map(x=>[x,x] as const)]}/>
+        <label className="f" htmlFor={'fill-'+row.id}><span className="l">Во все кормления</span><span className="w"><input id={'fill-'+row.id} inputMode="decimal" autoComplete="off" value={ru(same)} placeholder="—" onChange={e=>patch({feeds:Array(8).fill(dot(e.target.value))})}/><em>мл × 8</em></span></label>
+        <Ro label={'Смесь '+(index+2)+' за сутки'}>{f(res?.volumeMl??null,0)} мл · <button type="button" className="tb" onClick={()=>update({extraFeeds:extraFeeds.filter(x=>x.id!==row.id)})}>убрать</button></Ro>
+       </div>
+       <div className="feeds">{feedingHours.map((hour,i)=><label key={hour} className={'cell'+(bad?' bad':'')}><span>{hour.slice(0,2)}ʰ</span><input inputMode="decimal" autoComplete="off" value={ru(row.feeds[i]??'')} aria-label={'Смесь '+(index+2)+', кормление '+hour} onChange={e=>{const feeds=[...row.feeds];while(feeds.length<8)feeds.push('');feeds[i]=dot(e.target.value);patch({feeds});}}/></label>)}</div>
+      </div>;})}
+     {extraFeeds.length<2&&<p className="hint feed-add"><button type="button" className="tb" onClick={()=>update({extraFeeds:[...extraFeeds,newEnteralRow('f'+Date.now().toString(36))]})}>+ ещё одна смесь</button> — вторая смесь или грудное молоко по своим кормлениям; объём и Б/Ж/У суммируются</p>}
     </Blk>
     <Blk id="medications" title="Препараты" hint="группа → поиск → в лист" wide>
      <DrugsBlock p={p} r={r} update={update} notice={setNotice}/>

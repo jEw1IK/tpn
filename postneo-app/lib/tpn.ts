@@ -403,6 +403,8 @@ export function changeMedicineMethod(m:Medicine,method:Medicine['method'],kg:num
  return {patch:{method,...(method==='amount'?{amount:decimalInput(value)}:{pump:decimalInput(value)})},error:''};
 }
 export type ElectrolyteVolumes={caMl:number|null;kclMl:number|null;nacl10Ml:number|null;nacl09Ml:number|null;mgMl:number|null;soluvitMl:number|null;dipeptivenMl:number|null;addamelMl:number|null;carrierMl:number|null;sumMl:number|null};
+/** Перебор суточной жидкости дополнительными объёмами, который лист ещё терпит (мл). */
+export const overshootToleranceMl=5;
 export function calculate(p:Inputs){
  const errors:string[]=[];
  const issues:Issue[]=[];
@@ -481,15 +483,24 @@ export function calculate(p:Inputs){
  const drugMl=drugSum!==null&&Number.isFinite(drugSum)?drugSum:null;
  const drugsOnTop=(p.drugFluid??'included')==='extra';
  const fatLineMl=fatMl!==null&&vitalipidMl!==null?fatMl+vitalipidMl:null;
+ const ru=(value:number,digits=1)=>value.toLocaleString('ru-RU',{maximumFractionDigits:digits});
  const parts=[total,enteralCountedMl,aaMl,fatLineMl,drugsOnTop?0:drugMl,other,flush,carrierMl];
  // Main line (glucose + electrolytes + vitamins + carrier). The carrier is on top of the need, as in mytpn.
  const rawBase=parts.every(v=>v!==null)?total!-enteralCountedMl!-aaMl!-fatLineMl!-(drugsOnTop?0:drugMl!)-other!-flush!+carrierMl!:null;
  const tolerance=Number.EPSILON*16*Math.max(1,...parts.map(v=>Math.abs(v??0)));
- const base=rawBase!==null&&Number.isFinite(rawBase)&&Number.isFinite(tolerance)&&Math.abs(rawBase)<=tolerance?0:rawBase;
- if(base!==null&&base<0)error('fluid','Дополнительные объёмы превышают суточную жидкость на '+(-base).toLocaleString('ru-RU',{maximumFractionDigits:3})+' мл');
+ const snapped=rawBase!==null&&Number.isFinite(rawBase)&&Number.isFinite(tolerance)&&Math.abs(rawBase)<=tolerance?0:rawBase;
+ // Перебор суточной жидкости до 5 мл — не ошибка: глюкозы в основной линии не будет, электролиты и проводник идут сверх. Больше — лист не считается.
+ const baseOver=snapped!==null&&snapped<0?-snapped:0;
+ const base=snapped!==null&&snapped<0?0:snapped;
  const rawMixVolume=base!==null&&electrolytes.sumMl!==null&&carrierMl!==null?base-electrolytes.sumMl-carrierMl:null;
- const mixVolume=rawMixVolume!==null&&Number.isFinite(rawMixVolume)&&Number.isFinite(tolerance)&&Math.abs(rawMixVolume)<=tolerance?0:rawMixVolume;
- if(mixVolume!==null&&mixVolume<0)error('calciumMlPerKg','Объём электролитов превышает объём базы');
+ const mixSnapped=rawMixVolume!==null&&Number.isFinite(rawMixVolume)&&Number.isFinite(tolerance)&&Math.abs(rawMixVolume)<=tolerance?0:rawMixVolume;
+ const mixOver=mixSnapped!==null&&mixSnapped<0?-mixSnapped:0;
+ const mixVolume=mixSnapped!==null&&mixSnapped<0?0:mixSnapped;
+ const overshoot=baseOver+mixOver;
+ if(overshoot>overshootToleranceMl)error(baseOver>0?'fluid':'calciumMlPerKg',(baseOver>0?'Дополнительные объёмы':'Электролиты и проводник')+' превышают суточную жидкость на '+ru(overshoot,1)+' мл — больше допустимых '+overshootToleranceMl+' мл');
+ else if(overshoot>0)warnings.push((baseOver>0?'Дополнительные объёмы':'Электролиты и проводник')+' превышают суточную жидкость на '+ru(overshoot,1)+' мл: глюкозы в основной линии нет, в/в выйдет на '+ru(overshoot,1)+' мл больше расчёта');
+ // Фактический объём основной линии: без глюкозы это электролиты с проводником, они не сжимаются.
+ const lineMl=base!==null&&mixVolume!==null&&electrolytes.sumMl!==null&&carrierMl!==null?mixVolume+electrolytes.sumMl+carrierMl:base;
  if(mixVolume===0&&glucoseGrams!==null&&glucoseGrams>0)error('gir','Для заданной глюкозы не осталось жидкости');
  let lowMl:number|null=null,highMl:number|null=null;
  if(low!==null&&high!==null&&high<=low)error('highGlucose','Большая концентрация глюкозы должна превышать меньшую');
@@ -499,9 +510,9 @@ export function calculate(p:Inputs){
   if(highMl< -mixTolerance||lowMl< -mixTolerance){error('lowGlucose','Из выбранных растворов глюкозы нельзя получить заданную смесь');highMl=null;lowMl=null;}
   else{highMl=Math.max(0,highMl);lowMl=Math.max(0,lowMl);}
  }
- const baseRate=base!==null&&base>=0&&bh!==null?base/bh:null;
+ const baseRate=lineMl!==null&&lineMl>=0&&bh!==null?lineMl/bh:null;
  const glucosePercent=glucoseGrams!==null&&mixVolume!==null&&mixVolume>0?glucoseGrams*100/mixVolume:null;
- const mainLinePercent=glucoseGrams!==null&&base!==null&&base>0?glucoseGrams*100/base:null;
+ const mainLinePercent=glucoseGrams!==null&&lineMl!==null&&lineMl>0?glucoseGrams*100/lineMl:null;
  if(glucosePercent!==null&&glucosePercent>40)error('gir','Итоговая концентрация глюкозы больше 40 %: уменьшите дотацию глюкозы или увеличьте объём жидкости');
  else if(mainLinePercent!==null&&mainLinePercent>12.5)warnings.push('Глюкоза '+mainLinePercent.toLocaleString('ru-RU',{maximumFractionDigits:1})+' % в основной линии — выше 12,5 %, в периферическую вену не рекомендуется (КР 2015, раздел 15)');
  // mytpn: each intravenous antibiotic administration pauses the amino-acid line for half an hour.
@@ -512,7 +523,6 @@ export function calculate(p:Inputs){
  if(aaRate!==null&&(!Number.isFinite(aaRate)||(aaMl!==null&&aaMl>0&&aaRate===0))){error('aaHours',aaRate===0?'Положительная скорость аминокислот теряется до нуля: проверьте слишком малые значения':'Скорость аминокислот превышает числовой диапазон');aaRate=null;}
  const fatRate=fatLineMl!==null&&fh!==null?fatLineMl/fh:null;
  // The sheet prints rates to the pump step; flag a line or syringe that this rounding moves by 5 % or more.
- const ru=(value:number,digits=1)=>value.toLocaleString('ru-RU',{maximumFractionDigits:digits});
  const pumpCheck=(name:string,rate:number|null,ml:number|null,hours:number|null)=>{
   if(rate===null||!Number.isFinite(rate)||rate<=0)return;
   if(rate<pumpMinMlPerHour){warnings.push(`${name}: ${ru(rate,3)} мл/ч — меньше минимальной скорости помпы 0,1 мл/ч. Увеличьте объём раствора или сократите время введения.`);return;}
@@ -522,7 +532,7 @@ export function calculate(p:Inputs){
    :shift<0?`за ${ru(hours)} ч уйдёт ${ru(set*hours)} мл из ${ru(ml)} (−${ru(-shift*100,0)} %)`:`${ru(ml)} мл закончатся за ${ru(ml/set)} ч вместо ${ru(hours)}`;
   warnings.push(`${name}: на помпе ${ru(set)} мл/ч вместо ${ru(rate,3)} — ${effect}. Подберите объём или длительность так, чтобы скорость была кратна 0,1 мл/ч.`);
  };
- pumpCheck('Основная линия',baseRate,base,bh);
+ pumpCheck('Основная линия',baseRate,lineMl,bh);
  pumpCheck('Аминокислоты',aaRate,aaMl,aaInfusionHours);
  pumpCheck('Жировая эмульсия',fatRate,fatLineMl,fh);
  for(const m of medicines)if(m.valid&&m.kind==='continuous')pumpCheck(m.name,m.rate,null,null);
@@ -532,7 +542,7 @@ export function calculate(p:Inputs){
  const tenth=(value:number|null)=>value===null?null:Math.round(value*10)/10;
  const heparinParts=[tenth(mixVolume),tenth(aaMl),tenth(carrierMl),...electrolyteParts.map(tenth)];
  const heparinUnits=heparin!==null&&heparinParts.every(v=>v!==null)?Math.round(heparin*heparinParts.reduce<number>((sum,v)=>sum+v!,0)):null;
- const ivTotal=base!==null&&aaMl!==null&&fatLineMl!==null&&drugMl!==null&&other!==null&&flush!==null?base+aaMl+fatLineMl+drugMl+other+flush:null;
+ const ivTotal=lineMl!==null&&aaMl!==null&&fatLineMl!==null&&drugMl!==null&&other!==null&&flush!==null?lineMl+aaMl+fatLineMl+drugMl+other+flush:null;
  // Натрий за сутки: NaCl 10 % и 0,9 % в линии, NaCl 0,9 % как меньший раствор и проводник, растворители препаратов (0,9 % = 0,154 ммоль/мл).
  const naPerMl09=0.154;const isSaline=(name:string)=>/nacl/i.test(name);
  let diluentNaMmol:number|null=0;
@@ -554,8 +564,8 @@ export function calculate(p:Inputs){
  const krEnteral=counted?.energyKcal??null;
  const krTotal=krParenteral!==null&&krEnteral!==null?krParenteral+krEnteral:null;
  const kr={glucoseKcal:krGlucoseKcal,fatKcal:krFatKcal,parenteralKcal:krParenteral,enteralKcal:krEnteral,totalKcal:krTotal,perKg:krTotal!==null&&kg!==null&&kg>0?krTotal/kg:null};
- for(const [field,value] of [['fluid',total],['enteral',enteralMl],['aa',aaGrams],['aa',aaMl],['aaHours',aaRate],['fat',fatGrams],['fat',fatMl],['fatHours',fatRate],['gir',glucoseGrams],['calciumMlPerKg',caMl],['calciumContent',calciumMmol],['kcl',electrolytes.kclMl],['nacl10',electrolytes.nacl10Ml],['nacl09',electrolytes.nacl09Ml],['magnesium',electrolytes.mgMl],['soluvit',electrolytes.soluvitMl],['vitalipid',vitalipidMl],['dipeptiven',electrolytes.dipeptivenMl],['fluid',base],['lowGlucose',lowMl],['highGlucose',highMl],['baseHours',baseRate],['gir',glucosePercent],['baseHours',actualGir],['heparin',heparinUnits],['insulin',insulinUnits],['fluid',ivTotal],['weightToday',receivedPerKg]] as [string,number|null][]){if(value!==null&&!Number.isFinite(value))error(field,'Расчёт превышает числовой диапазон');}
- return {valid:errors.length===0,errors,issues,warnings,kg,kgToday,dynamics,day,total,enteralMl,enteralCountedMl,enteralTrophicMl,enteralSubtracted,enteralNutrition,proteinPlan,aaGrams,aaMl,aaRate,aaPauses,aaInfusionHours,fatTotal,fatGrams,fatMl,vitalipidMl,fatLineMl,fatRate,glucoseTotal,glucoseGrams,calciumMmol,calciumMmolPerKg,caMl,electrolytes,carrierName,carrierMl,base,baseRate,glucosePercent,mainLinePercent,actualGir,mixVolume,lowMl,highMl,lowPercent:low,drugMl,drugsOnTop,insulinUnits,insulinMl,heparinUnits,ivTotal,allFluid,receivedPerKg,kr,medicines,other,flush,sodium};
+ for(const [field,value] of [['fluid',total],['enteral',enteralMl],['aa',aaGrams],['aa',aaMl],['aaHours',aaRate],['fat',fatGrams],['fat',fatMl],['fatHours',fatRate],['gir',glucoseGrams],['calciumMlPerKg',caMl],['calciumContent',calciumMmol],['kcl',electrolytes.kclMl],['nacl10',electrolytes.nacl10Ml],['nacl09',electrolytes.nacl09Ml],['magnesium',electrolytes.mgMl],['soluvit',electrolytes.soluvitMl],['vitalipid',vitalipidMl],['dipeptiven',electrolytes.dipeptivenMl],['fluid',lineMl],['lowGlucose',lowMl],['highGlucose',highMl],['baseHours',baseRate],['gir',glucosePercent],['baseHours',actualGir],['heparin',heparinUnits],['insulin',insulinUnits],['fluid',ivTotal],['weightToday',receivedPerKg]] as [string,number|null][]){if(value!==null&&!Number.isFinite(value))error(field,'Расчёт превышает числовой диапазон');}
+ return {valid:errors.length===0,errors,issues,warnings,kg,kgToday,dynamics,day,total,enteralMl,enteralCountedMl,enteralTrophicMl,enteralSubtracted,enteralNutrition,proteinPlan,aaGrams,aaMl,aaRate,aaPauses,aaInfusionHours,fatTotal,fatGrams,fatMl,vitalipidMl,fatLineMl,fatRate,glucoseTotal,glucoseGrams,calciumMmol,calciumMmolPerKg,caMl,electrolytes,carrierName,carrierMl,base:lineMl,overshootMl:overshoot,baseRate,glucosePercent,mainLinePercent,actualGir,mixVolume,lowMl,highMl,lowPercent:low,drugMl,drugsOnTop,insulinUnits,insulinMl,heparinUnits,ivTotal,allFluid,receivedPerKg,kr,medicines,other,flush,sodium};
 }
 export type Result=ReturnType<typeof calculate>;
 

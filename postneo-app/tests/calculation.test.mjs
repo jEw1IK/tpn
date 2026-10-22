@@ -136,7 +136,24 @@ test('Все конечные скорости проверяются на пе�
 test('Машинная погрешность не превращает нулевой остаток в недостаток жидкости',()=>{
  const p=example();Object.assign(p,{weight:'1000',formulaId:'nutrilon-pre-0',fluid:'100',enteral:'80.2',aa:'2.1852',fat:'6.8076',gir:'0',calciumMlPerKg:'0',lowGlucose:'0',medicines:[]});// жиры: 3,76 г/кг в/в + 3,0476 г из 80,2 мл Пре 0
  const r=calculate(p);assert.equal(r.valid,true);assert.equal(r.base,0);assert.equal(r.mixVolume,0);assert.equal(r.baseRate,0);
- p.enteral='80.200001';assert.equal(calculate(p).valid,false);
+ p.enteral='80.200001';assert.equal(calculate(p).valid,true);
+});
+test('Перебор суточной жидкости до 5 мл — предупреждение, больше — ошибка',()=>{
+ const p=example();Object.assign(p,{weight:'1000',formulaId:'nutrilon-pre-0',fluid:'100',enteral:'80.2',aa:'2.1852',fat:'6.8076',gir:'0',calciumMlPerKg:'0',lowGlucose:'0',medicines:[]});
+ // лишний энтеральный объём частично гасится меньшими АК и жирами (белок и жир смеси вычтены), поэтому перебор меньше прибавки
+ p.enteral='85';const r=calculate(p);assert.equal(r.valid,true);assert.equal(r.base,0);assert.equal(r.mixVolume,0);assert.ok(r.overshootMl>2.8&&r.overshootMl<3);
+ assert.ok(r.warnings.some(w=>/превышают суточную жидкость на 2,9 мл/.test(w)));near(r.ivTotal,r.aaMl+r.fatLineMl);near(r.allFluid,r.total+r.overshootMl);
+ p.enteral='89.5';const bad=calculate(p);assert.equal(bad.valid,false);assert.ok(bad.errors.some(e=>/больше допустимых 5 мл/.test(e)));
+ // электролиты больше остатка: линия — только электролиты, глюкоза отсутствует
+ p.enteral='80.2';p.calciumMlPerKg='3';const ca=calculate(p);assert.equal(ca.valid,true);near(ca.base,3);assert.equal(ca.mixVolume,0);near(ca.overshootMl,3);near(ca.baseRate,3/24);
+ assert.ok(ca.warnings.some(w=>/Электролиты и проводник превышают/.test(w)));
+ p.calciumMlPerKg='5.5';assert.equal(calculate(p).valid,false);
+});
+test('Препараты в объёме: перебор 0,4 мл не блокирует лист, в/в растёт на эти 0,4 мл',()=>{
+ const p=example();p.drugFluid='included';const a=calculate(p);assert.equal(a.valid,true);
+ p.other=String(a.base+0.4);const r=calculate(p);assert.equal(r.valid,false);// глюкоза задана, а объёма под неё нет
+ // электролиты (2,6 мл) не сжимаются: линия — только они, перебор = 0,4 + 2,6
+ p.gir='0';const z=calculate(p);assert.equal(z.valid,true);near(z.base,z.electrolytes.sumMl);near(z.overshootMl,3);near(z.ivTotal,z.total+3);
 });
 test('Фактический GIR следует длительности и сохраняет суточную массу глюкозы',()=>{
  const p=example();p.baseHours='12';const r=calculate(p);near(r.actualGir,14);near(r.glucoseGrams,13.104);near(r.baseRate,92.75/12);

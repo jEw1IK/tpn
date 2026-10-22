@@ -7,7 +7,7 @@ import {BrandMark} from '@/components/brand-mark';
 
 /* Печатный лист А4 альбомный: лицевая сторона с инфузиями и препаратами, оборот с кормлениями, КОС и диурезом.
    Размеры в миллиметрах совпадают с CSS (.nurse-page), поэтому разбиение на страницы считается заранее. */
-const MM={content:195,header:21,summary:8.6,section:11,blank:6.4,minRow:8.6,minMed:8,line:3.1,heading:3.6,pad:1.8,charsPerLine:84,footer:12,maxBlank:6};
+const MM={content:195,header:21,summary:8.6,section:11,blank:6.4,minRow:8.6,minMed:8,line:3.1,heading:3.6,pad:1.8,charsPerLine:84,footer:12,maxBlank:16,minBlank:5};
 const lines=(text:string)=>text.split('\n').reduce((n,l)=>n+Math.max(1,Math.ceil(l.length/MM.charsPerLine)),0);
 function rowMm(row:WorkingRow,compact:boolean){
  const text=compact?row.instruction.replace(/\n/g,' · '):row.instruction;
@@ -25,8 +25,12 @@ function paginate(infusion:WorkingRow[],medication:WorkingRow[]){
   if(used+mm>capacity(pages.length===0)&&(page.infusion.length||page.medication.length)){pages.push(page);page={infusion:[],medication:[],blanks:0};used=0;}
   page.medication.push(row);used+=mm;
  }
- page.blanks=Math.max(0,Math.min(MM.maxBlank,Math.floor((capacity(pages.length===0)-used)/MM.blank)));
- pages.push(page);return pages;
+ const fit=(room:number)=>Math.max(0,Math.min(MM.maxBlank,Math.floor(room/MM.blank)));
+ page.blanks=fit(capacity(pages.length===0)-used);
+ pages.push(page);
+ // Пустых строк для рукописных назначений должно хватать: если на последней странице их меньше minBlank, добавляем страницу продолжения.
+ if(page.blanks<MM.minBlank)pages.push({infusion:[],medication:[],blanks:fit(capacity(false))});
+ return pages;
 }
 
 const hourClass=(x:NurseHour,extra='')=>'h'+(x.index%6===0&&x.index?' b1':'')+(x.time.startsWith('00:')?' d0':'')+(extra?' '+extra:'');
@@ -75,6 +79,7 @@ export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}
  ];
  const continuous=(row:WorkingRow)=>{const m=p.medicines.find(x=>x.id===row.medicineId);const d=m&&drugs.find(x=>x.id===m.drug);return d?.kind==='continuous';};
  const feedMarks=feedingMarks(p.feeds,p.start);
+ const extraRows=(p.extraFeeds??[]).map(row=>({row,res:en.rows.find(x=>x.id===row.id),marks:feedingMarks(row.feeds,p.start)}));
  const feedStatus=!r.valid?'':r.enteralMl?(en.counted?'учтено в суточной жидкости, Б/Ж/У смеси вычтены из в/в':'трофическое, сверх расчётной жидкости, в ПП не учтено'):'кормление не назначено; строки для записи, если его начнут';
  const every3=hours.filter(x=>x.index%3===0);
  const labRows=['pH','pCO₂, мм рт. ст.','pO₂, мм рт. ст.','BE, ммоль/л','HCO₃⁻, ммоль/л','Лактат, ммоль/л','Na⁺','K⁺','Ca²⁺','Cl⁻','Hb, г/л','Ht, %','Билирубин','Глюкоза, ммоль/л'];
@@ -94,7 +99,9 @@ export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}
    <Header p={p} header={header} r={r} title="Оборот листа" sub="энтеральное питание · КОС · респираторная поддержка · диурез и положение" compact/>
    <h2>Энтеральное питание<small>{feedStatus}</small></h2>
    <table className="feed"><colgroup><col className="n" style={{width:'64mm'}}/><col className="v"/><col className="k"/>{hours.map(x=><col key={x.index}/>)}</colgroup><thead><tr><th className="n">Смесь · способ · объём на кормление</th><th>мл<br/>сутки</th><th>мл/кг</th><HourHead hours={hours}/></tr></thead><tbody>
-    <tr><th scope="row">{en.formula?en.formula.name:'Смесь не выбрана'}{p.feedingRoute&&<small> · {p.feedingRoute.toLowerCase()}</small>}{p.feeds.some(x=>x.trim())&&<small> · по {p.feeds[0].replace('.',',')||'—'} мл × 8</small>}</th><td className="v">{show(r.enteralMl,0)}</td><td className="k">{show(en.volumePerKg,0)}</td>{hours.map(x=><td key={x.index} className={hourClass(x,feedMarks[x.index]?'feed':'')}>{feedMarks[x.index]||''}</td>)}</tr>
+    <tr><th scope="row">{en.formula?en.formula.name:'Смесь не выбрана'}{p.feedingRoute&&<small> · {p.feedingRoute.toLowerCase()}</small>}{p.feeds.some(x=>x.trim())&&<small> · по {p.feeds[0].replace('.',',')||'—'} мл × 8</small>}</th><td className="v">{show(extraRows.length?en.primaryMl:r.enteralMl,0)}</td><td className="k">{show(extraRows.length&&en.primaryMl!==null&&r.kg?en.primaryMl/r.kg:en.volumePerKg,0)}</td>{hours.map(x=><td key={x.index} className={hourClass(x,feedMarks[x.index]?'feed':'')}>{feedMarks[x.index]||''}</td>)}</tr>
+    {extraRows.map(({row,res,marks})=><tr key={row.id}><th scope="row">{res?.formula?res.formula.name:'Смесь не выбрана'}{(row.route||p.feedingRoute)&&<small> · {(row.route||p.feedingRoute).toLowerCase()}</small>}{row.feeds.some(x=>x.trim())&&<small> · по {row.feeds[0].replace('.',',')||'—'} мл × 8</small>}</th><td className="v">{show(res?.volumeMl??null,0)}</td><td className="k">{show(res?.volumeMl!==null&&res?.volumeMl!==undefined&&r.kg?res.volumeMl/r.kg:null,0)}</td>{hours.map(x=><td key={x.index} className={hourClass(x,marks[x.index]?'feed':'')}>{marks[x.index]||''}</td>)}</tr>)}
+    {extraRows.length>0&&<tr><th scope="row">Энтерально всего</th><td className="v">{show(r.enteralMl,0)}</td><td className="k">{show(en.volumePerKg,0)}</td>{hours.map(x=><td key={x.index} className={hourClass(x)}/>)}</tr>}
     <tr><th scope="row">Остаточный объём</th><td className="v"/><td className="k"/>{hours.map(x=><td key={x.index} className={hourClass(x)}/>)}</tr>
     <tr><th scope="row">Фактически получил</th><td className="v"/><td className="k"/>{hours.map(x=><td key={x.index} className={hourClass(x)}/>)}</tr>
    </tbody></table>

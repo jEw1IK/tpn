@@ -22,7 +22,7 @@ export function SidePanel({p,r,rs,pending,aaName,fatName,headerIssues}:{p:Inputs
   [fatName,v(rs.fatLineMl,1)+' мл',v(rs.fatRate,1)+' мл/ч','sum'],
   ['Виталипид',v(rs.vitalipidMl,1)+' мл',''],
   ['Энтерально',f(rs.enteralMl,0)+' мл',f(en.volumePerKg,1)+' мл/кг'],
-  ['Препараты в баланс',f(rs.drugMl,1)+' мл',p.medicines.length+' в листе'],
+  ['Препараты '+(rs.drugsOnTop?'сверх объёма':'в объёме'),f(rs.drugMl,1)+' мл',p.medicines.length+' в листе'],
   ['Всего за сутки',f(rs.total,0)+' мл',f(numeric(p.fluid),0)+' мл/кг','sum'],
  ];
  const alerts=[...rs.errors,...(pending.length?['Пока без дозы, в баланс не вошли: '+pending.join(', ')]:[])];

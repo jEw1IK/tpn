@@ -402,6 +402,10 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offse
 .out b{color:var(--fg);font-weight:600}
 .out .w{color:var(--warn)}
 .feeds{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.feed-extra{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.feed-extra .grid{margin-bottom:8px}
+.feed-add{margin:10px 0 0}
+.feed-add .tb{font-weight:600}
 .feeds .cell{padding:0 6px;justify-content:space-between}
 .feeds .cell input{width:100%;min-width:0;text-align:center}
 
