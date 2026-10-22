@@ -96,9 +96,9 @@ test('Меньший раствор без глюкозы: вода или NaCl 
  const w=calculate(patient({lowSolution:'water',lowGlucose:'77'})),n=calculate(patient({lowSolution:'nacl'}));
  assert.equal(w.valid,true);near(w.lowPercent,0);near(w.highMl,12.168*100/40);near(w.lowMl,143-w.highMl);near(n.highMl,w.highMl);
 });
-test('Глюкоза выше 12,5 % предупреждает, выше 40 % — ошибка',()=>{
+test('Глюкоза выше 12,5 % предупреждает; когда не умещается даже 40 % — линия растёт сверх потребности с предупреждением',()=>{
  const warn=calculate(patient({gir:'10'}));assert.equal(warn.valid,true);assert.ok(warn.warnings.some(w=>w.includes('12,5')));
- const bad=calculate(patient({gir:'32'}));assert.equal(bad.valid,false);assert.ok(bad.errors.some(e=>e.includes('40')));
+ const big=calculate(patient({gir:'32'}));assert.equal(big.valid,true);assert.ok(big.glucosePercent<=40+1e-9);assert.ok(big.overshootMl>0);assert.ok(big.warnings.some(w=>w.includes('не умещаются')));
 });
 
 test('mytpn, второй пациент 2400 г/2 сут с учтённым кормлением 80 мл: все ячейки совпадают в пределах округления, гепарин 75 Ед',()=>{

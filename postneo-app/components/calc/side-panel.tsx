@@ -1,5 +1,6 @@
 'use client';
 
+import {routeShort} from '@/lib/directory';
 import {clock,drugs,numeric,type Inputs,type Result} from '@/lib/tpn';
 import {formatNumber as f} from '@/lib/format';
 import {ru} from './fields';
@@ -49,10 +50,10 @@ function MedList({p,r,rs}:{p:Inputs;r:Result;rs:Result}){
    const d=drugs.find(x=>x.id===m.drug);const name=d?d.name:m.drug;const res=r.medicines.find(x=>x.id===m.id);
    if(!res||!res.valid)return <li key={m.id}><b>{name}</b><span className="pend">{res?res.errors.join(' · '):''}</span></li>;
    const times=res.times.map(t=>clock(t,p.start)).join(', ');
-   if(res.kind==='continuous')return <li key={m.id}><b>{name}</b><span><em>{ru(m.dose)} {m.unit}</em> · {f(res.rate,1)} мл/ч · {f(res.fluidVolume,1)} мл/сут</span></li>;
+   if(res.kind==='continuous')return <li key={m.id}><b>{name}</b><span><em>{ru(m.dose)} {m.unit}</em> · {f(res.rate,1)} мл/ч · {f(res.fluidVolume,1)} мл/сут</span><span>шприц: <em>{f(res.amountMg,2)} мг</em>{res.stockMl!==null?<> ({f(res.stockMl,2)} мл) + {m.diluent.trim()||'растворитель'} {f(res.solventMl,2)} мл</>:<> в {m.diluent.trim()||'растворителе'}</>} = {ru(m.volume)} мл · {f(res.concentration,3)} мг/мл</span></li>;
    if(res.kind==='blood')return <li key={m.id}><b>{name}</b><span><em>{ru(m.dose)} мл/кг</em> → {f(res.volume,1)} мл · {times} · вне баланса</span></li>;
    const n=24/(numeric(m.interval)||24);const perDay=numeric(m.dose)!==null?numeric(m.dose)!*n:null;
-   return <li key={m.id}><b>{name}</b><span><em>{ru(m.dose)} {m.unit||'мг/кг'} × {f(n,0)}</em>{perDay!==null&&<> · {f(perDay,1)} {m.unit||'мг/кг'}/сут</>}</span><span><em>{f(res.doseAmount,2)} {res.doseLabel}</em> на введение · {times} · {f(res.fluidVolume,1)} мл/сут</span></li>;
+   return <li key={m.id}><b>{name}</b><span><em>{ru(m.dose)} {m.unit||'мг/кг'} × {f(n,0)}</em>{perDay!==null&&<> · {f(perDay,1)} {m.unit||'мг/кг'}/сут</>}</span><span><em>{f(res.doseAmount,2)} {res.doseLabel}</em> на введение · {times}{res.intravenous?<> · {m.diluent.trim()||'растворитель'} до {ru(m.volume)} мл · {f(res.fluidVolume,1)} мл/сут</>:<> · {routeShort(m.route)}, без разведения</>}</span>{res.loadingMg!==null&&res.loadingMg>0&&<span>нагрузка: <em>{f(res.loadingMg,2)} мг</em> в {m.loadingFirst||'—'}{res.intravenous?<> · до {ru(m.loadingVolume)} мл за {ru(m.loadingHours)} ч</>:null}</span>}</li>;
   })}</ul>
   <div className="sum2"><span>Доп. жидкость с препаратами</span><b>{f(rs.drugMl,1)} мл</b></div>
  </>;

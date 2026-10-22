@@ -28,10 +28,10 @@ test('Для периодического препарата полный рас
  const p=example();p.medicines[0].stock='100';
  const row=buildWorkingRows(p,calculate(p)).medication[0];
  assert.equal(row.volume,'4');assert.equal(row.preparedVolume,'2');assert.equal(row.rate,'4');
- assert.ok(row.instruction.startsWith('48,75 мг на введение (37,5 мг/кг)'));
- for(const text of ['каждые 12 ч','Раствор до 2 мл','NaCl 0,9%','в/в за 0,5 ч','08:00, 20:00'])assert.ok(row.instruction.includes(text),text);
+ assert.ok(row.instruction.startsWith('48,75 мг на введение'));assert.ok(!row.instruction.includes('мг/кг'));
+ for(const text of ['каждые 12 ч','препарат 0,49 мл + NaCl 0,9% 1,51 мл = 2 мл','в/в за 0,5 ч','08:00, 20:00'])assert.ok(row.instruction.includes(text),text);
  assert.equal(row.instruction.split('\n').length,2);
- assert.ok(row.preparation.includes('100 мг/мл'));assert.ok(row.preparation.includes('0,4875 мл'));assert.ok(row.preparation.includes('1,5125 мл'));
+ assert.equal(row.preparation,undefined);// состав раствора теперь прямо в строке назначения
  assert.deepEqual(row.timing,['08:00','20:00']);assert.equal(row.partial,false);
 });
 test('Все группы и непрерывные шприцы включены с заданными дозами и суточными объёмами',()=>{
@@ -39,22 +39,22 @@ test('Все группы и непрерывные шприцы включен�
  for(const [drug,stock,dose] of [['dopamine','40','1'],['dobutamine','12.5','1'],['epinephrine','1','0.01'],['norepinephrine','1','0.01'],['midazolam','5','0.01'],['fentanyl','0.05','0.1']]){
   p.medicines.push({...newMedicine(drug,drug),dose,pump:'0.05',volume:'5',stock});
  }
- const r=calculate(p);assert.equal(r.valid,true);const rows=buildWorkingRows(p,r).medication;
- assert.deepEqual(rows.map(row=>row.medicineId),p.medicines.map(m=>m.id));
+ const r=calculate(p);assert.equal(r.valid,true);const sheet=buildWorkingRows(p,r);const rows=[...sheet.medication,...sheet.infusion.filter(row=>row.medicineId)];
+ assert.deepEqual(rows.map(row=>row.medicineId),p.medicines.map(m=>m.id));assert.equal(sheet.infusion.filter(row=>row.medicineId).length,6);
  assert.deepEqual(new Set(rows.map(row=>row.group)),new Set(['antibiotic','vasoactive','sedation']));
  const dopamine=rows.find(row=>row.id==='dopamine');assert.equal(dopamine.preparedVolume,'5');assert.equal(dopamine.volume,'1,2');assert.equal(dopamine.rate,'< 0,1');
  assert.ok(r.warnings.some(w=>w.includes('0,05 мл/ч — меньше минимальной скорости помпы 0,1 мл/ч')),r.warnings.join('\n'));
- assert.ok(dopamine.instruction.startsWith('7,8 мг в шприце (1 мкг/кг/мин)'));
- assert.ok(dopamine.instruction.includes('инфузия 24 ч'));assert.ok(dopamine.instruction.includes('Шприц до 5 мл'));
+ assert.ok(dopamine.instruction.startsWith('7,8 мг (0,19 мл) + NaCl 0,9% 4,81 мл = 5 мл'),dopamine.instruction);assert.ok(!dopamine.instruction.includes('мкг/кг'));
+ assert.ok(dopamine.instruction.includes('инфузия 24 ч'));
  assert.deepEqual(dopamine.timing,[]);
 });
 test('Длительность непрерывной инфузии отличается от времени расходования полного шприца',()=>{
  const p=example();p.medicines=[{...newMedicine('midazolam','duration-syringe'),dose:'0.01',pump:'0.05',volume:'5',stock:'5',hours:'24'}];
- const r=calculate(p);assert.equal(r.valid,true);const row=buildWorkingRows(p,r).medication[0];
+ const r=calculate(p);assert.equal(r.valid,true);const row=buildWorkingRows(p,r).infusion.find(x=>x.medicineId);
  assert.equal(row.rate,'< 0,1');assert.equal(row.volume,'1,2');assert.equal(row.preparedVolume,'5');
  assert.ok(row.instruction.includes('инфузия 24 ч'));assert.ok(row.instruction.includes('шприц на 100 ч'));
  assert.ok(!row.instruction.includes('за 24 ч'));
- const draft=buildWorkingRows({...p,weight:''},calculate({...p,weight:''})).medication[0];
+ const draft=buildWorkingRows({...p,weight:''},calculate({...p,weight:''})).infusion.find(x=>x.medicineId);
  assert.ok(draft.instruction.includes('шприц на — ч'));assert.ok(!draft.instruction.includes('шприц на 100 ч'));
 });
 test('Частичные периодические введения не скрывают полный объём и точное время с переходом даты',()=>{
@@ -74,7 +74,7 @@ test('Нагрузка отдельно сохраняет полный раст
  const main=rows.find(row=>row.id==='example-amp'),load=rows.find(row=>row.kind==='loading');
  assert.equal(main.volume,'4');assert.equal(load.volume,'1');assert.equal(load.preparedVolume,'3');assert.equal(load.rate,'6');
  assert.deepEqual(load.timing,['23:50']);assert.equal(load.partial,true);
- assert.ok(load.instruction.startsWith('6,5 мг на нагрузку (5 мг/кг)'));assert.ok(load.instruction.includes('Раствор до 3 мл'));
+ assert.ok(load.instruction.startsWith('6,5 мг на нагрузку'));assert.ok(!load.instruction.includes('мг/кг'));assert.ok(load.instruction.includes('NaCl 0,9% до 3 мл'));
  assert.ok(load.warning.includes('за сутки 1 мл (2,1667 мг)'));assert.ok(load.instruction.includes(load.warning));
  assert.deepEqual(load.notes,['Источник схемы: '+source.trim()]);assert.ok(!load.instruction.includes(source.trim()));
 });
@@ -91,7 +91,7 @@ test('Неполные вычисления скрыты в рабочем ви�
   assert.equal(row.volume,'—');assert.equal(row.rate,'—');assert.deepEqual(row.timing,[]);assert.equal(row.partial,false);
   assert.ok(!row.instruction.includes('NaN')&&!row.instruction.includes('Infinity'));
  }
- assert.ok(sheet.medication[0].instruction.startsWith('— мг на введение (37,5 мг/кг)'));
+ assert.ok(sheet.medication[0].instruction.startsWith('— мг на введение'));
  assert.equal(sheet.medication[0].preparedVolume,'2');
  assert.ok(sheet.infusion[0].instruction.includes('Ca глюконат 10% — мл (2 мл/кг)'));
 });

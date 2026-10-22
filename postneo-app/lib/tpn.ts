@@ -1,4 +1,4 @@
-import {bolusUnits,doseUnits,drugs as directoryDrugs,isIntravenousRoute,routeMinutes,type Drug,type DrugKind,type Group} from './directory.ts';
+import {isOralRoute,bolusUnits,doseUnits,drugs as directoryDrugs,isIntravenousRoute,routeMinutes,type Drug,type DrugKind,type Group} from './directory.ts';
 export type {Group,Drug} from './directory.ts';
 export type Medicine = {
  id:string; drug:string; group:Group; mode:'intermittent'|'continuous'; dose:string; unit:string;
@@ -301,7 +301,7 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
  if(time(start)===null)error('start','Укажите начало расчётных суток');
  if(!d)error('drug','Неизвестный препарат');
  if(!['intermittent','continuous'].includes(m.mode))error('mode','Проверьте режим введения');
- const intravenous=isIntravenousRoute(m.route);
+ const intravenous=isIntravenousRoute(m.route);const oral=isOralRoute(m.route);
  const routeTime=routeMinutes(m.route);
  /** Hours entered by the doctor win; the legacy minutes field still works for older inputs. */
  const durationField=(hoursKey:'infusionHours'|'loadingHours',minutesKey:'minutes'|'loadingMinutes')=>String(m[hoursKey]??'').trim()!==''?hoursKey:String(m[minutesKey]??'').trim()!==''?minutesKey:hoursKey;
@@ -333,7 +333,7 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
   doseLabel=baseUnit;
   const interval=read('interval','Укажите интервал от 1 до 168 ч',true);
   if(intravenous)minutes=routeTime??duration('infusionHours','minutes','Укажите время введения, ч',true);
-  else minutes=routeTime??duration('infusionHours','minutes','Укажите время введения, ч',false)??0;
+  else minutes=oral?0:routeTime??duration('infusionHours','minutes','Укажите время введения, ч',false)??0;
   if(interval!==null&&(interval<1||interval>168))error('interval','Интервал должен быть от 1 до 168 ч');
   if(minutes!==null&&interval!==null&&minutes>interval*60)error(routeTime!==null?'route':durationField('infusionHours','minutes'),'Время введения больше интервала');
   if(time(m.first)===null)error('first','Укажите время первого введения');
@@ -344,7 +344,7 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
    if(doseAmount!==null&&factor!==undefined)doseMg=positiveResult('dose',doseAmount*factor);
    if(doseMg!==null&&minutes!==null&&times.length>0)amountMg=positiveResult('dose',doseMg*times.reduce((sum,t)=>sum+Math.min(1,Math.max(0,1440-t)/Math.max(minutes!,1e-9)),0));
   }
-  const final=intravenous?read('volume','Укажите конечный объём',true):(m.volume.trim()?read('volume','Проверьте конечный объём',true):null);
+  const final=intravenous?read('volume','Укажите конечный объём',true):oral?null:(m.volume.trim()?read('volume','Проверьте конечный объём',true):null);
   if(final!==null){
    const fractions=minutes!==null&&times.length>0?times.reduce((sum,t)=>sum+(minutes!>0?Math.min(1,Math.max(0,1440-t)/minutes!):1),0):null;
    volume=fractions!==null?positiveResult('volume',final*fractions):null;
@@ -352,7 +352,7 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
    if(doseMg!==null)concentration=positiveResult('dose',doseMg/final);
   }
   fluidVolume=intravenous?volume:0;
-  if(m.stock.trim()!==''){const stock=read('stock','Проверьте исходную концентрацию',true);if(stock!==null&&doseMg!==null&&final!==null){stockMl=positiveResult('stock',doseMg/stock);if(stockMl!==null){solventMl=final-stockMl;if(exceedsVolume(stockMl,final))error('volume','Объём препарата больше конечного объёма');else solventMl=Math.max(0,solventMl);}}}
+  if(m.stock.trim()!==''&&!oral){const stock=read('stock','Проверьте исходную концентрацию',true);if(stock!==null&&doseMg!==null&&final!==null){stockMl=positiveResult('stock',doseMg/stock);if(stockMl!==null){solventMl=final-stockMl;if(exceedsVolume(stockMl,final))error('volume','Объём препарата больше конечного объёма');else solventMl=Math.max(0,solventMl);}}}
  }else{
   const factors:Record<string,number>={'мкг/кг/мин':0.06,'мкг/кг/ч':0.001,'мг/кг/ч':1};
   const factor=factors[m.unit];if(!factor)error('dose','Проверьте единицы скорости дозы');
@@ -403,8 +403,6 @@ export function changeMedicineMethod(m:Medicine,method:Medicine['method'],kg:num
  return {patch:{method,...(method==='amount'?{amount:decimalInput(value)}:{pump:decimalInput(value)})},error:''};
 }
 export type ElectrolyteVolumes={caMl:number|null;kclMl:number|null;nacl10Ml:number|null;nacl09Ml:number|null;mgMl:number|null;soluvitMl:number|null;dipeptivenMl:number|null;addamelMl:number|null;carrierMl:number|null;sumMl:number|null};
-/** Перебор суточной жидкости дополнительными объёмами, который лист ещё терпит (мл). */
-export const overshootToleranceMl=5;
 export function calculate(p:Inputs){
  const errors:string[]=[];
  const issues:Issue[]=[];
@@ -489,32 +487,29 @@ export function calculate(p:Inputs){
  const rawBase=parts.every(v=>v!==null)?total!-enteralCountedMl!-aaMl!-fatLineMl!-(drugsOnTop?0:drugMl!)-other!-flush!+carrierMl!:null;
  const tolerance=Number.EPSILON*16*Math.max(1,...parts.map(v=>Math.abs(v??0)));
  const snapped=rawBase!==null&&Number.isFinite(rawBase)&&Number.isFinite(tolerance)&&Math.abs(rawBase)<=tolerance?0:rawBase;
- // Перебор суточной жидкости до 5 мл — не ошибка: глюкозы в основной линии не будет, электролиты и проводник идут сверх. Больше — лист не считается.
- const baseOver=snapped!==null&&snapped<0?-snapped:0;
- const base=snapped!==null&&snapped<0?0:snapped;
- const rawMixVolume=base!==null&&electrolytes.sumMl!==null&&carrierMl!==null?base-electrolytes.sumMl-carrierMl:null;
+ // Электролиты, проводник и глюкоза в максимальной концентрации не сжимаются: если они не умещаются в суточную жидкость,
+ // линия становится больше расчёта (четыре кардиотоника внутри объёма — обычный случай), а лист предупреждает, на сколько.
+ const fixedMl=electrolytes.sumMl!==null&&carrierMl!==null?electrolytes.sumMl+carrierMl:null;
+ const rawMixVolume=snapped!==null&&fixedMl!==null?snapped-fixedMl:null;
  const mixSnapped=rawMixVolume!==null&&Number.isFinite(rawMixVolume)&&Number.isFinite(tolerance)&&Math.abs(rawMixVolume)<=tolerance?0:rawMixVolume;
- const mixOver=mixSnapped!==null&&mixSnapped<0?-mixSnapped:0;
- const mixVolume=mixSnapped!==null&&mixSnapped<0?0:mixSnapped;
- const overshoot=baseOver+mixOver;
- if(overshoot>overshootToleranceMl)error(baseOver>0?'fluid':'calciumMlPerKg',(baseOver>0?'Дополнительные объёмы':'Электролиты и проводник')+' превышают суточную жидкость на '+ru(overshoot,1)+' мл — больше допустимых '+overshootToleranceMl+' мл');
- else if(overshoot>0)warnings.push((baseOver>0?'Дополнительные объёмы':'Электролиты и проводник')+' превышают суточную жидкость на '+ru(overshoot,1)+' мл: глюкозы в основной линии нет, в/в выйдет на '+ru(overshoot,1)+' мл больше расчёта');
- // Фактический объём основной линии: без глюкозы это электролиты с проводником, они не сжимаются.
- const lineMl=base!==null&&mixVolume!==null&&electrolytes.sumMl!==null&&carrierMl!==null?mixVolume+electrolytes.sumMl+carrierMl:base;
- if(mixVolume===0&&glucoseGrams!==null&&glucoseGrams>0)error('gir','Для заданной глюкозы не осталось жидкости');
+ const minGlucoseMl=glucoseGrams!==null&&high!==null&&high>0?glucoseGrams*100/high:glucoseGrams===0?0:null;
+ const mixVolume=mixSnapped===null||minGlucoseMl===null?null:Math.max(mixSnapped,minGlucoseMl);
+ const overshoot=mixSnapped!==null&&mixVolume!==null&&mixVolume>mixSnapped?mixVolume-mixSnapped:0;
+ const base=mixVolume!==null&&fixedMl!==null?mixVolume+fixedMl:snapped!==null&&snapped<0?0:snapped;
+ if(overshoot>0.05)warnings.push('Назначения не умещаются в суточную жидкость: в/в выйдет на '+ru(overshoot,1)+' мл больше расчёта'+((mixSnapped??0)<=0?' (глюкоза в максимальной концентрации, основной раствор только из неё и электролитов)':''));
+ const lineMl=base;
  let lowMl:number|null=null,highMl:number|null=null;
  if(low!==null&&high!==null&&high<=low)error('highGlucose','Большая концентрация глюкозы должна превышать меньшую');
  if(mixVolume!==null&&mixVolume>=0&&glucoseGrams!==null&&low!==null&&high!==null&&high>low){
   highMl=(glucoseGrams*100-low*mixVolume)/(high-low);lowMl=mixVolume-highMl;
   const mixTolerance=Number.EPSILON*16*Math.max(1,Math.abs(mixVolume),Math.abs(highMl),Math.abs(lowMl));
   if(highMl< -mixTolerance||lowMl< -mixTolerance){error('lowGlucose','Из выбранных растворов глюкозы нельзя получить заданную смесь');highMl=null;lowMl=null;}
-  else{highMl=Math.max(0,highMl);lowMl=Math.max(0,lowMl);}
+  else{highMl=highMl<=mixTolerance?0:highMl;lowMl=lowMl<=mixTolerance?0:lowMl;}
  }
  const baseRate=lineMl!==null&&lineMl>=0&&bh!==null?lineMl/bh:null;
  const glucosePercent=glucoseGrams!==null&&mixVolume!==null&&mixVolume>0?glucoseGrams*100/mixVolume:null;
  const mainLinePercent=glucoseGrams!==null&&lineMl!==null&&lineMl>0?glucoseGrams*100/lineMl:null;
- if(glucosePercent!==null&&glucosePercent>40)error('gir','Итоговая концентрация глюкозы больше 40 %: уменьшите дотацию глюкозы или увеличьте объём жидкости');
- else if(mainLinePercent!==null&&mainLinePercent>12.5)warnings.push('Глюкоза '+mainLinePercent.toLocaleString('ru-RU',{maximumFractionDigits:1})+' % в основной линии — выше 12,5 %, в периферическую вену не рекомендуется (КР 2015, раздел 15)');
+ if(mainLinePercent!==null&&mainLinePercent>12.5)warnings.push('Глюкоза '+mainLinePercent.toLocaleString('ru-RU',{maximumFractionDigits:1})+' % в основной линии — выше 12,5 %, в периферическую вену не рекомендуется (КР 2015, раздел 15)');
  // mytpn: each intravenous antibiotic administration pauses the amino-acid line for half an hour.
  const aaPauses=(p.aaPause??'off')==='on'?medicines.filter(m=>m.valid&&m.group==='antibiotic'&&m.kind==='intermittent'&&m.intravenous&&(numeric(p.medicines.find(x=>x.id===m.id)?.interval??'')??99)<25).reduce((sum,m)=>sum+m.times.length,0)*0.5:0;
  const aaInfusionHours=ah===null?null:ah-aaPauses;

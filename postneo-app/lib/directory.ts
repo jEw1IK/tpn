@@ -40,6 +40,11 @@ export function isIntravenousRoute(route:string):boolean{
  const value=route.trim().toLowerCase();
  return value==='внутривенно'||value.startsWith('в/в');
 }
+/** Через рот или зонд: препарат дают как есть, без разведения и без объёма в балансе. */
+export function isOralRoute(route:string):boolean{
+ const value=route.trim().toLowerCase();
+ return value==='per os'||value.includes('зонд')||value==='внутрь'||value==='энтерально';
+}
 /** Administration time encoded in the route label, e.g. «в/в (за 30 мин)» → 30. Plain «в/в» has none. */
 export function routeMinutes(route:string):number|null{
  const match=/\(за\s+(\d+(?:[.,]\d+)?)\s*(мин|час)/i.exec(route);

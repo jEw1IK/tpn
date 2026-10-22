@@ -23,7 +23,7 @@ test('Незаполненное начало суток не объявляет
  assert.ok(r.issues.every(x=>x.field!=='first'));assert.equal(r.medicines[0].volume,null);
 });
 test('Пустая разовая доза блокирует полный баланс',()=>{const p=example();p.medicines[0].dose='';const r=calculate(p);assert.equal(r.valid,false);assert.equal(r.drugMl,null);assert.equal(r.base,null)});
-test('Отрицательный остаток и невозможная смесь помечаются ошибкой',()=>{const p=example();p.other='200';assert.equal(calculate(p).valid,false);const q=example();q.highGlucose='11';assert.equal(calculate(q).valid,false)});
+test('Отрицательный остаток не блокирует лист, слишком разведённая смесь из выбранных растворов — ошибка',()=>{const p=example();p.other='200';const r=calculate(p);assert.equal(r.valid,true);assert.ok(r.overshootMl>100);const q=example();q.highGlucose='11';assert.equal(calculate(q).valid,true);const d=example();d.gir='1';assert.equal(calculate(d).valid,false)});
 test('Русская десятичная запятая поддерживается без ошибочного parseFloat',()=>{near(numeric('3,5'),3.5);assert.equal(numeric('3abc'),null);assert.equal(numeric(''),null);assert.equal(numeric('-1'),null);assert.equal(numeric('Infinity'),null)});
 test('Смена длительности жиров меняет скорость, сохраняя суточное количество',()=>{const p=example();p.fatHours='20';near(calculate(p).fatRate,9.75/20);near(calculate(p).fatMl,9.75)});
 test('Расписание от первого введения не добавляет дозу на границе следующих суток',()=>{assert.deepEqual(schedule('00:00',12,'00:00'),[0,720]);assert.deepEqual(schedule('23:00',8,'08:00'),[900,1380]);assert.deepEqual(schedule('08:00',24,'08:00'),[0]);});
@@ -138,22 +138,26 @@ test('Машинная погрешность не превращает нуле
  const r=calculate(p);assert.equal(r.valid,true);assert.equal(r.base,0);assert.equal(r.mixVolume,0);assert.equal(r.baseRate,0);
  p.enteral='80.200001';assert.equal(calculate(p).valid,true);
 });
-test('Перебор суточной жидкости до 5 мл — предупреждение, больше — ошибка',()=>{
+test('Перебор суточной жидкости любого размера — предупреждение, линия не сжимается ниже электролитов и глюкозы',()=>{
  const p=example();Object.assign(p,{weight:'1000',formulaId:'nutrilon-pre-0',fluid:'100',enteral:'80.2',aa:'2.1852',fat:'6.8076',gir:'0',calciumMlPerKg:'0',lowGlucose:'0',medicines:[]});
- // лишний энтеральный объём частично гасится меньшими АК и жирами (белок и жир смеси вычтены), поэтому перебор меньше прибавки
  p.enteral='85';const r=calculate(p);assert.equal(r.valid,true);assert.equal(r.base,0);assert.equal(r.mixVolume,0);assert.ok(r.overshootMl>2.8&&r.overshootMl<3);
- assert.ok(r.warnings.some(w=>/превышают суточную жидкость на 2,9 мл/.test(w)));near(r.ivTotal,r.aaMl+r.fatLineMl);near(r.allFluid,r.total+r.overshootMl);
- p.enteral='89.5';const bad=calculate(p);assert.equal(bad.valid,false);assert.ok(bad.errors.some(e=>/больше допустимых 5 мл/.test(e)));
- // электролиты больше остатка: линия — только электролиты, глюкоза отсутствует
+ assert.ok(r.warnings.some(w=>/не умещаются в суточную жидкость: в\/в выйдет на 2,9 мл/.test(w)));near(r.ivTotal,r.aaMl+r.fatLineMl);near(r.allFluid,r.total+r.overshootMl);
+ p.enteral='95';const big=calculate(p);assert.equal(big.valid,true);assert.ok(big.overshootMl>5);
+ // электролиты больше остатка: линия — только электролиты
  p.enteral='80.2';p.calciumMlPerKg='3';const ca=calculate(p);assert.equal(ca.valid,true);near(ca.base,3);assert.equal(ca.mixVolume,0);near(ca.overshootMl,3);near(ca.baseRate,3/24);
- assert.ok(ca.warnings.some(w=>/Электролиты и проводник превышают/.test(w)));
- p.calciumMlPerKg='5.5';assert.equal(calculate(p).valid,false);
+ // глюкоза без объёма: идёт в максимальной концентрации, объём линии растёт
+ p.gir='8';p.calciumMlPerKg='0';p.highGlucose='40';const g=calculate(p);assert.equal(g.valid,true);near(g.mixVolume,g.glucoseGrams*100/40);near(g.highMl,g.mixVolume);near(g.lowMl,0);near(g.glucosePercent,40);near(g.overshootMl,g.mixVolume);
+ assert.ok(g.warnings.some(w=>/максимальной концентрации/.test(w)));assert.ok(g.errors.length===0);
 });
-test('Препараты в объёме: перебор 0,4 мл не блокирует лист, в/в растёт на эти 0,4 мл',()=>{
- const p=example();p.drugFluid='included';const a=calculate(p);assert.equal(a.valid,true);
- p.other=String(a.base+0.4);const r=calculate(p);assert.equal(r.valid,false);// глюкоза задана, а объёма под неё нет
- // электролиты (2,6 мл) не сжимаются: линия — только они, перебор = 0,4 + 2,6
- p.gir='0';const z=calculate(p);assert.equal(z.valid,true);near(z.base,z.electrolytes.sumMl);near(z.overshootMl,3);near(z.ivTotal,z.total+3);
+test('Четыре кардиотоника внутри объёма: лист считается, в/в больше потребности на их объём',()=>{
+ const p={...example(),weight:'585',weightToday:'585',fluid:'160',gir:'6',aa:'3.5',fat:'0',calciumMlPerKg:'2',highGlucose:'40',lowGlucose:'10',drugFluid:'included',enteralMode:'feeds8',formulaId:'nutrilon-pre-0',feeds:Array(8).fill('5'),
+  medicines:[1,2,3,4].map(i=>({...newMedicine('norepinephrine','card'+i),mode:'continuous',dose:'1',unit:'мкг/кг/мин',hours:'20',pump:'1',volume:'20',stock:'2',diluent:'NaCl 0,9%',route:'в/в',method:'rate'}))};
+ const r=calculate(p);assert.equal(r.valid,true,r.errors.join('; '));near(r.drugMl,80);assert.ok(r.overshootMl>0);near(r.ivTotal+r.enteralMl,r.total+r.overshootMl);
+ near(r.glucosePercent,40);assert.ok(r.girIv>0);
+});
+test('Per os: без разведения, без объёма в балансе, пустое «до» не ошибка',()=>{
+ const m={...newMedicine('other-vit-d','v'),mode:'intermittent',dose:'500',unit:'МЕ',interval:'24',first:'08:00',route:'per os',volume:'',diluent:'',infusionHours:''};
+ const r=calculateMedicine(m,2,'08:00');assert.equal(r.valid,true,r.errors.join('; '));assert.equal(r.fluidVolume,0);assert.equal(r.volume,null);assert.equal(r.concentration,null);near(r.doseAmount,500);
 });
 test('Фактический GIR следует длительности и сохраняет суточную массу глюкозы',()=>{
  const p=example();p.baseHours='12';const r=calculate(p);near(r.actualGir,14);near(r.glucoseGrams,13.104);near(r.baseRate,92.75/12);
