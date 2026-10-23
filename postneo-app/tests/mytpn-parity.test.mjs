@@ -75,7 +75,7 @@ test('Вес сегодня для доз и «получит», вес для �
  near(r.dynamics.dayGrams,-50);near(r.dynamics.dayPercent,-4);near(r.dynamics.birthPercent,-100*200/1400);assert.ok(r.warnings.some(w=>w.includes('за сутки')));
 });
 test('Справочник: 81 позиция mytpn плюс седация, все группы, у каждой записи подсказка и единица',()=>{
- assert.equal(drugs.length,83);
+ assert.equal(drugs.length,157);assert.equal(new Set(drugs.map(d=>d.id)).size,drugs.length);
  for(const g of groupOrder)assert.ok(drugs.some(d=>d.group===g),g);
  for(const d of drugs){assert.ok(d.unit,d.id);assert.equal(typeof d.hint,'string');const m=newMedicine(d.id,'x');assert.equal(m.group,d.group);}
  assert.equal(enteralFormulas.length,14);assert.deepEqual(feedingHours.length,8);

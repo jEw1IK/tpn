@@ -239,9 +239,9 @@ test('Помпа: скорость с шагом 0,1 мл/ч; предупреж
  const dop=newMedicine('dopamine','dop');
  const byRate=calculate({...example(),medicines:[{...dop,dose:'5',method:'rate',pump:'0.55',volume:'12',stock:'40',hours:'24'}]});
  assert.equal(byRate.medicines[0].valid,true,byRate.medicines[0].errors.join('; '));
- assert.ok(pump(byRate).some(w=>w.startsWith('Дофамин 4%: на помпе 0,6 мл/ч вместо 0,55 — доза будет на 9 % выше расчётной')),pump(byRate).join('\n'));
+ assert.ok(pump(byRate).some(w=>w.startsWith('Дофамин 4% (40 мг/мл): на помпе 0,6 мл/ч вместо 0,55 — доза будет на 9 % выше расчётной')),pump(byRate).join('\n'));
  const tiny=calculate({...example(),medicines:[{...dop,dose:'5',method:'rate',pump:'0.05',volume:'12',stock:'40',hours:'24'}]});
- assert.ok(pump(tiny).some(w=>w==='Дофамин 4%: 0,05 мл/ч — меньше минимальной скорости помпы 0,1 мл/ч. Увеличьте объём раствора или сократите время введения.'),pump(tiny).join('\n'));
+ assert.ok(pump(tiny).some(w=>w==='Дофамин 4% (40 мг/мл): 0,05 мл/ч — меньше минимальной скорости помпы 0,1 мл/ч. Увеличьте объём раствора или сократите время введения.'),pump(tiny).join('\n'));
  assert.equal(formatNumber(0.05,1),'< 0,1');
 });
 test('Кальций задаётся в мл/кг глюконата 10 % (КР 2015, таблица 3); ммоль — производная; выше 4 мл/кг — предупреждение',()=>{
@@ -257,10 +257,10 @@ test('натрий за сутки: растворители препарато�
  const p={...example(),weight:'1000',weightToday:'1000',nacl10:'2',nacl09:'0',lowSolution:'glucose'};
  const r=calculate(p);
  assert.equal(r.valid,true,r.errors.join('; '));
- // ампициллин + сульбактам и нетилмицин: по 2 мл NaCl 0,9 % дважды в сутки → 8 мл → 1,232 ммоль
- assert.ok(Math.abs(r.sodium.diluentMmol-8*0.154)<1e-9,String(r.sodium.diluentMmol));
+ // ампициллин + сульбактам: 2 мл NaCl 0,9 % дважды (4 мл); нетилмицин 25 мг/мл: 3 мг = 0,12 мл препарата + 1,88 мл NaCl дважды → 7,76 мл → 1,195 ммоль
+ assert.ok(Math.abs(r.sodium.diluentMmol-7.76*0.154)<1e-9,String(r.sodium.diluentMmol));
  assert.ok(Math.abs(r.sodium.lineMmol-2)<1e-9);
- assert.ok(Math.abs(r.sodium.perKg-(2+8*0.154))<1e-9);
+ assert.ok(Math.abs(r.sodium.perKg-(2+7.76*0.154))<1e-9);
  const water={...p,medicines:p.medicines.map(m=>({...m,diluent:'Вода для инъекций'}))};
  assert.equal(calculate(water).sodium.diluentMmol,0);
 });

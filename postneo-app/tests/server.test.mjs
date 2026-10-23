@@ -31,13 +31,13 @@ test('пациент → лист на сегодня → подпись → л�
  assert.equal(openSheet(db,p.id,'2026-10-16',doc.id).id,s1.id);
  const filled={...s1.inputs,weightToday:'1400',weight:'1400',fluid:'80',gir:'4',aa:'2',fat:'1',calciumMlPerKg:'3',hospitalDay:'2',medicines:[Object.assign(newMedicine('ampsul','m1'),{dose:'37.5',interval:'12',first:'08:00',volume:'2',infusionHours:'0.5'})]};
  const saved=saveSheet(db,p.id,'2026-10-16',filled,{aaName:'Аминовен Инфант 10%'},doc.id);
- assert.equal(saved.summary.valid,true,JSON.stringify(saved.summary));assert.ok(saved.summary.total>0);assert.deepEqual(saved.summary.drugs,['Ампициллин + сульбактам']);
+ assert.equal(saved.summary.valid,true,JSON.stringify(saved.summary));assert.ok(saved.summary.total>0);assert.deepEqual(saved.summary.drugs,['Ампициллин + сульбактам 0,5 г + 0,25 г (Сультасин)']);
  assert.deepEqual(listWeights(db,p.id).map(w=>w.grams),[1450,1400]);
  signSheet(db,p.id,'2026-10-16',doc.id);assert.equal(getSheet(db,p.id,'2026-10-16').status,'signed');
  assert.throws(()=>saveSheet(db,p.id,'2026-10-16',filled,{},doc.id),/подписан/);
  const s2=openSheet(db,p.id,'2026-10-17',doc.id);
  assert.equal(s2.inputs.day,'3');assert.equal(s2.inputs.weightYesterday,'1400');assert.equal(s2.inputs.weightToday,'');assert.equal(s2.inputs.fluid,'80');assert.equal(s2.inputs.medicines.length,1);
- assert.deepEqual(courses(db,p.id,'2026-10-17').map(c=>[c.name,c.day]),[['Ампициллин + сульбактам',2]]);
+ assert.deepEqual(courses(db,p.id,'2026-10-17').map(c=>[c.name,c.day]),[['Ампициллин + сульбактам 0,5 г + 0,25 г (Сультасин)',2]]);
  const g=patientGlance(db,p,'2026-10-17');assert.equal(g.day,3);assert.deepEqual(g.pcv,{weeks:30,days:4});assert.equal(g.lastSheet.date,'2026-10-17');
  unsignSheet(db,p.id,'2026-10-16');assert.equal(getSheet(db,p.id,'2026-10-16').version,2);
  upsertWeight(db,p.id,'2026-10-17',1380,doc.id);assert.equal(listWeights(db,p.id).length,3);

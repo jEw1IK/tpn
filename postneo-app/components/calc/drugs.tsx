@@ -9,7 +9,7 @@ import {Pick,dot,ru} from './fields';
 
 /** Вкладки групп: антибиотики вместе с противогрибковыми и противовирусными, кардиотоники отдельно. */
 const TABS:[string,string,readonly Group[],string][]=[
- ['abx','Антибиотики',['antibiotic','antifungal'],'цеф, ван, мер, флук…'],['tonic','Кардиотоники',['vasoactive'],'доф, добу, адр, нор…'],['sed','Седация',['sedation'],'название…'],
+ ['abx','Антибиотики',['antibiotic','antifungal'],'цеф, ван, мер, флук…'],['tonic','Кардио',['vasoactive','cardiac'],'доф, добу, адр, нор, амио…'],['sed','Седация',['sedation'],'мида, фент, конв…'],
  ['horm','Гормоны',['hormone'],'название…'],['anal','Аналептики',['analeptic'],'название…'],['blood','Кровь',['blood'],'эр, плазма, тромбо…'],['other','Другие',['other'],'название…'],
 ];
 export type DoseHint={dose:string;interval:string;loading:string};

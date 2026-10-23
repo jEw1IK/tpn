@@ -34,9 +34,9 @@ export function newMedicine(drug:string,id:string):Medicine {
  const d=drugs.find(x=>x.id===drug);
  if(!d)throw new RangeError('Неизвестный препарат: '+drug);
  const continuous=d.kind==='continuous';
- const stock=d.percent!==undefined?String(d.percent*10):'';
+ const stock=d.percent!==undefined?String(d.percent*10):d.stock!==undefined?String(d.stock):'';
  return {id,drug,group:d.group,mode:continuous?'continuous':'intermittent',dose:'',unit:d.unit,
- interval:d.kind==='blood'?'24':'',first:'00:00',minutes:'',infusionHours:'',loadingHours:'',volume:continuous?'12':'',diluent:'NaCl 0,9%',route:'в/в',hours:'24',pump:continuous?'0.5':'',amount:'',stock,method:'rate',
+ interval:d.kind==='blood'?'24':'',first:'00:00',minutes:'',infusionHours:'',loadingHours:'',volume:continuous?'12':'',diluent:d.diluent??'NaCl 0,9%',route:d.route??'в/в',hours:'24',pump:continuous?'0.5':'',amount:'',stock,method:'rate',
  loading:false,loadingDose:'',loadingVolume:'',loadingFirst:'00:00',loadingMinutes:'',loadingSource:''};
 }
 export const emptyFeeds=()=>Array<string>(8).fill('');
