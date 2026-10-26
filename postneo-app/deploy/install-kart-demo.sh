@@ -29,10 +29,19 @@ EOF
 # данные живут вне клона, чтобы обновление их не трогало
 sed -i "s#- ./data:/data#- $ROOT/data:/data#" "$APP/docker-compose.yml"
 ( cd "$APP" && docker compose up -d --build )
+# место на диске: промежуточные слои сборки больше не нужны
+docker image prune -f >/dev/null 2>&1 || true
+docker builder prune -f >/dev/null 2>&1 || true
 
-# nginx: /kart/ → контейнер; конфиг сайта остаётся как есть, добавляем include
-NGX=/etc/nginx/sites-available/postneo-site
-if [ -f "$NGX" ] && ! grep -q "location /kart/" "$NGX"; then
+# nginx: /kart/ → контейнер. Ищем конфиг, который раздаёт сайт (/postneo/), и добавляем в него location
+NGX=""
+for f in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do
+  [ -f "$f" ] && grep -q "postneo" "$f" && { NGX="$(readlink -f "$f")"; break; }
+done
+[ -n "$NGX" ] || { [ -f /etc/nginx/sites-enabled/default ] && NGX="$(readlink -f /etc/nginx/sites-enabled/default)"; }
+if [ -z "$NGX" ]; then echo "nginx: конфиг сайта не найден, добавьте location /kart/ вручную (см. deploy/README.md)";
+elif ! grep -q "location /kart/" "$NGX"; then
+  echo "nginx: добавляю /kart/ в $NGX" 
   python3 - "$NGX" <<'PY'
 import re,sys
 f=sys.argv[1];s=open(f).read()
