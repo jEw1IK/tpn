@@ -12,7 +12,7 @@ export function SidePanel({p,r,rs,pending,aaName,fatName,headerIssues}:{p:Inputs
  const en=rs.enteralNutrition;const kg=rs.kg;
  const lowName=p.lowSolution==='water'?'воды':p.lowSolution==='nacl'?'NaCl 0,9 %':'глюкозы '+ru(p.lowGlucose)+' %';
  const rows:[string,string,string,string?][]=[
-  ['Глюкоза '+v(rs.glucosePercent,1)+' %',v(rs.mixVolume,1)+' мл',v(rs.glucoseGrams,2)+' г'],
+  ['Глюкоза '+v(rs.glucosePercent,2)+' %',v(rs.mixVolume,1)+' мл',v(rs.glucoseGrams,2)+' г'],
   ['  из '+lowName+' + глюкозы '+ru(p.highGlucose)+' %',v(rs.lowMl,1)+' + '+v(rs.highMl,1),'в/в '+v(rs.girIv,1)+' из '+v(rs.girTotal,1)+' мг/кг/мин','dim'],
   ['Ca глюконат 10 %',v(rs.caMl,1)+' мл',f(rs.calciumMmolPerKg,2)+' ммоль/кг'],
   ['MgSO₄ 25 %',v(e.mgMl,1)+' мл',''],['KCl 4 %',v(e.kclMl,1)+' мл',''],['NaCl 0,9 %',v(e.nacl09Ml,1)+' мл',''],
@@ -29,11 +29,15 @@ export function SidePanel({p,r,rs,pending,aaName,fatName,headerIssues}:{p:Inputs
  const alerts=[...rs.errors,...(pending.length?['Пока без дозы, в баланс не вошли: '+pending.join(', ')]:[])];
  return <aside className="side glass" id="side" aria-label="Полученная инфузия">
   <h2 className="h">Полученная инфузия</h2>
-  <div className="big"><span data-testid="total-fluid">{f(rs.total,0)}</span><small>мл</small><span className={'pct'+(high?' w':'')}><span data-testid="line-percent">{v(rs.mainLinePercent,1)}</span> %</span></div>
+  <div className="big"><span data-testid="total-fluid">{f(rs.total,0)}</span><small>мл</small><span className={'pct'+(high?' w':'')}><span data-testid="line-percent">{v(rs.mainLinePercent,2)}</span> %</span></div>
   <div className="hint">основной раствор {v(rs.base,1)} мл · {v(rs.baseRate,1)} мл/ч · в/в {v(rs.ivTotal,0)} мл</div>
+  <dl className="conc" aria-label="Концентрация глюкозы">
+   <div><dt>Глюкоза в растворе</dt><dd className={high?'w':undefined}>{v(rs.glucosePercent,2)} <small>%</small></dd><span>{v(rs.glucoseGrams,2)} г в {v(rs.mixVolume,1)} мл глюкозы</span></div>
+   <div><dt>Основной раствор</dt><dd className={high?'w':undefined}>{v(rs.mainLinePercent,2)} <small>%</small></dd><span>с электролитами, {v(rs.base,1)} мл · {v(rs.baseRate,2)} мл/ч</span></div>
+  </dl>
   {alerts.length>0&&<div className="alerts" role="alert">{alerts.map((x,i)=><div key={i} className="alert err">{x}</div>)}</div>}
   <table className="tab"><tbody>
-   <tr className="sum"><td>Основной раствор</td><td className="n">{v(rs.base,1)} мл</td><td className={'r'+(high?' w':'')}>{v(rs.mainLinePercent,1)} %</td></tr>
+   <tr className="sum"><td>Основной раствор</td><td className="n">{v(rs.base,1)} мл</td><td className={'r'+(high?' w':'')}>{v(rs.mainLinePercent,2)} %</td></tr>
    {rows.map(([a,b,c,cls],i)=><tr key={i} className={cls}><td>{a}</td><td className="n">{b}</td><td className="r">{c}</td></tr>)}
   </tbody></table>
   <dl className="keys"><div><dt>Белок всего</dt><dd>{v(rs.proteinPlan.achievedPerKg,2)} г/кг</dd></div><div><dt>Жиры в/в</dt><dd>{v(kg&&rs.fatGrams!==null?rs.fatGrams/kg:null,2)} г/кг</dd></div><div><dt>ккал по КР</dt><dd>{v(rs.kr.perKg,0)} /кг</dd></div></dl>

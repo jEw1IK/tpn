@@ -120,8 +120,8 @@ test('Сестринский лист сохраняет назначенную 
 test('Подробная строка аминокислот использует рассчитанную в/в дозу после энтерального белка',()=>{
  const p=example();Object.assign(p,{aa:'4',enteralMode:'feeds',formulaId:'nutrilon-pre-0',feedingMl:'5',feedingCount:'8',gir:'3',lowGlucose:'0'});
  const r=calculate(p);assert.equal(r.valid,true);const row=buildNurseRows(p,r).find(row=>row.kind==='amino');
- assert.equal(row.volume,'41,6');assert.equal(row.rate,'1,7');
- assert.deepEqual(row.details,['3,2 г/кг/сут → 4,16 г; вводить за 24 ч.']);assert.deepEqual(row.marks,Array(24).fill(''));
+ assert.equal(row.volume,'42');assert.equal(row.rate,'1,8');
+ assert.deepEqual(row.details,['3,231 г/кг/сут → 4,2 г; вводить за 24 ч.']);assert.deepEqual(row.marks,Array(24).fill(''));
 });
 test('При покрытой или превышенной цели подробный лист явно сообщает, что аминокислоты в/в не требуются',()=>{
  for(const target of ['0.8','0.7']){

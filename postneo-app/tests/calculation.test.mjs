@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {calculate,calculateMedicine,changeMedicineMethod,decimalInput,example,blank,newMedicine,numeric,schedule,clock,scheduleDay,firstOffset,hoursLabel,pumpRate} from '../lib/tpn.ts';
 import {formatNumber} from '../lib/format.ts';
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} != ${b}`);
-test('Согласованный пример: точные количества и единый баланс',()=>{const r=calculate(example());assert.equal(r.valid,true);near(r.total,156);near(r.aaGrams,4.55);near(r.aaMl,45.5);near(r.fatGrams,1.95);near(r.fatMl,9.75);near(r.drugMl,8);near(r.base,92.75);near(r.glucoseGrams,13.104);near(r.caMl,2.6);near(r.calciumMmol,0.585);near(r.calciumMmolPerKg,0.45);near(r.base+r.aaMl+r.fatMl+r.drugMl,156);near(r.fatRate,9.75/24);near(r.glucosePercent,13.104*100/(92.75-2.6));near(r.mainLinePercent,13.104*100/92.75)});
+test('Согласованный пример: точные количества и единый баланс',()=>{const r=calculate(example());assert.equal(r.valid,true);near(r.total,156);near(r.aaGrams,4.6);near(r.aaMl,46);near(r.fatGrams,2);near(r.fatMl,10);near(r.drugMl,8);near(r.base,92);near(r.glucoseGrams,13.1);near(r.caMl,2.6);near(r.calciumMmol,0.585);near(r.calciumMmolPerKg,0.45);near(r.base+r.aaMl+r.fatMl+r.drugMl,156);near(r.fatRate,10/24);near(r.glucosePercent,13.1*100/(92-2.6));near(r.mainLinePercent,13.1*100/92)});
 test('Смешение глюкозы сохраняет массу и объём; кальций учтён один раз',()=>{const r=calculate(example());near(r.lowMl+r.highMl+r.caMl,r.base);near(r.lowMl*.1+r.highMl*.2,r.glucoseGrams)});
 test('Изменение лекарственных объёмов изменяет базу и концентрацию, сохраняя глюкозу',()=>{const p=example();p.medicines[0].volume='3';const a=calculate(example()),b=calculate(p);near(b.drugMl,10);near(b.base,a.base-2);near(b.glucoseGrams,a.glucoseGrams);assert.ok(b.glucosePercent>a.glucosePercent)});
 test('Пустая масса не превращается в ноль или готовый расчёт',()=>{const r=calculate(blank());assert.equal(r.valid,false);assert.equal(r.total,null);assert.equal(r.base,null)});
@@ -25,7 +25,7 @@ test('Незаполненное начало суток не объявляет
 test('Пустая разовая доза блокирует полный баланс',()=>{const p=example();p.medicines[0].dose='';const r=calculate(p);assert.equal(r.valid,false);assert.equal(r.drugMl,null);assert.equal(r.base,null)});
 test('Отрицательный остаток не блокирует лист, слишком разведённая смесь из выбранных растворов — ошибка',()=>{const p=example();p.other='200';const r=calculate(p);assert.equal(r.valid,true);assert.ok(r.overshootMl>100);const q=example();q.highGlucose='11';assert.equal(calculate(q).valid,true);const d=example();d.gir='1';assert.equal(calculate(d).valid,false)});
 test('Русская десятичная запятая поддерживается без ошибочного parseFloat',()=>{near(numeric('3,5'),3.5);assert.equal(numeric('3abc'),null);assert.equal(numeric(''),null);assert.equal(numeric('-1'),null);assert.equal(numeric('Infinity'),null)});
-test('Смена длительности жиров меняет скорость, сохраняя суточное количество',()=>{const p=example();p.fatHours='20';near(calculate(p).fatRate,9.75/20);near(calculate(p).fatMl,9.75)});
+test('Смена длительности жиров меняет скорость, сохраняя суточное количество',()=>{const p=example();p.fatHours='20';near(calculate(p).fatRate,10/20);near(calculate(p).fatMl,10)});
 test('Расписание от первого введения не добавляет дозу на границе следующих суток',()=>{assert.deepEqual(schedule('00:00',12,'00:00'),[0,720]);assert.deepEqual(schedule('23:00',8,'08:00'),[900,1380]);assert.deepEqual(schedule('08:00',24,'08:00'),[0]);});
 test('Начало внутри последней минуты суток не отображается как следующие сутки',()=>{
  const m=newMedicine('ampsul','fractional-time');Object.assign(m,{dose:'10',interval:'23.999',minutes:'30',volume:'2'});
@@ -140,13 +140,14 @@ test('Машинная погрешность не превращает нуле
 });
 test('Перебор суточной жидкости любого размера — предупреждение, линия не сжимается ниже электролитов и глюкозы',()=>{
  const p=example();Object.assign(p,{weight:'1000',formulaId:'nutrilon-pre-0',fluid:'100',enteral:'80.2',aa:'2.1852',fat:'6.8076',gir:'0',calciumMlPerKg:'0',lowGlucose:'0',medicines:[]});
- p.enteral='85';const r=calculate(p);assert.equal(r.valid,true);assert.equal(r.base,0);assert.equal(r.mixVolume,0);assert.ok(r.overshootMl>2.8&&r.overshootMl<3);
- assert.ok(r.warnings.some(w=>/не умещаются в суточную жидкость: в\/в выйдет на 2,9 мл/.test(w)));near(r.ivTotal,r.aaMl+r.fatLineMl);near(r.allFluid,r.total+r.overshootMl);
+ p.enteral='85';const r=calculate(p);assert.equal(r.valid,true);assert.equal(r.base,0);assert.equal(r.mixVolume,0);assert.ok(r.overshootMl>2&&r.overshootMl<4,String(r.overshootMl));
+ assert.ok(r.warnings.some(w=>/не умещаются в суточную жидкость: в\/в выйдет на 3 мл/.test(w)),r.warnings.join('\n'));near(r.ivTotal,r.aaMl+r.fatLineMl);near(r.allFluid,r.total+r.overshootMl);
  p.enteral='95';const big=calculate(p);assert.equal(big.valid,true);assert.ok(big.overshootMl>5);
  // электролиты больше остатка: линия — только электролиты
- p.enteral='80.2';p.calciumMlPerKg='3';const ca=calculate(p);assert.equal(ca.valid,true);near(ca.base,3);assert.equal(ca.mixVolume,0);near(ca.overshootMl,3);near(ca.baseRate,3/24);
+ // с шагом 0,1 г АК 1 мл и эмульсия 19 мл уже выходят за объём на 0,2 мл, плюс кальций 3 мл
+ p.enteral='80.2';p.calciumMlPerKg='3';const ca=calculate(p);assert.equal(ca.valid,true);near(ca.base,3);assert.equal(ca.mixVolume,0);near(ca.overshootMl,3.2);near(ca.baseRate,3/24);
  // глюкоза без объёма: идёт в максимальной концентрации, объём линии растёт
- p.gir='8';p.calciumMlPerKg='0';p.highGlucose='40';const g=calculate(p);assert.equal(g.valid,true);near(g.mixVolume,g.glucoseGrams*100/40);near(g.highMl,g.mixVolume);near(g.lowMl,0);near(g.glucosePercent,40);near(g.overshootMl,g.mixVolume);
+ p.gir='8';p.calciumMlPerKg='0';p.highGlucose='40';const g=calculate(p);assert.equal(g.valid,true);near(g.mixVolume,g.glucoseGrams*100/40);near(g.highMl,g.mixVolume);near(g.lowMl,0);near(g.glucosePercent,40);near(g.overshootMl,g.mixVolume+0.2);// АК и эмульсия с шагом 0,1 г уже вышли за объём на 0,2 мл
  assert.ok(g.warnings.some(w=>/максимальной концентрации/.test(w)));assert.ok(g.errors.length===0);
 });
 test('Четыре кардиотоника внутри объёма: лист считается, в/в больше потребности на их объём',()=>{
@@ -160,7 +161,7 @@ test('Per os: без разведения, без объёма в балансе
  const r=calculateMedicine(m,2,'08:00');assert.equal(r.valid,true,r.errors.join('; '));assert.equal(r.fluidVolume,0);assert.equal(r.volume,null);assert.equal(r.concentration,null);near(r.doseAmount,500);
 });
 test('Фактический GIR следует длительности и сохраняет суточную массу глюкозы',()=>{
- const p=example();p.baseHours='12';const r=calculate(p);near(r.actualGir,14);near(r.glucoseGrams,13.104);near(r.baseRate,92.75/12);
+ const p=example();p.baseHours='12';const r=calculate(p);near(r.actualGir,13.1*1000/1.3/720);near(r.glucoseGrams,13.1);near(r.baseRate,92/12);
 });
 test('Нагрузка на границе суток считает поступившую массу пропорционально времени',()=>{
  const m=newMedicine('ampsul','late-loading');

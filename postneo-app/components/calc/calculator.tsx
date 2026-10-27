@@ -104,7 +104,7 @@ export function Calculator({initial,initialUi,onChange,locked=false,lockedNote,f
       <Stp id="aa" label="Белки" unit="г/кг/сут" step={0.25} value={p.aa} onChange={aa=>update({aa})} bad={r.issues.some(i=>i.field==='aa')}/>
       <Stp id="fat" label="Жиры" unit="г/кг/сут" step={0.25} value={p.fat} onChange={fat=>update({fat})} bad={r.issues.some(i=>i.field==='fat')}/>
      </div>
-     <p className="out">углеводы <b>{v(rs.girTotal,1)}</b> общ. = в/в <b>{v(rs.girIv,1)}</b> + смесь {v(rs.girEnteral,1)} мг/кг/мин · в/в {v(rs.ivTotal,0)} мл · глюкоза <b>{v(rs.glucoseGrams,2)} г</b> → {v(rs.mixVolume,1)} мл {v(rs.glucosePercent,1)} % · <span className={high?'w':undefined}>{v(rs.mainLinePercent,1)} % в линии</span> · АК <b>{v(rs.aaMl,1)} мл</b> · жиры <b>{v(rs.fatLineMl,1)} мл</b>{fluidStatus&&<> · {fluidStatus}</>}</p>
+     <p className="out">углеводы <b>{v(rs.girTotal,1)}</b> общ. = в/в <b>{v(rs.girIv,1)}</b> + смесь {v(rs.girEnteral,1)} мг/кг/мин · в/в {v(rs.ivTotal,0)} мл · глюкоза <b>{v(rs.glucoseGrams,2)} г</b> → {v(rs.mixVolume,1)} мл <b>{v(rs.glucosePercent,2)} %</b> · <span className={high?'w':undefined}>{v(rs.mainLinePercent,2)} % в линии</span> · АК <b>{v(rs.aaMl,1)} мл</b> · жиры <b>{v(rs.fatLineMl,1)} мл</b>{fluidStatus&&<> · {fluidStatus}</>}</p>
     </Blk>
     <Blk id="ions" title="Электролиты" hint="в основной раствор">
      <div className="grid c3">

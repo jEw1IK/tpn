@@ -507,6 +507,13 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offse
 .big small{font-weight:400;font-size:12px;color:var(--mute);letter-spacing:0}
 .big .pct{font-size:22px;color:var(--mute);font-weight:600}
 .big .pct.w{color:var(--warn)}
+.conc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0 4px}
+.conc div{padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--acc) 7%,transparent);border:1px solid color-mix(in srgb,var(--acc) 22%,transparent);min-width:0}
+.conc dt{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.conc dd{margin:2px 0 0;font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--fg)}
+.conc dd small{font-size:14px;font-weight:600;color:var(--mute)}
+.conc dd.w{color:var(--warn)}
+.conc span{display:block;margin-top:3px;font-size:11px;color:var(--mute);line-height:1.3}
 .tab{width:100%;border-collapse:collapse;table-layout:fixed;color:inherit;font-variant-numeric:tabular-nums;font-size:12.5px}
 .tab td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:baseline}
 .tab td:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:0}

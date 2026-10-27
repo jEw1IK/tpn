@@ -155,6 +155,9 @@ export type ProteinPlan={valid:boolean;targetPerKg:number|null;targetGrams:numbe
 
 
 /** Allocate a total protein goal to enteral/other protein first, then amino acids. Never infer absent composition as zero. */
+/** Шаги округления как в листе mytpn: белок и жиры до 0,1 г, глюкоза до 0,01 г. Половина округляется вверх, двоичная пыль не мешает. */
+export const roundTo=(value:number,digits:number)=>{const k=10**digits;return Math.round(value*k+1e-9*Math.sign(value))/k;};
+export const r1=(value:number)=>roundTo(value,1),r2=(value:number)=>roundTo(value,2);
 export function calculateProteinPlan(p:Inputs,en:EnteralResult=calculateEnteral(p)):ProteinPlan{
  const issues:Issue[]=[];
  const issue=(field:string,message:string,medicineId?:string)=>{if(!issues.some(x=>x.field===field&&x.medicineId===medicineId))issues.push({field,message,...(medicineId?{medicineId}:{})});};
@@ -199,7 +202,7 @@ export function calculateProteinPlan(p:Inputs,en:EnteralResult=calculateEnteral(
  if(en.valid&&((en.volumeMl===0&&positiveText(p[volumeField]))||(en.counted&&(en.volumeMl??0)>0&&enteralGrams===0&&(en.formula?.per100ml.proteinG??0)>0))){
   issue(volumeField,'Положительное энтеральное поступление белка теряется до нуля: проверьте слишком малые значения');enteralGrams=null;
  }
- if(enteralGrams!==null)enteralGrams=checked(enteralGrams,false,volumeField);
+ if(enteralGrams!==null)enteralGrams=checked(r1(enteralGrams),false,volumeField);
  const perKg=(value:number|null)=>kg===null||value===null?null:product([value],[kg],'weight');
  const enteralPerKg=perKg(enteralGrams);
  let requiredIvGrams:number|null=null,requiredIvPerKg:number|null=null,achievedGrams:number|null=null,achievedPerKg:number|null=null,excessGrams:number|null=null,excessPerKg:number|null=null;
@@ -207,7 +210,7 @@ export function calculateProteinPlan(p:Inputs,en:EnteralResult=calculateEnteral(
   const supplied=checked(enteralGrams,false,'aa');
   if(supplied!==null){
    const gap=targetGrams-supplied,tolerance=Number.EPSILON*16*Math.max(Math.abs(targetGrams),Math.abs(supplied));
-   requiredIvGrams=gap>tolerance?gap:0;excessGrams=gap< -tolerance?-gap:0;
+   requiredIvGrams=gap>tolerance?r1(gap):0;excessGrams=gap< -tolerance?-gap:0;
    requiredIvPerKg=perKg(requiredIvGrams);excessPerKg=perKg(excessGrams);
    achievedGrams=checked(supplied+requiredIvGrams,false,'aa');achievedPerKg=perKg(achievedGrams);
   }
@@ -449,10 +452,11 @@ export function calculate(p:Inputs){
  const mul=(a:number|null,b:number|null)=>a===null||b===null?null:a*b;
  const total=mul(kg,fluid),enteralMl=enteralNutrition.volumeMl,enteralCountedMl=enteralNutrition.countedMl,enteralTrophicMl=enteralNutrition.trophicMl;
  const counted=enteralNutrition.countedDaily;
- const enteralSubtracted={proteinG:counted?.proteinG??null,fatG:counted?.fatG??null,carbohydrateG:counted?.carbohydrateG??null};
+ // Нутриенты смеси вычитаются округлёнными до 0,1 г, как в листе mytpn (l45–l47), иначе проценты расходятся на сотые.
+ const enteralSubtracted={proteinG:counted?r1(counted.proteinG):null,fatG:counted?r1(counted.fatG):null,carbohydrateG:counted?r1(counted.carbohydrateG):null};
  // Fat and glucose doses are IV doses net of the counted enteral intake (КР 2015, раздел 10; mytpn e45/e47).
  const fatTotal=mul(kg,fat);
- const fatGrams=fatTotal===null||enteralSubtracted.fatG===null?null:Math.max(0,fatTotal-enteralSubtracted.fatG);
+ const fatGrams=fatTotal===null||enteralSubtracted.fatG===null?null:Math.max(0,r1(fatTotal-enteralSubtracted.fatG));
  const caMl=mul(kg,caPerKg);
  const calciumMmol=caMl!==null&&cc!==null?caMl*cc:null;
  const calciumMmolPerKg=caPerKg!==null&&cc!==null?caPerKg*cc:null;
@@ -461,7 +465,7 @@ export function calculate(p:Inputs){
  if(aaMl!==null&&(!Number.isFinite(aaMl)||(aaGrams!==null&&aaGrams>0&&aaMl===0))){error('aaPercent',aaMl===0?'Положительный объём аминокислот теряется до нуля: проверьте слишком малые значения':'Объём аминокислот превышает числовой диапазон');aaMl=null;}
  const fatMl=fatGrams!==null&&fp!==null?100*fatGrams/fp:null;
  const glucoseTotal=kg!==null&&gir!==null?gir*kg*1.44:null;
- const glucoseGrams=glucoseTotal===null||enteralSubtracted.carbohydrateG===null?null:Math.max(0,glucoseTotal-enteralSubtracted.carbohydrateG);
+ const glucoseGrams=glucoseTotal===null||enteralSubtracted.carbohydrateG===null?null:Math.max(0,r2(glucoseTotal-enteralSubtracted.carbohydrateG));
  const perKgMl=(dose:number|null)=>mul(kg,dose);
  const electrolytes:ElectrolyteVolumes={caMl,
   kclMl:kcl!==null&&kclC!==null&&kg!==null?kcl*kg/kclC:null,

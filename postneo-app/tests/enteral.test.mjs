@@ -52,13 +52,15 @@ test('Трофическое питание (8 мл = 6,2 мл/кг) идёт с
  near(b.base,a.base);near(b.aaGrams,a.aaGrams);near(b.glucoseGrams,a.glucoseGrams);near(b.fatGrams,a.fatGrams);
  near(b.ivTotal,a.ivTotal);near(b.allFluid,b.total+8);near(b.receivedPerKg,(156+8)/1.3);
  const c=calculate({...p(),enteralMode:'feeds',feedingMl:'1',feedingCount:'8',trophicRule:'always'});
- near(c.base,a.base-8+2.08+0.304*5);near(c.aaGrams,a.aaGrams-.208);near(c.fatGrams,a.fatGrams-.304);near(c.glucoseGrams,a.glucoseGrams-.664);
+ // 8 мл Пре 0: белок 0,208 → 0,2 г, жиры 0,304 → 0,3 г, углеводы 0,664 → 0,7 г (шаг 0,1 г); АК 4,6 → 4,4 г (−2 мл), эмульсия 2,0 → 1,7 г (−1,5 мл)
+ near(c.base,a.base-8+2+1.5);near(c.aaGrams,a.aaGrams-.2);near(c.fatGrams,a.fatGrams-.3);near(c.glucoseGrams,a.glucoseGrams-.7);
 });
 test('Энтеральное питание от 25 мл/кг вычитается один раз; белок, жиры и углеводы смеси снижают в/в дозы',()=>{
  const a=calculate(example()),b=calculate({...p(),enteralMode:'feeds',feedingMl:'5',feedingCount:'8',lowGlucose:'0'});
  assert.equal(b.valid,true);near(b.enteralMl,40);assert.equal(b.enteralNutrition.counted,true);near(b.enteralCountedMl,40);near(b.enteralTrophicMl,0);
- near(b.aaGrams,a.aaGrams-1.04);near(b.fatGrams,a.fatGrams-1.52);near(b.glucoseGrams,a.glucoseGrams-3.32);
- near(b.base,a.base-40+10.4+7.6);near(b.base+b.enteralCountedMl+b.aaMl+b.fatMl+b.drugMl,b.total);near(b.allFluid,b.total);
+ // белок 1,04 → 1,0 г; жиры 1,52 → 1,5 г; углеводы 3,32 → 3,3 г (шаг 0,1 г, как в листе mytpn)
+ near(b.aaGrams,a.aaGrams-1);near(b.fatGrams,a.fatGrams-1.5);near(b.glucoseGrams,a.glucoseGrams-3.3);
+ near(b.base,a.base-40+10+7.5);near(b.base+b.enteralCountedMl+b.aaMl+b.fatMl+b.drugMl,b.total);near(b.allFluid,b.total);
  const edge=calculate({...p(),enteralMode:'daily',enteralVolume:'32.5',lowGlucose:'0'}),below=calculate({...p(),enteralMode:'daily',enteralVolume:'32.49',lowGlucose:'0'});
  assert.equal(edge.enteralNutrition.counted,true);assert.equal(below.enteralNutrition.counted,false);
 });

@@ -15,14 +15,14 @@ test('Рабочий лист разделяет инфузии, препара�
 });
 test('Инфузионная строка базы сохраняет видимые компоненты, кальций и заданную длительность',()=>{
  const p=example(),r=calculate(p),sheet=buildWorkingRows(p,r),base=sheet.infusion[0];
- assert.equal(base.volume,'92,75');assert.equal(base.rate,'3,9');
+ assert.equal(base.volume,'92');assert.equal(base.rate,'3,8');
  // Рабочий лист: объёмы до 0,1 мл, как набирают шприцем; точные значения — в приложении.
- assert.ok(base.instruction.startsWith('Глюкоза 10% 49,3 + глюкоза 20% 40,9 + электролиты 2,6 мл'));
+ assert.ok(base.instruction.startsWith('Глюкоза 10% 47,8 + глюкоза 20% 41,6 + электролиты 2,6 мл'),base.instruction);
  assert.ok(base.instruction.includes('Ca глюконат 10% 2,6 мл (2 мл/кг)'));
- assert.ok(base.instruction.includes('За 24 ч · глюкоза 13,1 г, 14,1%'));assert.ok(base.instruction.includes('GIR 7'));assert.ok(base.instruction.includes('гепарин 69 Ед'));
+ assert.ok(base.instruction.includes('За 24 ч · глюкоза 13,1 г, 14,65% в растворе глюкозы, 14,24% в линии'),base.instruction);assert.ok(base.instruction.includes('GIR 7'));assert.ok(base.instruction.includes('гепарин 69 Ед'));
  assert.equal(base.instruction.split('\n').length,3);
- assert.equal(sheet.infusion[1].volume,'45,5');assert.ok(sheet.infusion[1].instruction.includes('3,5 г/кг/сут → 4,55 г'));
- assert.equal(sheet.infusion[2].volume,'9,75');assert.ok(sheet.infusion[2].instruction.includes('1,5 г/кг/сут → 1,95 г'));
+ assert.equal(sheet.infusion[1].volume,'46');assert.ok(sheet.infusion[1].instruction.includes('3,538 г/кг/сут → 4,6 г'),sheet.infusion[1].instruction);
+ assert.equal(sheet.infusion[2].volume,'10');assert.ok(sheet.infusion[2].instruction.includes('1,5 г/кг/сут → 2 г'),sheet.infusion[2].instruction);
 });
 test('Для периодического препарата полный раствор и масса на введение отделены от суточного баланса',()=>{
  const p=example();p.medicines[0].stock='100';
@@ -107,8 +107,8 @@ test('Поддерживающие объёмы и смесь не превра�
 test('Рабочее назначение аминокислот печатает остаток после смеси, а не общую цель белка',()=>{
  const p=example();Object.assign(p,{aa:'4',enteralMode:'feeds',formulaId:'nutrilon-pre-0',feedingMl:'5',feedingCount:'8',gir:'3',lowGlucose:'0'});
  const r=calculate(p);assert.equal(r.valid,true);const row=buildWorkingRows(p,r).infusion.find(row=>row.kind==='amino');
- assert.equal(row.volume,'41,6');assert.equal(row.rate,'1,7');
- assert.ok(row.instruction.includes('3,2 г/кг/сут → 4,16 г'));
+ assert.equal(row.volume,'42');assert.equal(row.rate,'1,8');
+ assert.ok(row.instruction.includes('3,231 г/кг/сут → 4,2 г'),row.instruction);
  assert.ok(!row.instruction.includes('4 г/кг/сут'));
 });
 test('Покрытая смесью цель убирает ненужное введение аминокислот из рабочей сетки',()=>{

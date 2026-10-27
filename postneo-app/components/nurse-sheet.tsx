@@ -71,7 +71,7 @@ export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}
   ['Физ. потребность',<>{show(r.total,0)} мл <small>{f(numeric(p.fluid),0)} мл/кг</small></>],
   ['Получит в/в',<>{show(r.ivTotal,0)} мл <small>{show(r.ivTotal!==null&&kg?r.ivTotal/kg:null,0)} мл/кг</small></>],
   ['Энтерально',<>{show(r.enteralMl,0)} мл <small>{show(en.volumePerKg,0)} мл/кг{trophic?' троф.':''}</small></>],
-  ['Основной раствор',<>{show(r.base,1)} мл <small>{show(r.mainLinePercent,1)} %</small></>],
+  ['Основной раствор',<>{show(r.base,1)} мл <small>{show(r.mainLinePercent,2)} %</small></>],
   ['Глюкоза общ. / в/в',<>{f(numeric(p.gir),1)} / {show(r.girIv,1)} <small>мг/кг/мин · {show(r.glucoseGrams,1)} г</small></>],
   ['Белок всего · АК в/в',<>{show(r.proteinPlan.achievedPerKg,1)} · {show(r.proteinPlan.requiredIvPerKg,1)} <small>г/кг</small></>],
   ['Жиры в/в',<>{show(kg&&r.fatGrams!==null?r.fatGrams/kg:null,1)} <small>г/кг · {show(r.fatGrams,2)} г</small></>],
@@ -81,8 +81,9 @@ export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}
  const feedMarks=feedingMarks(p.feeds,p.start);
  const extraRows=(p.extraFeeds??[]).map(row=>({row,res:en.rows.find(x=>x.id===row.id),marks:feedingMarks(row.feeds,p.start)}));
  const feedStatus=!r.valid?'':r.enteralMl?(en.counted?'учтено в суточной жидкости, Б/Ж/У смеси вычтены из в/в':'трофическое, сверх расчётной жидкости, в ПП не учтено'):'кормление не назначено; строки для записи, если его начнут';
- const every3=hours.filter(x=>x.index%3===0);
- const labRows=['pH','pCO₂, мм рт. ст.','pO₂, мм рт. ст.','BE, ммоль/л','HCO₃⁻, ммоль/л','Лактат, ммоль/л','Na⁺','K⁺','Ca²⁺','Cl⁻','Hb, г/л','Ht, %','Билирубин','Глюкоза, ммоль/л'];
+ // Диурез и положение считают с 09:00 по трёхчасовым интервалам: 09–12, 12–15 … 06–09.
+ const every3=hours.filter(x=>x.index%3===1);
+ const labRows=['pH','pCO₂, мм рт. ст.','pO₂, мм рт. ст.','BE, ммоль/л','HCO₃⁻, ммоль/л','Лактат, ммоль/л','Na⁺','K⁺','Ca²⁺','Cl⁻','Hb, г/л','Ht, %','MetHb, %','Билирубин','Глюкоза, ммоль/л'];
  const respRows=['Режим','FiO₂, %','Flow, л/мин','PIP, см H₂O','PEEP, см H₂O','MAP, см H₂O','Частота, /мин','Ti, с','Vt, мл','etCO₂'];
  const obs=(title:string,rows:string[])=><div><h2>{title}<small>время и значения по факту</small></h2><table className="obs"><colgroup><col className="l"/>{Array.from({length:8},(_,i)=><col key={i}/>)}</colgroup><tbody><tr className="t"><th scope="row">Время</th>{Array.from({length:8},(_,i)=><td key={i}/>)}</tr>{rows.map(l=><tr key={l}><th scope="row">{l}</th>{Array.from({length:8},(_,i)=><td key={i}/>)}</tr>)}</tbody></table></div>;
  return <article className="nurse-sheet" data-ready={ready}>
@@ -102,12 +103,11 @@ export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}
     <tr><th scope="row">{en.formula?en.formula.name:'Смесь не выбрана'}{p.feedingRoute&&<small> · {p.feedingRoute.toLowerCase()}</small>}{p.feeds.some(x=>x.trim())&&<small> · по {p.feeds[0].replace('.',',')||'—'} мл × 8</small>}</th><td className="v">{show(extraRows.length?en.primaryMl:r.enteralMl,0)}</td><td className="k">{show(extraRows.length&&en.primaryMl!==null&&r.kg?en.primaryMl/r.kg:en.volumePerKg,0)}</td>{hours.map(x=><td key={x.index} className={hourClass(x,feedMarks[x.index]?'feed':'')}>{feedMarks[x.index]||''}</td>)}</tr>
     {extraRows.map(({row,res,marks})=><tr key={row.id}><th scope="row">{res?.formula?res.formula.name:'Смесь не выбрана'}{(row.route||p.feedingRoute)&&<small> · {(row.route||p.feedingRoute).toLowerCase()}</small>}{row.feeds.some(x=>x.trim())&&<small> · по {row.feeds[0].replace('.',',')||'—'} мл × 8</small>}</th><td className="v">{show(res?.volumeMl??null,0)}</td><td className="k">{show(res?.volumeMl!==null&&res?.volumeMl!==undefined&&r.kg?res.volumeMl/r.kg:null,0)}</td>{hours.map(x=><td key={x.index} className={hourClass(x,marks[x.index]?'feed':'')}>{marks[x.index]||''}</td>)}</tr>)}
     {extraRows.length>0&&<tr><th scope="row">Энтерально всего</th><td className="v">{show(r.enteralMl,0)}</td><td className="k">{show(en.volumePerKg,0)}</td>{hours.map(x=><td key={x.index} className={hourClass(x)}/>)}</tr>}
-    <tr><th scope="row">Остаточный объём</th><td className="v"/><td className="k"/>{hours.map(x=><td key={x.index} className={hourClass(x)}/>)}</tr>
     <tr><th scope="row">Фактически получил</th><td className="v"/><td className="k"/>{hours.map(x=><td key={x.index} className={hourClass(x)}/>)}</tr>
    </tbody></table>
    <div className="two">{obs('КОС и лаборатория',labRows)}{obs('Респираторная поддержка',respRows)}</div>
    <h2>Диурез и смена положения<small>раз в 3 часа · диурез в мл, положение буквой: С спина · Л левый бок · П правый бок · Ж живот</small></h2>
-   <table className="diur"><colgroup><col className="l"/>{every3.map(x=><col key={x.index}/>)}<col className="sum"/></colgroup><thead><tr><th className="n">Показатель</th>{every3.map(x=><th key={x.index} className={x.nextDay?'d1':undefined}>{x.time.slice(0,2)}{x.nextDay&&<sup>+1</sup>}–{String((Number(x.time.slice(0,2))+3)%24).padStart(2,'0')}</th>)}<th>за сутки</th></tr></thead><tbody>{['Диурез, мл','Смена положения','Остаток в желудке, мл'].map(l=><tr key={l}><th scope="row">{l}</th>{every3.map(x=><td key={x.index} className={x.time.startsWith('00:')?'d0':undefined}/>)}<td/></tr>)}</tbody></table>
+   <table className="diur"><colgroup><col className="l"/>{every3.map(x=><col key={x.index}/>)}<col className="sum"/></colgroup><thead><tr><th className="n">Показатель</th>{every3.map(x=><th key={x.index} className={x.nextDay?'d1':undefined}>{x.time.slice(0,2)}{x.nextDay&&<sup>+1</sup>}–{String((Number(x.time.slice(0,2))+3)%24).padStart(2,'0')}</th>)}<th>за сутки</th></tr></thead><tbody>{['Диурез, мл','Смена положения'].map(l=><tr key={l}><th scope="row">{l}</th>{every3.map(x=><td key={x.index} className={x.time.startsWith('00:')?'d0':undefined}/>)}<td/></tr>)}</tbody></table>
    <Foot p={p} page={total} pages={total} note={<>Баланс за сутки: в/в фактически ______ мл · энтерально ______ мл · диурез ______ мл · масса утром ______ г</>}/>
   </section>
  </article>;

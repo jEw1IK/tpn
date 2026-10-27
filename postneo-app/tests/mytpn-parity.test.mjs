@@ -16,24 +16,24 @@ function patient(patch={}){
 test('mytpn, базовый пациент без ввода «жидкости вне инфузии»: глюкоза 143 мл 8,5 %, АК 39 мл, СМОФ 13 мл, гепарин 91 Ед, в/в 203, всего 227, 174,6 мл/кг',()=>{
  const r=calculate(patient());assert.equal(r.valid,true,r.errors.join('; '));
  near(r.total,195);near(r.enteralMl,24);near(r.enteralCountedMl,0);near(r.enteralTrophicMl,24);
- near(r.glucoseGrams,12.168);near(r.aaGrams,3.9);near(r.aaMl,39);near(r.fatGrams,2.6);near(r.fatMl,13);
- near(r.drugMl,8);near(r.base,143);near(r.mixVolume,143);near(r.glucosePercent,12.168*100/143);near(r.mainLinePercent,r.glucosePercent);
- near(r.lowMl+r.highMl,143);near(r.highMl*0.4+r.lowMl*0.05,12.168);
+ near(r.glucoseGrams,12.17);near(r.aaGrams,3.9);near(r.aaMl,39);near(r.fatGrams,2.6);near(r.fatMl,13);
+ near(r.drugMl,8);near(r.base,143);near(r.mixVolume,143);near(r.glucosePercent,12.17*100/143);near(r.mainLinePercent,r.glucosePercent);
+ near(r.lowMl+r.highMl,143);near(r.highMl*0.4+r.lowMl*0.05,12.17);
  near(r.baseRate,143/24);near(r.aaPauses,2);near(r.aaRate,39/22);near(r.fatRate,13/20);
  assert.equal(r.heparinUnits,91);near(r.ivTotal,203);near(r.allFluid,227);near(r.receivedPerKg,227/1.3);
- near(r.kr.glucoseKcal,48.672);near(r.kr.fatKcal,23.4);near(r.kr.parenteralKcal,72.072);near(r.kr.enteralKcal,0);near(r.kr.perKg,72.072/1.3);
+ near(r.kr.glucoseKcal,48.68);near(r.kr.fatKcal,23.4);near(r.kr.parenteralKcal,72.08);near(r.kr.enteralKcal,0);near(r.kr.perKg,72.08/1.3);
  const vitd=r.medicines.find(m=>m.id==='vitd');assert.equal(vitd.valid,true);near(vitd.doseAmount,500);assert.equal(vitd.doseLabel,'МЕ');assert.equal(vitd.intravenous,false);near(vitd.fluidVolume,0);assert.deepEqual(vitd.times,[120]);
 });
 test('mytpn, растворители учтены в объёме (жидкость вне инфузии = 8): глюкоза 135 мл 9 %, гепарин 87 Ед, в/в 195',()=>{
  const r=calculate(patient({drugFluid:'included'}));assert.equal(r.valid,true,r.errors.join('; '));
- near(r.base,135);near(r.mixVolume,135);near(r.glucosePercent,12.168*100/135);assert.equal(r.heparinUnits,87);near(r.ivTotal,195);near(r.allFluid,219);near(r.receivedPerKg,219/1.3);
+ near(r.base,135);near(r.mixVolume,135);near(r.glucosePercent,12.17*100/135);assert.equal(r.heparinUnits,87);near(r.ivTotal,195);near(r.allFluid,219);near(r.receivedPerKg,219/1.3);
 });
 test('mytpn, электролиты и витамины: K 2, Na 10 % 3, Na 0,9 % 1 ммоль/кг, Ca 1 мл/кг, Mg 0,2, Солувит 1, Виталипид 4, Аддамель 1, Дипептивен 1',()=>{
  const r=calculate(patient({drugFluid:'included',kcl:'2',nacl10:'3',nacl09:'1',calciumMlPerKg:'1',calciumContent:'0.225',magnesium:'0.2',soluvit:'1',vitalipid:'4',addamel:'1',dipeptiven:'1'}));
  assert.equal(r.valid,true,r.errors.join('; '));
  const e=r.electrolytes;near(e.kclMl,2.6/0.56);near(e.nacl10Ml,3.9/1.7);near(e.nacl09Ml,1.3/0.15);near(e.caMl,1.3);near(e.mgMl,0.26);near(e.soluvitMl,1.3);near(e.dipeptivenMl,1.3);near(e.addamelMl,1);near(r.vitalipidMl,5.2);
  near(r.fatLineMl,18.2);near(r.fatRate,18.2/20);near(r.base,195-39-18.2-8);near(r.mixVolume,129.8-e.sumMl);near(r.mixVolume,109.04,0.01);
- near(r.glucosePercent,12.168*100/r.mixVolume);assert.ok(Math.abs(r.glucosePercent-11.2)<0.1);near(r.baseRate,129.8/24);assert.equal(r.heparinUnits,84);
+ near(r.glucosePercent,12.17*100/r.mixVolume);assert.ok(Math.abs(r.glucosePercent-11.2)<0.1);near(r.baseRate,129.8/24);assert.equal(r.heparinUnits,84);
  const h=calculate(patient({drugFluid:'included',kcl:'2',nacl10:'3',nacl09:'1',calciumMlPerKg:'1',calciumContent:'0.225',magnesium:'0.2',soluvit:'1',vitalipid:'4',addamel:'1',dipeptiven:'1',heparin:'1'}));assert.equal(h.heparinUnits,169);
 });
 test('mytpn, проводниковый раствор и инсулин: 10 мл сверх объёма входят в скорость и гепарин; инсулин даёт Ед/сут и 12 мл',()=>{
@@ -87,14 +87,14 @@ test('Восемь кормлений и дополнительные строк
  near(r.enteralMl,32);near(r.enteralNutrition.volumePerKg,32/1.3);assert.equal(r.enteralNutrition.counted,false);
  near(r.enteralNutrition.daily.proteinG,24*2.88/100+8*1.05/100);
  const big=calculate(patient({feeds:['5','5','5','5','5','5','5','5'],extraFeeds:[row]}));near(big.enteralMl,48);assert.equal(big.enteralNutrition.counted,true);near(big.enteralCountedMl,48);
- near(big.aaGrams,3.9-(40*2.88/100+8*1.05/100));
+ near(big.aaGrams,3.9-1.2);// белок смеси 1,236 → 1,2 г
  const broken=calculate(patient({feeds:['3','x','','','','','','']}));assert.equal(broken.valid,false);assert.ok(broken.issues.some(i=>i.field==='feeds'));
  const noFormula=newEnteralRow('nf');noFormula.feeds=['1','','','','','','',''];assert.equal(calculate(patient({extraFeeds:[noFormula]})).valid,false);
  assert.deepEqual(emptyFeeds(),['','','','','','','','']);
 });
 test('Меньший раствор без глюкозы: вода или NaCl 0,9 % считаются как 0 %, не как 0,9 %',()=>{
  const w=calculate(patient({lowSolution:'water',lowGlucose:'77'})),n=calculate(patient({lowSolution:'nacl'}));
- assert.equal(w.valid,true);near(w.lowPercent,0);near(w.highMl,12.168*100/40);near(w.lowMl,143-w.highMl);near(n.highMl,w.highMl);
+ assert.equal(w.valid,true);near(w.lowPercent,0);near(w.highMl,12.17*100/40);near(w.lowMl,143-w.highMl);near(n.highMl,w.highMl);
 });
 test('Глюкоза выше 12,5 % предупреждает; когда не умещается даже 40 % — линия растёт сверх потребности с предупреждением',()=>{
  const warn=calculate(patient({gir:'10'}));assert.equal(warn.valid,true);assert.ok(warn.warnings.some(w=>w.includes('12,5')));
@@ -109,6 +109,6 @@ test('mytpn, второй пациент 2400 г/2 сут с учтённым к
  const close=(actual,expected)=>assert.ok(Math.abs(actual-expected)<=0.06,`${actual} != ${expected}`);
  close(r.enteralMl,80);assert.equal(r.enteralNutrition.counted,true);close(r.glucoseGrams,10.78);close(r.aaGrams,3.7);close(r.fatGrams,0.4);close(r.aaMl,37);close(r.fatMl,2);
  close(r.mixVolume,105.3);close(r.glucosePercent,10.2);close(r.base,112);close(r.electrolytes.kclMl,4.3);close(r.caMl,2.4);assert.equal(r.heparinUnits,75);
- close(r.baseRate,4.7);close(r.fatRate,0.1);close(r.ivTotal,160);close(r.allFluid,240);close(r.receivedPerKg,100);close(r.kr.enteralKcal,64);close(r.kr.parenteralKcal,46.8);close(r.kr.perKg,46.2);
+ close(r.baseRate,4.7);close(r.fatRate,0.1);close(r.ivTotal,160);close(r.allFluid,240);close(r.receivedPerKg,100);close(r.kr.enteralKcal,64);close(r.kr.parenteralKcal,46.7);close(r.kr.perKg,46.1);
  close(r.aaPauses,1.5);close(r.aaRate,37/22.5);close(r.medicines[0].doseMg,120);assert.deepEqual(r.medicines[0].times,[0,480,960]);close(r.drugMl,9);
 });
