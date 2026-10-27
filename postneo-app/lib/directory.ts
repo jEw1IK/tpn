@@ -75,6 +75,10 @@ export function isIntravenousRoute(route:string):boolean{
  const value=route.trim().toLowerCase();
  return value==='внутривенно'||value.startsWith('в/в');
 }
+/** Единственный путь, где длительность задаёт врач: микроструйно. Болюс в/в и все внесосудистые пути — сразу; «в/в (за N)» несёт время в названии. */
+export const needsDuration=(route:string)=>/микроструйно/i.test(route);
+/** Разведение нужно только для в/в и в/м; через рот, под кожу, ректально, ингаляционно, в глаза, наружно и эндотрахеально препарат вводится как есть. */
+export const takesDilution=(route:string)=>isIntravenousRoute(route)||route.trim().toLowerCase()==='в/м';
 /** Через рот или зонд: препарат дают как есть, без разведения и без объёма в балансе. */
 export function isOralRoute(route:string):boolean{
  const value=route.trim().toLowerCase();

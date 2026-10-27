@@ -1,4 +1,4 @@
-import {isOralRoute,bolusUnits,doseUnits,drugs as directoryDrugs,isIntravenousRoute,routeMinutes,type Drug,type DrugKind,type Group} from './directory.ts';
+import {isOralRoute,needsDuration,takesDilution,bolusUnits,doseUnits,drugs as directoryDrugs,isIntravenousRoute,routeMinutes,type Drug,type DrugKind,type Group} from './directory.ts';
 export type {Group,Drug} from './directory.ts';
 export type Medicine = {
  id:string; drug:string; group:Group; mode:'intermittent'|'continuous'; dose:string; unit:string;
@@ -42,8 +42,8 @@ export function newMedicine(drug:string,id:string):Medicine {
 export const emptyFeeds=()=>Array<string>(8).fill('');
 export function newEnteralRow(id:string):EnteralRow{return {id,formulaId:'none',feeds:emptyFeeds(),route:''};}
 export function example():Inputs {
- const a=newMedicine('ampsul','example-amp');Object.assign(a,{dose:'37.5',interval:'12',infusionHours:'0.5',volume:'2',first:'08:00'});
- const n=newMedicine('netil','example-net');Object.assign(n,{dose:'3',interval:'12',infusionHours:'0.5',volume:'2',first:'09:00'});
+ const a=newMedicine('ampsul','example-amp');Object.assign(a,{dose:'37.5',interval:'12',route:'в/в (за 30 мин)',volume:'2',first:'08:00'});
+ const n=newMedicine('netil','example-net');Object.assign(n,{dose:'3',interval:'12',route:'в/в (за 30 мин)',volume:'2',first:'09:00'});
  return {surname:'Тестовый',historyNumber:'УЧ-001',birthDate:'2026-10-04',sheetDate:'2026-10-06',sex:'male',hospitalDay:'3',gestationDays:'0',pcvMode:'auto',pcvWeeks:'',pcvDays:'',weight:'1300',day:'3',gestation:'30',fluid:'120',
  weightToday:'',weightYesterday:'',birthWeight:'',trophicRule:'kr',drugFluid:'included',
  enteral:'0',enteralMode:'perKg',formulaId:'none',enteralVolume:'0',feedingMl:'0',feedingCount:'8',feeds:emptyFeeds(),feedingRoute:'',extraFeeds:[],other:'0',flush:'0',
@@ -335,8 +335,8 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
   if(!allowed.includes(unit))error('dose','Нужны единицы разовой дозы');
   doseLabel=baseUnit;
   const interval=read('interval','Укажите интервал от 1 до 168 ч',true);
-  if(intravenous)minutes=routeTime??duration('infusionHours','minutes','Укажите время введения, ч',true);
-  else minutes=oral?0:routeTime??duration('infusionHours','minutes','Укажите время введения, ч',false)??0;
+  // Болюс вводится сразу: время есть только у путей «в/в (за N)» и у микроструйного введения, где его задаёт врач.
+  minutes=routeTime??(needsDuration(m.route)?duration('infusionHours','minutes','Укажите время введения, ч',true):0);
   if(interval!==null&&(interval<1||interval>168))error('interval','Интервал должен быть от 1 до 168 ч');
   if(minutes!==null&&interval!==null&&minutes>interval*60)error(routeTime!==null?'route':durationField('infusionHours','minutes'),'Время введения больше интервала');
   if(time(m.first)===null)error('first','Укажите время первого введения');
@@ -347,7 +347,7 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
    if(doseAmount!==null&&factor!==undefined)doseMg=positiveResult('dose',doseAmount*factor);
    if(doseMg!==null&&minutes!==null&&times.length>0)amountMg=positiveResult('dose',doseMg*times.reduce((sum,t)=>sum+Math.min(1,Math.max(0,1440-t)/Math.max(minutes!,1e-9)),0));
   }
-  const final=intravenous?read('volume','Укажите конечный объём',true):oral?null:(m.volume.trim()?read('volume','Проверьте конечный объём',true):null);
+  const final=intravenous?read('volume','Укажите конечный объём',true):takesDilution(m.route)&&m.volume.trim()?read('volume','Проверьте конечный объём',true):null;
   if(final!==null){
    const fractions=minutes!==null&&times.length>0?times.reduce((sum,t)=>sum+(minutes!>0?Math.min(1,Math.max(0,1440-t)/minutes!):1),0):null;
    volume=fractions!==null?positiveResult('volume',final*fractions):null;
@@ -355,7 +355,7 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
    if(doseMg!==null)concentration=positiveResult('dose',doseMg/final);
   }
   fluidVolume=intravenous?volume:0;
-  if(m.stock.trim()!==''&&!oral){const stock=read('stock','Проверьте исходную концентрацию',true);if(stock!==null&&doseMg!==null&&final!==null){stockMl=positiveResult('stock',doseMg/stock);if(stockMl!==null){solventMl=final-stockMl;if(exceedsVolume(stockMl,final))error('volume','Объём препарата больше конечного объёма');else solventMl=Math.max(0,solventMl);}}}
+  if(m.stock.trim()!==''&&takesDilution(m.route)){const stock=read('stock','Проверьте исходную концентрацию',true);if(stock!==null&&doseMg!==null&&final!==null){stockMl=positiveResult('stock',doseMg/stock);if(stockMl!==null){solventMl=final-stockMl;if(exceedsVolume(stockMl,final))error('volume','Объём препарата больше конечного объёма');else solventMl=Math.max(0,solventMl);}}}
  }else{
   const factors:Record<string,number>={'мкг/кг/мин':0.06,'мкг/кг/ч':0.001,'мг/кг/ч':1};
   const factor=factors[m.unit];if(!factor)error('dose','Проверьте единицы скорости дозы');
@@ -378,16 +378,18 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
   fluidVolume=intravenous?volume:0;
  }
  if(m.loading){
-  const ld=read('loadingDose','Укажите нагрузочную дозу',true);loadingVolume=read('loadingVolume','Укажите объём нагрузки',true);const lm=duration('loadingHours','loadingMinutes','Укажите время введения нагрузки, ч',true);
+  const ld=read('loadingDose','Укажите нагрузочную дозу',true);loadingVolume=takesDilution(m.route)?read('loadingVolume','Укажите объём нагрузки',true):0;
+  // Нагрузка идёт тем же путём: время из названия пути, иначе болюс; своё время — только если врач его вписал.
+  const lm=routeTime??(String(m.loadingHours??'').trim()!==''||String(m.loadingMinutes??'').trim()!==''?duration('loadingHours','loadingMinutes','Укажите время введения нагрузки, ч',true):0);
   if(!m.loadingSource.trim())error('loadingSource','Укажите источник схемы с нагрузкой');
   if(time(m.loadingFirst)===null)error('loadingFirst','Укажите время нагрузки');
   if(lm!==null&&lm>1440)error(durationField('loadingHours','loadingMinutes'),'Время нагрузки не должно превышать 24 ч');
   if(ld!==null&&mass!==null)loadingMg=positiveResult('loadingDose',ld*mass*(m.unit.startsWith('мкг')?0.001:1));
-  if(loadingVolume!==null&&lm!==null)loadingRate=positiveResult(durationField('loadingHours','loadingMinutes'),loadingVolume*60/lm);
+  if(loadingVolume!==null&&lm!==null&&lm>0&&loadingVolume>0)loadingRate=positiveResult(durationField('loadingHours','loadingMinutes'),loadingVolume*60/lm);
   const stock=numeric(m.stock);
   if(stock!==null&&stock>0&&loadingMg!==null&&loadingVolume!==null){const loadingStock=positiveResult('stock',loadingMg/stock);if(loadingStock!==null&&exceedsVolume(loadingStock,loadingVolume))error('loadingVolume','Объём исходного препарата больше конечного объёма нагрузки');}
   const loadOffset=firstOffset(m.loadingFirst,start);
-  if(loadingVolume!==null&&lm!==null&&loadOffset!==null){const fraction=Math.min(1,(1440-loadOffset)/lm);loadingDeliveredVolume=positiveResult(durationField('loadingHours','loadingMinutes'),loadingVolume*fraction);if(volume!==null&&loadingDeliveredVolume!==null){volume+=loadingDeliveredVolume;if(intravenous&&fluidVolume!==null)fluidVolume+=loadingDeliveredVolume;}loadingDeliveredMg=loadingMg!==null?positiveResult('loadingDose',loadingMg*fraction):null;}
+  if(loadingVolume!==null&&lm!==null&&loadOffset!==null){const fraction=lm>0?Math.min(1,(1440-loadOffset)/lm):1;loadingDeliveredVolume=loadingVolume===0?0:positiveResult(durationField('loadingHours','loadingMinutes'),loadingVolume*fraction);if(volume!==null&&loadingDeliveredVolume!==null){volume+=loadingDeliveredVolume;if(intravenous&&fluidVolume!==null)fluidVolume+=loadingDeliveredVolume;}loadingDeliveredMg=loadingMg!==null?positiveResult('loadingDose',loadingMg*fraction):null;}
  }
  if([volume,fluidVolume,rate,doseMg,doseAmount,amountMg,stockMl,solventMl,concentration,loadingMg,loadingDeliveredMg,loadingVolume,loadingDeliveredVolume,loadingRate,syringeHours,syringeCount].some(v=>v!==null&&!Number.isFinite(v)))error('dose','Расчёт превышает числовой диапазон');
  return {id:m.id,name,group:d?.group??m.group,kind,valid:errors.length===0,errors,issues,volume,fluidVolume,intravenous,rate,doseMg,doseAmount,doseLabel,amountMg,stockMl,solventMl,concentration,times,loadingMg,loadingDeliveredMg,loadingVolume,loadingDeliveredVolume,loadingRate,minutes,duration:hoursSpan,unit:m.unit,syringeHours,syringeCount};

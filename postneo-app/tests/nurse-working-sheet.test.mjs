@@ -29,7 +29,7 @@ test('Для периодического препарата полный рас
  const row=buildWorkingRows(p,calculate(p)).medication[0];
  assert.equal(row.volume,'4');assert.equal(row.preparedVolume,'2');assert.equal(row.rate,'4');
  assert.ok(row.instruction.startsWith('48,75 мг на введение'));assert.ok(!row.instruction.includes('мг/кг'));
- for(const text of ['каждые 12 ч','препарат 0,49 мл + NaCl 0,9% 1,51 мл = 2 мл','в/в за 0,5 ч','08:00, 20:00'])assert.ok(row.instruction.includes(text),text);
+ for(const text of ['каждые 12 ч','препарат 0,49 мл + NaCl 0,9% 1,51 мл = 2 мл','в/в (за 30 мин)','08:00, 20:00'])assert.ok(row.instruction.includes(text),text);
  assert.equal(row.instruction.split('\n').length,2);
  assert.equal(row.preparation,undefined);// состав раствора теперь прямо в строке назначения
  assert.deepEqual(row.timing,['08:00','20:00']);assert.equal(row.partial,false);

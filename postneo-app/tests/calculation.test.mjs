@@ -8,10 +8,10 @@ test('Смешение глюкозы сохраняет массу и объё�
 test('Изменение лекарственных объёмов изменяет базу и концентрацию, сохраняя глюкозу',()=>{const p=example();p.medicines[0].volume='3';const a=calculate(example()),b=calculate(p);near(b.drugMl,10);near(b.base,a.base-2);near(b.glucoseGrams,a.glucoseGrams);assert.ok(b.glucosePercent>a.glucosePercent)});
 test('Пустая масса не превращается в ноль или готовый расчёт',()=>{const r=calculate(blank());assert.equal(r.valid,false);assert.equal(r.total,null);assert.equal(r.base,null)});
 test('Ошибки полей препаратов видны до ввода массы, без фиктивных вычисленных масс',()=>{
- const p=example();p.weight='';p.medicines[0].dose='';p.medicines[0].infusionHours='';
+ const p=example();p.weight='';p.medicines[0].dose='';p.medicines[0].route='в/в микроструйно';p.medicines[0].infusionHours='';
  const r=calculate(p);assert.equal(r.valid,false);assert.equal(r.medicines.length,2);
  assert.ok(r.issues.some(x=>x.medicineId==='example-amp'&&x.field==='dose'));
- assert.ok(r.issues.some(x=>x.medicineId==='example-amp'&&x.field==='infusionHours'));
+ assert.ok(r.issues.some(x=>x.medicineId==='example-amp'&&x.field==='infusionHours'));// микроструйно: время задаёт врач
  assert.equal(r.issues.filter(x=>x.field==='weight').length,1);
  assert.equal(r.medicines[1].doseMg,null);assert.equal(r.medicines[1].amountMg,null);
  assert.equal(r.drugMl,null);assert.equal(r.base,null);
@@ -28,7 +28,7 @@ test('Русская десятичная запятая поддерживае�
 test('Смена длительности жиров меняет скорость, сохраняя суточное количество',()=>{const p=example();p.fatHours='20';near(calculate(p).fatRate,10/20);near(calculate(p).fatMl,10)});
 test('Расписание от первого введения не добавляет дозу на границе следующих суток',()=>{assert.deepEqual(schedule('00:00',12,'00:00'),[0,720]);assert.deepEqual(schedule('23:00',8,'08:00'),[900,1380]);assert.deepEqual(schedule('08:00',24,'08:00'),[0]);});
 test('Начало внутри последней минуты суток не отображается как следующие сутки',()=>{
- const m=newMedicine('ampsul','fractional-time');Object.assign(m,{dose:'10',interval:'23.999',minutes:'30',volume:'2'});
+ const m=newMedicine('ampsul','fractional-time');Object.assign(m,{dose:'10',interval:'23.999',route:'в/в (за 30 мин)',volume:'2'});
  const r=calculateMedicine(m,1.3,'00:00');assert.equal(r.valid,true);
  assert.deepEqual(r.times.map(t=>clock(t,'00:00')),['00:00','23:59:56']);near(r.volume,2.004);
  assert.equal(clock(1439.999999,'00:00'),'23:59:59');
@@ -38,7 +38,7 @@ test('Часы учитывают начало суток, переход чер
  assert.equal(clock(59.5,'23:00'),'23:59:30');assert.equal(clock(60.5,'23:00'),'00:00:30');
  assert.equal(clock(60+1e-10,'00:00'),'01:00');assert.equal(clock(Infinity,'00:00'),'—');
 });
-test('Часть инфузии после конца расчётных суток не включается в жидкость этих суток',()=>{const m=newMedicine('ampsul','late');Object.assign(m,{dose:'10',interval:'24',first:'23:45',minutes:'30',volume:'2'});const r=calculateMedicine(m,1.3,'00:00');assert.equal(r.valid,true);near(r.volume,1);near(r.rate,4);near(r.amountMg,6.5)});
+test('Часть инфузии после конца расчётных суток не включается в жидкость этих суток',()=>{const m=newMedicine('ampsul','late');Object.assign(m,{dose:'10',interval:'24',first:'23:45',route:'в/в (за 30 мин)',volume:'2'});const r=calculateMedicine(m,1.3,'00:00');assert.equal(r.valid,true);near(r.volume,1);near(r.rate,4);near(r.amountMg,6.5)});
 test('Непрерывная инфузия мидазолама: разведение и единицы',()=>{const m=newMedicine('midazolam','mid');Object.assign(m,{dose:'0.03',pump:'0.3',volume:'20',stock:'5'});const r=calculateMedicine(m,.68,'00:00');assert.equal(r.valid,true);near(r.concentration,.068);near(r.amountMg,1.36);near(r.stockMl,.272);near(r.solventMl,19.728);near(r.volume,7.2)});
 test('мкг/кг/мин переводятся в мг/ч с множителем 0,06',()=>{const m=newMedicine('epinephrine','epi');Object.assign(m,{dose:'0.05',pump:'0.3',volume:'20',stock:'1'});const r=calculateMedicine(m,1.3,'00:00');assert.equal(r.valid,true);near(r.concentration,.013);near(r.amountMg,.26);near(r.volume,7.2)});
 test('Обратный расчёт по количеству препарата даёт ту же скорость',()=>{const m=newMedicine('epinephrine','epi');Object.assign(m,{method:'amount',amount:'0.26',dose:'0.05',volume:'20',stock:'1'});near(calculateMedicine(m,1.3,'00:00').rate,.3)});
@@ -109,7 +109,7 @@ test('Положительный объём исходного препарат�
  assert.ok(r.issues.some(x=>x.field==='stock'&&x.message.includes('теряется до нуля')));
 });
 test('Часть положительного объёма на конце суток не превращается в допустимый ноль',()=>{
- const m={...newMedicine('ampsul','tiny-partial'),dose:'1',interval:'24',first:'23:59',minutes:'30',volume:decimalInput(Number.MIN_VALUE)};
+ const m={...newMedicine('ampsul','tiny-partial'),dose:'1',interval:'24',first:'23:59',route:'в/в (за 30 мин)',volume:decimalInput(Number.MIN_VALUE)};
  const r=calculateMedicine(m,1,'00:00');assert.equal(r.valid,false);assert.equal(r.volume,null);
  assert.ok(r.issues.some(x=>x.field==='volume'&&x.message.includes('теряется до нуля')));
 });
@@ -214,8 +214,9 @@ test('Баланс жидкости и масса глюкозы сохраня�
  }
 });
 
-test('Время введения задаётся в часах: 0,5 ч = 30 мин, 1,5 ч = 90 мин; часы важнее старых минут',()=>{
- const m=newMedicine('ampsul','h');Object.assign(m,{dose:'37.5',interval:'12',first:'08:00',volume:'2',infusionHours:'0,5'});
+test('Время введения задаётся в часах только для микроструйного пути: 0,5 ч = 30 мин, часы важнее старых минут; болюс в/в — сразу',()=>{
+ const bolus=calculateMedicine({...newMedicine('ampsul','b'),dose:'37.5',interval:'12',first:'08:00',volume:'2',infusionHours:'0.5'},1.3,'08:00');assert.equal(bolus.valid,true);assert.equal(bolus.minutes,0);assert.equal(bolus.rate,null);
+ const m=newMedicine('ampsul','h');Object.assign(m,{dose:'37.5',interval:'12',first:'08:00',volume:'2',route:'в/в микроструйно',infusionHours:'0,5'});
  const half=calculateMedicine(m,1.3,'08:00');assert.equal(half.valid,true,half.errors.join('; '));near(half.minutes,30);near(half.rate,4);
  const long=calculateMedicine({...m,infusionHours:'1.5'},1.3,'08:00');near(long.minutes,90);near(long.rate,2/1.5);
  const both=calculateMedicine({...m,infusionHours:'1',minutes:'30'},1.3,'08:00');near(both.minutes,60);
@@ -224,7 +225,8 @@ test('Время введения задаётся в часах: 0,5 ч = 30 м
  const zero=calculateMedicine({...m,infusionHours:'0'},1.3,'08:00');assert.ok(zero.issues.some(x=>x.field==='infusionHours'&&x.message.includes('часов')));
  const tooLong=calculateMedicine({...m,interval:'1',infusionHours:'2'},1.3,'08:00');assert.ok(tooLong.issues.some(x=>x.field==='infusionHours'&&x.message.includes('больше интервала')));
  const load=calculateMedicine({...m,loading:true,loadingDose:'5',loadingVolume:'2',loadingHours:'0.5',loadingFirst:'08:00',loadingSource:'схема'},1.3,'08:00');assert.equal(load.valid,true,load.errors.join('; '));near(load.loadingRate,4);
- const noLoadTime=calculateMedicine({...m,loading:true,loadingDose:'5',loadingVolume:'2',loadingFirst:'08:00',loadingSource:'схема'},1.3,'08:00');assert.ok(noLoadTime.issues.some(x=>x.field==='loadingHours'));
+ // нагрузка без своего времени — болюс тем же путём: без ошибки, без скорости
+ const noLoadTime=calculateMedicine({...m,route:'в/в',loading:true,loadingDose:'5',loadingVolume:'2',loadingFirst:'08:00',loadingSource:'схема'},1.3,'08:00');assert.equal(noLoadTime.valid,true,noLoadTime.errors.join('; '));assert.equal(noLoadTime.loadingRate,null);near(noLoadTime.loadingDeliveredVolume,2);
  assert.equal(hoursLabel(30),'0,5 ч');assert.equal(hoursLabel(90),'1,5 ч');assert.equal(hoursLabel(20),'0,33 ч');assert.equal(hoursLabel(null),'—');
 });
 test('Помпа: скорость с шагом 0,1 мл/ч; предупреждение, если округление сдвигает объём или дозу на 5 % и больше',()=>{
