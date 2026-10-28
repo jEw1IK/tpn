@@ -6,3 +6,4 @@ data
 tsconfig.tsbuildinfo
 next.config.ts.bak
 .env
+.hallmark
