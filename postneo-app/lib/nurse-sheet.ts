@@ -1,4 +1,4 @@
-import {formatNumber} from './format.ts';
+import {formatNumber,formatConcentration} from './format.ts';
 import {formatDate,nextDate} from './patient-header.ts';
 import {calculateMedicine,clock,enteredMinutes,firstOffset,hoursLabel,numeric,scheduleDay,trophicThresholdMlPerKg,type Group,type Inputs,type Medicine,type MedResult,type Result} from './tpn.ts';
 import {feedingHours,routeShort} from './directory.ts';
@@ -57,18 +57,18 @@ function eventTime(offset:number|null,start:string,date:string):string{
 }
 
 function medicineDetails(m:Medicine,med:MedResult|undefined,ready:boolean,start:string,date:string):string[]{
- const show=(value:number|null|undefined,digits=4)=>formatNumber(ready?value:null,digits);
+ const show=(value:number|null|undefined,digits=2)=>formatNumber(ready?value:null,digits);
  const periodic=m.mode==='intermittent';
  if(med?.kind==='blood'){
   return [
-   `${entered(m.dose)} мл/кг → ${show(med.volume,3)} мл; ${routeShort(m.route)||'путь не указан'}; скорость ${show(med.rate,1)} мл/ч.`,
+   `${entered(m.dose)} мл/кг → ${show(med.volume,2)} мл; ${routeShort(m.route)||'путь не указан'}; скорость ${show(med.rate,1)} мл/ч.`,
    ready?`Начало: ${med.times.length?eventTime(med.times[0],start,date):'—'}. Объём трансфузии в суточную жидкость не входит.`:'Время введения не рассчитано.',
   ];
  }
  const unitLabel=med?.doseLabel||'мг';const minutes=med?.minutes??enteredMinutes(m.infusionHours,m.minutes);
  const details=[
   `${entered(m.dose)} ${m.unit} → ${show(periodic?med?.doseAmount:med?.amountMg)} ${periodic?unitLabel:'мг'} ${periodic?'на введение':'в шприце'}; ${routeShort(m.route)||'путь не указан'}; ${periodic?`каждые ${entered(m.interval)} ч${minutes!==null&&minutes>0?`, за ${hoursLabel(minutes)}`:''}`:`инфузия ${entered(m.hours)} ч`}.`,
-  med&&!med.intravenous?`Путь вне вены: объём в жидкость суток не входит${m.volume.trim()?`; разведение ${entered(m.volume)} мл`:''}.`:`Раствор ${entered(m.volume)} мл${med?.concentration!=null?`, ${show(med.concentration)} мг/мл`:''}; ${m.diluent.trim()||'растворитель не задан'}.`,
+  med&&!med.intravenous?`Путь вне вены: объём в жидкость суток не входит${m.volume.trim()?`; разведение ${entered(m.volume)} мл`:''}.`:`Раствор ${entered(m.volume)} мл${med?.concentration!=null&&ready?`, ${formatConcentration(med.concentration)}`:''}; ${m.diluent.trim()||'растворитель не задан'}.`,
  ];
  if(m.stock.trim()){
   details.push(`Исходный ${entered(m.stock)} мг/мл: препарат ${show(med?.stockMl)} мл + растворитель ${show(med?.solventMl)} мл.`);
@@ -80,7 +80,7 @@ function medicineDetails(m:Medicine,med:MedResult|undefined,ready:boolean,start:
    if(partial.length)details.push(`С ${partial.map(t=>eventTime(t,start,date)).join(' · ')} введение продолжается за границей суток; учтена только часть до их окончания.`);
   }else details.push(`Введения не рассчитаны; первое ${validTime(m.first)?m.first:'—'}; в сутки — мг.`);
  }else{
-  details.push(`Шприц на ${show(med?.syringeHours,3)} ч; на заданную длительность ${show(med?.syringeCount,0)} шпр.`);
+  details.push(`Шприц на ${show(med?.syringeHours,2)} ч; на заданную длительность ${show(med?.syringeCount,0)} шпр.`);
  }
  return details;
 }
@@ -88,7 +88,7 @@ function medicineDetails(m:Medicine,med:MedResult|undefined,ready:boolean,start:
 /** Adapt the existing calculation only: no new dose formulas or inferred administration times. */
 export function buildNurseRows(p:Inputs,r:Result):NurseRow[]{
  const ready=r.valid;
- const show=(value:number|null|undefined,digits=3)=>formatNumber(ready?value:null,digits);
+ const show=(value:number|null|undefined,digits=2)=>formatNumber(ready?value:null,digits);
  const make=(row:Omit<NurseRow,'marks'>):NurseRow=>({...row,marks:cells()});
  const rows:NurseRow[]=[
   make({id:'base',kind:'base',label:'Основная линия: глюкоза + электролиты',volume:show(r.base),rate:show(r.baseRate,1),details:[
@@ -133,9 +133,9 @@ export function buildNurseRows(p:Inputs,r:Result):NurseRow[]{
   const maintenance=medicationReady?calculateMedicine({...m,loading:false},r.kg??NaN,p.start):undefined;
   const maintenanceVolume=maintenance?.valid?maintenance.volume:null;
   rows.push(make({id:m.id,kind:'medicine',label:med?.name||m.drug,medicineId:m.id,group:m.group,
-   details:medicineDetails(m,med,medicationReady,p.start,p.sheetDate),volume:formatNumber(medicationReady?(med?.kind==='blood'?med.volume:maintenance?.valid?maintenance.fluidVolume:null):null,3),rate:formatNumber(medicationReady?med?.rate:null,1)}));
+   details:medicineDetails(m,med,medicationReady,p.start,p.sheetDate),volume:formatNumber(medicationReady?(med?.kind==='blood'?med.volume:maintenance?.valid?maintenance.fluidVolume:null):null,2),rate:formatNumber(medicationReady?med?.rate:null,1)}));
   if(m.loading){
-   const loadShow=(value:number|null|undefined,digits=4)=>formatNumber(medicationReady?value:null,digits);
+   const loadShow=(value:number|null|undefined,digits=2)=>formatNumber(medicationReady?value:null,digits);
    const source=m.loadingSource.trim();
    rows.push(make({id:m.id+'-loading',kind:'loading',label:(med?.name||m.drug)+' · нагрузка',medicineId:m.id,group:m.group,
     volume:loadShow(med?.loadingDeliveredVolume,3),rate:loadShow(med?.loadingRate,1),details:[

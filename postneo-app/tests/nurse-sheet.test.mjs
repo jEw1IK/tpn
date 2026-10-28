@@ -70,8 +70,8 @@ test('Часть нагрузки выведена отдельно от пол�
  assert.equal(main.volume,'4');assert.equal(load.volume,'1');assert.equal(load.rate,'6');
  near(number(main.volume)+number(load.volume),r.medicines[0].volume);
  assert.ok(load.details.some(line=>line.includes('Полный объём нагрузки 3 мл')&&line.includes('23:50')));
- assert.ok(load.details.some(line=>line.includes('2,1667 мг и 1 мл')));
- assert.ok(main.details.some(line=>line.includes('0,4875 мл + растворитель 1,5125 мл')));
+ assert.ok(load.details.some(line=>line.includes('2,17 мг и 1 мл')));
+ assert.ok(main.details.some(line=>line.includes('0,49 мл + растворитель 1,51 мл')));
  assert.ok(main.details.some(line=>line.includes('Исходный 100 мг/мл')));
  assert.ok(load.details.some(line=>line.includes('исходная концентрация 100 мг/мл')));
 });
@@ -82,7 +82,7 @@ test('Большая нагрузка не стирает положительн
  // This deliberately demonstrates why subtracting the load from the rounded aggregate loses the maintenance volume.
  assert.equal(r.medicines[0].volume,1);
  const rows=buildNurseRows(p,r);
- assert.equal(rows.find(row=>row.kind==='medicine').volume,'< 0,001');
+ assert.equal(rows.find(row=>row.kind==='medicine').volume,'< 0,01');
  assert.equal(rows.find(row=>row.kind==='loading').volume,'1');
 });
 test('Длинный источник и любые примечания сохраняются целиком при разбиении страниц',()=>{
@@ -109,9 +109,9 @@ test('Энтеральное питание сохраняет состав и �
 test('Сестринский лист сохраняет назначенную дозу кальция, нутриенты на кг и полный источник смеси',()=>{
  const p=example();Object.assign(p,{enteralMode:'feeds',formulaId:'nutrilon-pre-0',feedingMl:'5',feedingCount:'8',gir:'3',lowGlucose:'0'});
  const r=calculate(p);assert.equal(r.valid,true);const rows=buildNurseRows(p,r);
- assert.ok(rows.find(row=>row.kind==='base').details.some(line=>line.includes('Глюконат кальция 10 %: 2 мл/кг/сут → 2,6 мл; по 0,225 ммоль/мл это 0,585 ммоль (0,45 ммоль/кг).')));
+ assert.ok(rows.find(row=>row.kind==='base').details.some(line=>line.includes('Глюконат кальция 10 %: 2 мл/кг/сут → 2,6 мл; по 0,225 ммоль/мл это 0,59 ммоль (0,45 ммоль/кг).')));
  const en=rows.find(row=>row.kind==='enteral');
- assert.ok(en.details.includes('На кг/сут (все смеси): белок 0,8 г; жиры 1,169 г; углеводы 2,554 г; энергия 24,308 ккал.'));assert.ok(en.details.some(line=>line.startsWith('От 25 мл/кг')));
+ assert.ok(en.details.includes('На кг/сут (все смеси): белок 0,8 г; жиры 1,17 г; углеводы 2,55 г; энергия 24,31 ккал.'));assert.ok(en.details.some(line=>line.startsWith('От 25 мл/кг')));
  assert.deepEqual(en.notes,[`Источник состава смеси Нутрилон Пре 0: ${r.enteralNutrition.formula.source}`]);
  const zero=buildNurseRows(example(),calculate(example())).find(row=>row.kind==='enteral');
  assert.equal(zero.volume,'0');assert.equal(zero.notes,undefined);
@@ -121,7 +121,7 @@ test('Подробная строка аминокислот используе�
  const p=example();Object.assign(p,{aa:'4',enteralMode:'feeds',formulaId:'nutrilon-pre-0',feedingMl:'5',feedingCount:'8',gir:'3',lowGlucose:'0'});
  const r=calculate(p);assert.equal(r.valid,true);const row=buildNurseRows(p,r).find(row=>row.kind==='amino');
  assert.equal(row.volume,'42');assert.equal(row.rate,'1,8');
- assert.deepEqual(row.details,['3,231 г/кг/сут → 4,2 г; вводить за 24 ч.']);assert.deepEqual(row.marks,Array(24).fill(''));
+ assert.deepEqual(row.details,['3,23 г/кг/сут → 4,2 г; вводить за 24 ч.']);assert.deepEqual(row.marks,Array(24).fill(''));
 });
 test('При покрытой или превышенной цели подробный лист явно сообщает, что аминокислоты в/в не требуются',()=>{
  for(const target of ['0.8','0.7']){

@@ -21,7 +21,7 @@ test('Инфузионная строка базы сохраняет видим
  assert.ok(base.instruction.includes('Ca глюконат 10% 2,6 мл (2 мл/кг)'));
  assert.ok(base.instruction.includes('За 24 ч · глюкоза 13,1 г, 14,65% в растворе глюкозы, 14,24% в линии'),base.instruction);assert.ok(base.instruction.includes('GIR 7'));assert.ok(base.instruction.includes('гепарин 69 Ед'));
  assert.equal(base.instruction.split('\n').length,3);
- assert.equal(sheet.infusion[1].volume,'46');assert.ok(sheet.infusion[1].instruction.includes('3,538 г/кг/сут → 4,6 г'),sheet.infusion[1].instruction);
+ assert.equal(sheet.infusion[1].volume,'46');assert.ok(sheet.infusion[1].instruction.includes('3,54 г/кг/сут → 4,6 г'),sheet.infusion[1].instruction);
  assert.equal(sheet.infusion[2].volume,'10');assert.ok(sheet.infusion[2].instruction.includes('1,5 г/кг/сут → 2 г'),sheet.infusion[2].instruction);
 });
 test('Для периодического препарата полный раствор и масса на введение отделены от суточного баланса',()=>{
@@ -75,15 +75,15 @@ test('Нагрузка отдельно сохраняет полный раст
  assert.equal(main.volume,'4');assert.equal(load.volume,'1');assert.equal(load.preparedVolume,'3');assert.equal(load.rate,'6');
  assert.deepEqual(load.timing,['23:50']);assert.equal(load.partial,true);
  assert.ok(load.instruction.startsWith('6,5 мг на нагрузку'));assert.ok(!load.instruction.includes('мг/кг'));assert.ok(load.instruction.includes('NaCl 0,9% до 3 мл'));
- assert.ok(load.warning.includes('за сутки 1 мл (2,1667 мг)'));assert.ok(load.instruction.includes(load.warning));
+ assert.ok(load.warning.includes('за сутки 1 мл (2,17 мг)'));assert.ok(load.instruction.includes(load.warning));
  assert.deepEqual(load.notes,['Источник схемы: '+source.trim()]);assert.ok(!load.instruction.includes(source.trim()));
 });
 test('Короткая рабочая строка сохраняет малый положительный объём рядом с большой нагрузкой',()=>{
  const p=example();p.medicines=[{...newMedicine('ampsul','tiny-maintenance'),dose:'0.0000000000000000001',interval:'24',minutes:'60',volume:'0.000000000000000001',stock:'1',
   loading:true,loadingDose:'0.1',loadingVolume:'1',loadingMinutes:'30',loadingSource:'Вымышленная проверка точности'}];
  const r=calculate(p);assert.equal(r.valid,true);const rows=buildWorkingRows(p,r).medication;
- assert.equal(rows[0].volume,'< 0,001');assert.equal(rows[1].volume,'1');
- assert.ok(rows[0].instruction.includes('< 0,0001 мг на введение'));
+ assert.equal(rows[0].volume,'< 0,01');assert.equal(rows[1].volume,'1');
+ assert.ok(rows[0].instruction.includes('< 0,01 мг на введение'));
 });
 test('Неполные вычисления скрыты в рабочем виде, введённые параметры сохранены',()=>{
  const p=example();p.weight='';const sheet=buildWorkingRows(p,calculate(p));
@@ -108,7 +108,7 @@ test('Рабочее назначение аминокислот печатае�
  const p=example();Object.assign(p,{aa:'4',enteralMode:'feeds',formulaId:'nutrilon-pre-0',feedingMl:'5',feedingCount:'8',gir:'3',lowGlucose:'0'});
  const r=calculate(p);assert.equal(r.valid,true);const row=buildWorkingRows(p,r).infusion.find(row=>row.kind==='amino');
  assert.equal(row.volume,'42');assert.equal(row.rate,'1,8');
- assert.ok(row.instruction.includes('3,231 г/кг/сут → 4,2 г'),row.instruction);
+ assert.ok(row.instruction.includes('3,23 г/кг/сут → 4,2 г'),row.instruction);
  assert.ok(!row.instruction.includes('4 г/кг/сут'));
 });
 test('Покрытая смесью цель убирает ненужное введение аминокислот из рабочей сетки',()=>{

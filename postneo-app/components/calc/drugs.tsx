@@ -4,7 +4,7 @@ import {useEffect,useRef,useState} from 'react';
 import {Search,X} from 'lucide-react';
 import {bloodRoutes,diluents,doseUnits,drugDirectorySource,groupNames,routeShort,routes,type Drug,type Group,isOralRoute,needsDuration,takesDilution} from '@/lib/directory';
 import {clock,drugs,newMedicine,scheduleDay,type Inputs,type MedResult,type Medicine,type Result} from '@/lib/tpn';
-import {formatNumber as f} from '@/lib/format';
+import {formatNumber as f,formatConcentration} from '@/lib/format';
 import {Pick,dot,ru} from './fields';
 
 /** Вкладки групп: антибиотики вместе с противогрибковыми и противовирусными, кардиотоники отдельно. */
@@ -103,9 +103,9 @@ function DrugCard({m,res,start,set,remove}:{m:Medicine;res:MedResult|undefined;s
  const setLoading=(v:string)=>set({loadingDose:v,loading:v.trim()!=='',loadingVolume:m.loadingVolume||m.volume||'2',loadingHours:m.loadingHours||'',loadingSource:m.loadingSource||'схема отделения',loadingFirst:m.loadingFirst||m.first});
  const out=!res?'':!res.valid?<span className="w">{res.errors.join(' · ')}</span>
   :blood?<><b>{f(res.volume,1)} мл</b> · {f(res.rate,1)} мл/ч · {times} · вне баланса</>
-  :continuous?<><b>{f(res.amountMg,2)} мг</b> в шприце · {f(res.concentration,3)} мг/мл · <b>{f(res.rate,1)} мл/ч</b> · {f(res.fluidVolume,1)} мл/сут{res.stockMl!==null&&<> · препарат {f(res.stockMl,2)} мл + растворитель {f(res.solventMl,2)} мл</>}</>
+  :continuous?<><b>{f(res.amountMg,2)} мг</b> в шприце · {formatConcentration(res.concentration)} · <b>{f(res.rate,1)} мл/ч</b> · {f(res.fluidVolume,1)} мл/сут{res.stockMl!==null&&<> · препарат {f(res.stockMl,2)} мл + растворитель {f(res.solventMl,2)} мл</>}</>
   :!res.intravenous?<><b>{f(res.doseAmount,2)} {res.doseLabel}</b> на введение · {times} · {routeShort(m.route)}, {res.volume!==null&&m.volume.trim()?<>{m.diluent.trim()||'растворитель'} до {ru(m.volume)} мл</>:'без разведения'}, вне баланса{res.loadingMg?<> · нагрузка {f(res.loadingMg,2)} мг в {m.loadingFirst||'—'}</>:null}</>
-  :<><b>{f(res.doseAmount,2)} {res.doseLabel}</b> на введение · {f(res.concentration,2)} мг/мл · {res.rate!==null&&<><b>{f(res.rate,1)} мл/ч</b> · </>}{f(res.fluidVolume,1)} мл/сут · {times}{res.loadingMg?<> · нагрузка <b>{f(res.loadingMg,2)} мг</b> в {m.loadingFirst||'—'}{res.loadingVolume?<>, до {ru(m.loadingVolume)} мл{m.loadingHours.trim()?<> за {ru(m.loadingHours)} ч</>:null}</>:null}</>:null}</>;
+  :<><b>{f(res.doseAmount,2)} {res.doseLabel}</b> на введение · {formatConcentration(res.concentration)} · {res.rate!==null&&<><b>{f(res.rate,1)} мл/ч</b> · </>}{f(res.fluidVolume,1)} мл/сут · {times}{res.loadingMg?<> · нагрузка <b>{f(res.loadingMg,2)} мг</b> в {m.loadingFirst||'—'}{res.loadingVolume?<>, до {ru(m.loadingVolume)} мл{m.loadingHours.trim()?<> за {ru(m.loadingHours)} ч</>:null}</>:null}</>:null}</>;
  return <article className={'drug'+(res&&!res.valid?' bad':'')} id={'drug-'+m.id}>
   <div className="drug-h"><b>{d?d.name:m.drug}</b><span>{d?groupNames[d.group]:''} · {routeShort(m.route)||'путь не указан'}</span>{m.group==='sedation'&&<button type="button" className="mode" onClick={()=>set({mode:continuous?'intermittent':'continuous',dose:'',unit:continuous?(m.drug==='fentanyl'?'мкг/кг':'мг/кг'):(d?.unit??m.unit),pump:continuous?'':'0.5',volume:continuous?'2':'12',interval:'',infusionHours:continuous?'0.5':''})}>{continuous?'→ периодически':'→ непрерывно'}</button>}<button type="button" className="del" onClick={remove}>отменить</button></div>
   <div className="cells">

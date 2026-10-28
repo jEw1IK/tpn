@@ -1,4 +1,4 @@
-import {formatNumber} from './format.ts';
+import {formatNumber,formatConcentration} from './format.ts';
 import {buildNurseRows,electrolyteLines,feedingMarks,lowSolutionLabel,type NurseRow} from './nurse-sheet.ts';
 import {feedingHours,routeShort,takesDilution} from './directory.ts';
 import {clock,enteredMinutes,firstOffset,hoursLabel,numeric,scheduleDay,type Group,type Inputs,type Result} from './tpn.ts';
@@ -39,7 +39,7 @@ function clockTime(offset:number|null,start:string):string{
 export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
  const fullRows=buildNurseRows(p,r);
  const full=(id:string)=>fullRows.find(row=>row.id===id)!;
- const show=(value:number|null|undefined,digits=3)=>formatNumber(r.valid?value:null,digits);
+ const show=(value:number|null|undefined,digits=2)=>formatNumber(r.valid?value:null,digits);
  const make=(row:NurseRow,instruction:string,extra:Partial<WorkingRow>={}):WorkingRow=>({
   id:row.id,kind:row.kind,label:row.label,instruction,volume:row.volume,rate:row.rate,timing:[],partial:false,
   ...(row.medicineId?{medicineId:row.medicineId,group:row.group}:{}),...(row.notes?{notes:row.notes}:{}),...extra,
@@ -64,7 +64,7 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
  const medication:WorkingRow[]=[];
  for(const m of p.medicines){
   const med=r.medicines.find(result=>result.id===m.id),ready=r.valid&&med?.valid===true;
-  const medShow=(value:number|null|undefined,digits=4)=>formatNumber(ready?value:null,digits);
+  const medShow=(value:number|null|undefined,digits=2)=>formatNumber(ready?value:null,digits);
   const periodic=m.mode==='intermittent',row=full(m.id),blood=med?.kind==='blood';
   const partial=ready&&periodic&&!blood&&med?.minutes!==null&&med?.minutes!==undefined&&med.times.some(t=>t+med.minutes!>1440);
   const warning=partial?`${med!.times.length>1?'Последнее введение частично; всего':'Часть'} за сутки ${row.volume} мл; полный объём введения ${entered(m.volume)} мл.`:undefined;
@@ -84,7 +84,7 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
    oral?`Без разведения${med&&!med.intravenous?', вне баланса жидкости':''} · ${when}`:`${m.stock.trim()?`препарат ${medShow(med?.stockMl,2)} мл + ${diluent} ${medShow(med?.solventMl,2)} мл = ${entered(m.volume)} мл`:`${diluent} до ${entered(m.volume)} мл`} · ${when}`,
    ...(warning?[warning]:[]),
   ].join('\n'):[
-   `${m.stock.trim()?`${medShow(med?.amountMg,2)} мг (${medShow(med?.stockMl,2)} мл) + ${diluent} ${medShow(med?.solventMl,2)} мл = ${entered(m.volume)} мл`:`${medShow(med?.amountMg,2)} мг в ${diluent} до ${entered(m.volume)} мл`} · ${medShow(med?.concentration,3)} мг/мл`,
+   `${m.stock.trim()?`${medShow(med?.amountMg,2)} мг (${medShow(med?.stockMl,2)} мл) + ${diluent} ${medShow(med?.solventMl,2)} мл = ${entered(m.volume)} мл`:`${medShow(med?.amountMg,2)} мг в ${diluent} до ${entered(m.volume)} мл`} · ${formatConcentration(med?.concentration)}`,
    `${routeLabel(m.route)} · ${medShow(med?.rate,1)} мл/ч · инфузия ${entered(m.hours)} ч · шприц на ${medShow(med?.syringeHours,1)} ч`,
   ].join('\n');
   const built=make(row,instruction,{timing,partial,warning,preparedVolume:entered(m.volume)});

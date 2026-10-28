@@ -191,7 +191,7 @@ test('Ошибка сохраняет точную ссылку на поле и
  assert.equal(r.base,null);
 });
 test('Ненулевые малые значения не отображаются как ноль',()=>{
- assert.equal(formatNumber(0.000001,4),'< 0,0001');assert.equal(formatNumber(0,4),'0');
+ assert.equal(formatNumber(0.000001,4),'< 0,01');assert.equal(formatNumber(0,4),'0');assert.equal(formatNumber(47.425,3),'47,43');
  assert.equal(formatNumber(Infinity),'—');assert.equal(formatNumber(null),'—');
 });
 test('Переполнение суммы конечных лекарственных объёмов не скрывается допуском',()=>{
