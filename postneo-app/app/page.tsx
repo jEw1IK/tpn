@@ -1,23 +1,115 @@
-import {ArrowRight,ArrowUpRight,Calculator,Droplets,FileText,FlaskConical,Printer} from 'lucide-react';
-import {calculate,example} from '@/lib/tpn';
+import './home.css';
+import {calculate,blank,drugs,enteralFormulas,type Inputs} from '@/lib/tpn';
 import {formatNumber as f} from '@/lib/format';
 import {BrandMark} from '@/components/brand-mark';
 
 const examplePdf='/examples/nurse-sheet-p.pdf';
+/* Учебный пациент, на котором страница показывает расчёт: 1450 г, 2-е сутки, 110 мл/кг, глюкоза 5 мг/кг/мин, белок 2 г/кг, жиры 1,5 г/кг, грудное молоко по часам. */
+const patient=(feedMl:string):Inputs=>({...blank(),weight:'1450',weightToday:'1450',day:'2',gestation:'32',start:'08:00',fluid:'110',aa:'2',aaPercent:'10',aaHours:'24',fat:'1.5',fatPercent:'20',fatHours:'24',gir:'5',baseHours:'24',calciumMlPerKg:'1',calciumContent:'0.225',lowGlucose:'5',highGlucose:'40',heparin:'0.5',enteralMode:'feeds8',formulaId:'grudnoe-moloko',feeds:Array(8).fill(feedMl),medicines:[],drugFluid:'extra',trophicRule:'kr'});
+const changelog:[string,string,string][]=[
+ ['2026-10-27','27 октября','Шаги округления как в бумажном листе: граммы белка и жиров до 0,1, проценты до сотых.'],
+ ['2026-10-27','27 октября','Болюс вводится сразу; длительность осталась только у микроструйного пути.'],
+ ['2026-10-23','23 октября','Справочник собран по аптеке отделения: 74 новых препарата с концентрациями форм.'],
+ ['2026-10-22','22 октября','Вторая смесь по своим кормлениям, углеводная нагрузка общая и в/в.'],
+];
 
 export default function HomePage(){
- const p=example(),r=calculate(p);
- const sources=[{label:'База',value:r.base,color:'var(--home-blue)'},{label:'Аминокислоты',value:r.aaMl,color:'#e7eee7'},{label:'Жировая эмульсия',value:r.fatMl,color:'var(--home-mint)'},{label:'Препараты',value:r.medicines.reduce((sum,m)=>sum+(m.volume??0),0),color:'#7c8980'}];
- return <div className="home-shell">
-  <a className="home-skip" href="#home-main">Перейти к содержимому</a>
-  <header className="home-header"><a className="home-brand" href="/" aria-label="POSTNEO — главная"><BrandMark/></a><nav aria-label="Навигация по сайту"><a href="#possibilities">Возможности</a><a href="#start">Как начать</a><a href="/calculator" className="home-header-cta">Калькулятор <ArrowUpRight size={16}/></a></nav></header>
-  <main id="home-main" className="home-main">
-   <section className="home-hero" aria-labelledby="home-title"><div className="home-hero-copy"><p className="home-kicker"><span/> Неонатология · POSTNEO</p><h1 id="home-title">Питание и инфузии.<br/><em>Один суточный расчёт.</em></h1><p className="home-intro">Жидкость, калории и белок — от каждого раствора до общего итога. С понятным листом назначений для медсестры.</p><div className="home-actions"><a href="/calculator" className="home-button home-button-primary">Открыть калькулятор <ArrowRight size={19}/></a><a href={examplePdf} target="_blank" rel="noreferrer" className="home-example-link"><FileText size={18}/> Посмотреть пример PDF <ArrowUpRight size={15}/><span className="home-sr-only"> — откроется в новой вкладке</span></a></div><p className="home-test-label"><FlaskConical size={15}/> Тестовая версия · без регистрации</p></div>
-    <div className="home-example" aria-label="Сводка учебного примера"><div className="home-example-head"><span>Суточная сводка</span><span className="home-demo-tag">Учебный пример</span></div><div className="home-example-patient"><span>Расчётная масса <b>{f(r.kg===null?null:r.kg*1000)} г</b></span><span>Период <b>24 часа</b></span></div><div className="home-volume"><span>Общая жидкость</span><p><strong>{f(r.total)}</strong> мл/сут</p><small>{p.fluid} мл/кг/сут</small></div><div className="home-balance-bar" aria-hidden="true">{sources.map(s=><span key={s.label} style={{width:((s.value??0)/(r.total??1)*100)+'%',background:s.color}}/>)}</div><dl className="home-balance-sources">{sources.map(s=><div key={s.label}><dt><i style={{background:s.color}}/>{s.label}</dt><dd>{f(s.value,2)} <span>мл</span></dd></div>)}</dl><div className="home-nutrition"><div><span>Энергия</span><p><strong>{f(r.kr.totalKcal,2)}</strong> ккал/сут</p><small>{f(r.kr.perKg,2)} ккал/кг/сут</small></div><div><span>Белок</span><p><strong>{f(r.proteinPlan.achievedGrams,3)}</strong> г/сут</p><small>{f(r.proteinPlan.achievedPerKg,3)} г/кг/сут</small></div></div><p className="home-example-foot">Вымышленные данные для проверки расчёта.</p></div>
-   </section>
-   <section className="home-capabilities" id="possibilities" aria-labelledby="capabilities-title"><div className="home-section-heading"><p className="home-kicker">В одном рабочем пространстве</p><h2 id="capabilities-title">От расчёта до печатного листа</h2></div><div className="home-feature-grid"><article><div className="home-feature-title"><Droplets size={23}/><span>01</span></div><h3>Баланс жидкости</h3><p>База, аминокислоты, жиры, питание и лекарственные объёмы входят в одни расчётные сутки.</p></article><article><div className="home-feature-title"><Calculator size={23}/><span>02</span></div><h3>Калории и белок</h3><p>Задайте общую цель белка: смесь учитывается автоматически, аминокислоты в/в покрывают остаток. Калории и белок — за сутки и на килограмм.</p></article><article><div className="home-feature-title"><Printer size={23}/><span>03</span></div><h3>Лист для медсестры</h3><p>Назначения и почасовая сетка. На обороте — КОС, лабораторные показатели и параметры респираторной поддержки.</p></article></div></section>
-   <section className="home-paper-section" aria-labelledby="paper-title"><div className="home-paper-copy"><p className="home-kicker">Продуман для поста</p><h2 id="paper-title">Назначения читаются.<br/>Для отметок есть место.</h2><p>Реквизиты ребёнка в шапке. Объём за сутки и скорость — в отдельных колонках. Все 24 часа остаются свободными для отметок выполнения.</p><ul><li>Фамилия, история, дата рождения, пол, сутки жизни, ПКВ и койко-день</li><li>Отдельные строки инфузий и лекарственных назначений</li><li>Предпросмотр и печать на A4 в альбомной ориентации</li></ul><a href={examplePdf} target="_blank" rel="noreferrer" className="home-paper-link">Открыть двухсторонний образец <ArrowUpRight size={17}/><span className="home-sr-only"> — PDF в новой вкладке</span></a></div><div className="home-paper-gallery"><figure className="home-paper-front"><img src="/images/nurse-sheet-front-p.png" alt="Лицевая сторона учебного листа: шапка ребёнка, суточные итоги, инфузии и лекарства с сеткой на 24 часа" width="1179" height="833" loading="lazy"/><figcaption><span>01 / Назначения</span><span>Учебный образец</span></figcaption></figure><figure className="home-paper-back"><img src="/images/nurse-sheet-back-p.png" alt="Оборот учебного листа с пустыми таблицами КОС и параметров респираторной поддержки" width="1179" height="833" loading="lazy"/><figcaption>02 / КОС и респираторные параметры</figcaption></figure></div></section>
-   <section className="home-start" id="start" aria-labelledby="start-title"><div className="home-section-heading"><p className="home-kicker">Первый запуск</p><h2 id="start-title">Начните с учебного примера</h2><p>Калькулятор открывается с вымышленными данными. Можно проверить их или очистить форму для своего тестового сценария.</p></div><ol className="home-steps"><li><span>1</span><div><h3>Данные ребёнка</h3><p>Масса, возраст, реквизиты и начало расчётных суток.</p></div></li><li><span>2</span><div><h3>Питание и препараты</h3><p>Объёмы, дозы, составы растворов и длительность введения.</p></div></li><li><span>3</span><div><h3>Проверка и печать</h3><p>Сводка, отмеченные ошибки и предпросмотр листа.</p></div></li></ol><div className="home-start-footer"><p><b>Для тестирования интерфейса и расчётов.</b> Дозы, разведения и совместимость проверяет врач. Введённые данные не сохраняются после обновления страницы.</p><a href="/calculator" className="home-button home-button-primary">Перейти к расчёту <ArrowRight size={19}/></a></div></section>
-  </main><footer className="home-footer"><a className="home-brand" href="/" aria-label="POSTNEO — главная"><BrandMark/></a><p>Неонатология · Питание и инфузионная терапия</p><span>Тестовая версия 0.2</span></footer>
+ const lead=calculate(patient('5'));
+ const rows=['5','10','15'].map(ml=>{const r=calculate(patient(ml));return {ml,enteral:r.enteralMl,glucose:r.glucoseGrams,gir:r.girIv,aa:r.aaMl,fat:r.fatLineMl,base:r.base,kcal:r.kr.perKg};});
+ const groups=new Set(drugs.map(d=>d.group)).size;
+ return <div className="home">
+  <a className="skip" href="#home-main">К содержимому</a>
+  <header className="hm-nav"><div className="hm-wrap hm-nav__in">
+   <a className="hm-brand" href="/" aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a>
+   <a className="btn btn--quiet" href="/calculator">Открыть калькулятор</a>
+  </div></header>
+  <main id="home-main">
+   <section className="hm-hero" aria-labelledby="home-title"><div className="hm-wrap hm-hero__in">
+    <div className="hm-hero__text">
+     <h1 id="home-title">Суточный расчёт питания и лист назначений.</h1>
+     <p className="lead">Жидкость, глюкоза, белок и препараты новорождённого по КР 2015, с печатью на А4.</p>
+     <p className="hm-hero__act"><a className="btn" href="/calculator">Открыть калькулятор</a><a className="hm-link" href={examplePdf}>Пример листа в PDF</a></p>
+    </div>
+    <figure className="hm-shot hm-shot--hero" data-slot="hero" data-kind="product" data-alt="Калькулятор с заполненным учебным листом: блоки ввода слева, полученная инфузия справа">
+     <picture>
+      <source media="(max-width: 60rem)" srcSet="/images/calculator-phone-result.png" width="780" height="1688"/>
+      <img src="/images/calculator-desktop.png" width="2400" height="1920" alt="Экран калькулятора: потребность, растворы, электролиты, смесь и панель «Полученная инфузия»" fetchPriority="high"/>
+     </picture>
+    </figure>
+   </div></section>
+
+   <section className="hm-bento" id="possibilities" aria-labelledby="bento-title"><div className="hm-wrap">
+    <h2 id="bento-title">Жидкость, белок и препараты в одном листе</h2>
+    <div className="bento">
+     <article className="tile tile--lead">
+      <h3>Учебный пример: 1450 г, вторые сутки</h3>
+      <p className="tile__big num">{f(lead.base,1)} <small>мл основного раствора</small></p>
+      <dl className="tile__facts num">
+       <div><dt>Глюкоза в/в</dt><dd>{f(lead.glucoseGrams,2)} г, {f(lead.glucosePercent,2)} %</dd></div>
+       <div><dt>Аминокислоты</dt><dd>{f(lead.aaMl,0)} мл</dd></div>
+       <div><dt>Жировая эмульсия</dt><dd>{f(lead.fatLineMl,0)} мл</dd></div>
+       <div><dt>Гепарин</dt><dd>{lead.heparinUnits} Ед</dd></div>
+      </dl>
+      <p className="tile__note">110 мл/кг, глюкоза 5 мг/кг/мин, белок 2 и жиры 1,5 г/кг, грудное молоко по 5 мл восемь раз.</p>
+     </article>
+     <figure className="tile tile--shot" data-slot="sheet-front" data-kind="product" data-alt="Лицевая сторона печатного листа">
+      <img src="/images/nurse-sheet-front-p.png" width="1123" height="794" alt="Лист интенсивной терапии: инфузии, лекарственные назначения и клетки 24 часов" loading="lazy"/>
+      <figcaption data-keep>Лист А4: инфузии, препараты, клетки на 24 часа</figcaption>
+     </figure>
+     <figure className="tile tile--shot" data-slot="sheet-back" data-kind="product" data-alt="Оборот печатного листа">
+      <img src="/images/nurse-sheet-back-p.png" width="1123" height="794" alt="Оборот листа: кормления, КОС, респираторная поддержка, диурез" loading="lazy"/>
+      <figcaption data-keep>Оборот: кормления, КОС, диурез</figcaption>
+     </figure>
+     <article className="tile">
+      <h3>{drugs.length} препаратов аптеки отделения</h3>
+      <p>Антибиотики, кардиотоники, седация, гормоны, кровь: {groups} групп с концентрациями форм. Растворитель и объём считаются в баланс.</p>
+      <p>Нагрузочная доза, титрование кардиотоников по шприцу, per os без разведения.</p>
+     </article>
+     <article className="tile">
+      <h3>{enteralFormulas.length} смесей и грудное молоко</h3>
+      <p>Две смеси по своим кормлениям. От 25 мл/кг белок, жиры и углеводы смеси вычитаются из внутривенных доз.</p>
+      <p>Трофическое питание до 25 мл/кг идёт сверх расчётной жидкости.</p>
+     </article>
+    </div>
+   </div></section>
+
+   <section className="hm-table" aria-labelledby="table-title"><div className="hm-wrap">
+    <div className="hm-head"><h2 id="table-title">Смесь растёт, инфузия тает</h2><p className="lead">Тот же ребёнок, три объёма кормления. Цель по глюкозе и белку одна, меняется только внутривенная часть.</p></div>
+    <table className="cmp">
+     <thead><tr><th scope="col">Кормление</th><th scope="col" className="num">Энтерально</th><th scope="col" className="num">Глюкоза в/в</th><th scope="col" className="num">Аминокислоты</th><th scope="col" className="num">Эмульсия</th><th scope="col" className="num">Основной раствор</th><th scope="col" className="num">Энергия</th></tr></thead>
+     <tbody>{rows.map(r=><tr key={r.ml}><th scope="row">{r.ml} мл восемь раз</th><td className="num" data-label="Энтерально">{f(r.enteral,0)} мл</td><td className="num" data-label="Глюкоза в/в">{f(r.glucose,2)} г, {f(r.gir,1)} мг/кг/мин</td><td className="num" data-label="Аминокислоты">{f(r.aa,0)} мл</td><td className="num" data-label="Эмульсия">{f(r.fat,0)} мл</td><td className="num" data-label="Основной раствор">{f(r.base,1)} мл</td><td className="num" data-label="Энергия">{f(r.kcal,0)} ккал/кг</td></tr>)}</tbody>
+    </table>
+   </div></section>
+
+   <section className="hm-log" aria-labelledby="log-title"><div className="hm-wrap hm-split">
+    <div className="hm-head"><h2 id="log-title">Что изменилось за октябрь</h2><p className="lead">Правки приходят из отделения и выкладываются в тот же день.</p></div>
+    <ol className="log">{changelog.map(([iso,date,text],i)=><li key={i}><time dateTime={iso}>{date}</time><p>{text}</p></li>)}</ol>
+   </div></section>
+
+   <section className="hm-faq" aria-labelledby="faq-title"><div className="hm-wrap hm-split">
+    <div className="hm-head"><h2 id="faq-title">Три вопроса перед первым листом</h2></div>
+    <dl className="faq">
+     <div><dt>Где хранятся данные?</dt><dd>В браузере на вашем компьютере. На сервер ничего не отправляется, после очистки браузера лист исчезает.</dd></div>
+     <div><dt>Кто отвечает за дозы?</dt><dd>Врач. Подсказки у препаратов ориентировочные, калькулятор считает объёмы и показывает, где расчёт выходит за рамки КР.</dd></div>
+     <div><dt>Работает на телефоне?</dt><dd>Да, блоки выстраиваются в одну колонку, итог открывается шторкой снизу. Печатать удобнее с компьютера.</dd></div>
+    </dl>
+   </div></section>
+
+   <section className="hm-close" id="start" aria-labelledby="close-title"><div className="hm-wrap hm-close__in">
+    <div className="hm-close__text">
+     <h2 id="close-title">Пример уже внутри</h2>
+     <p className="lead">Открывается без регистрации, с вымышленным ребёнком внутри. Проверьте цифры или очистите форму и начните свой лист.</p>
+     <p className="hm-close__act"><a className="btn" href="/calculator">Открыть калькулятор</a></p>
+    </div>
+    <figure className="hm-shot hm-shot--phone" data-slot="phone" data-kind="product" data-alt="Калькулятор на телефоне">
+     <img src="/images/calculator-phone.png" width="780" height="1688" alt="Калькулятор на экране телефона: блоки ввода в одну колонку" loading="lazy"/>
+    </figure>
+   </div></section>
+  </main>
+  <footer className="hm-foot"><div className="hm-wrap">
+   <p className="hm-foot__line">Расчёт питания и инфузий для отделения новорождённых, собранный неонатологами.</p>
+   <div className="hm-foot__row"><a className="hm-brand" href="/" aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a><nav aria-label="Ссылки"><a href="/calculator">Калькулятор</a><a href="#possibilities">Возможности</a><a href="#start">Первый лист</a><a href={examplePdf}>Пример листа</a></nav><small>Тестовая версия 0.2</small></div>
+  </div></footer>
+  <script dangerouslySetInnerHTML={{__html:"window.hallmarkSlots=(m)=>{for(const [k,v] of Object.entries(m)){const s=document.querySelector(`[data-slot=\"${k}\"]`);if(!s)continue;const im=new Image();im.src=typeof v==='string'?v:v.src;im.alt=(typeof v==='object'&&v.alt)||s.dataset.alt||'';s.querySelectorAll(':scope > img').forEach((o)=>o.remove());s.prepend(im);}};document.querySelectorAll('[data-slot] img').forEach((i)=>{i.addEventListener('error',()=>i.remove(),{once:true});});"}}/>
  </div>;
 }

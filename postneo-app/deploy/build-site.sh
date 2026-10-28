@@ -27,7 +27,7 @@ for f in files:
     s=open(f,encoding='utf-8').read();t=s.replace('_next/static','nx/static').replace('/_next/','/nx/')
     if f.endswith('.html'):
         t=t.replace('href="/calculator"','href="calculator.html"').replace('href="/"','href="index.html"')
-        t=re.sub(r'(href|src)="/(?!/)',r'\1="',t)
+        t=re.sub(r'(href|src|srcSet|srcset)="/(?!/)',r'\1="',t)
     if '�' in t: t=t.replace('�','\\uFFFD')
     if t!=s: open(f,'w',encoding='utf-8').write(t);n+=1
 print('post-processed',n,'files; leftover _next refs:',sum(open(f,encoding='utf-8').read().count('_next/') for f in files))
