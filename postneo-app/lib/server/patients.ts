@@ -42,7 +42,7 @@ export function setPatientStatus(db:Db,id:number,status:'active'|'discharged',on
 }
 export function getPatient(db:Db,id:number):Patient|null{return (db.prepare('select * from patients where id=?').get(id) as Patient|undefined)??null;}
 export function listPatients(db:Db,status:'active'|'discharged'|'all'='active'):Patient[]{
- return (status==='all'?db.prepare('select * from patients order by status,surname'):db.prepare('select * from patients where status=? order by surname').bind(status)).all() as Patient[];
+ return (status==='all'?db.prepare('select * from patients order by status,surname').all():db.prepare('select * from patients where status=? order by surname').all(status)) as Patient[];
 }
 export const patientCore=(p:Patient):PatientCore=>({surname:p.surname,historyNumber:p.history_number,birthDate:p.birth_date,sex:p.sex,gestationWeeks:p.gestation_weeks,gestationDays:p.gestation_days,birthWeight:p.birth_weight,admittedOn:p.admitted_on});
 

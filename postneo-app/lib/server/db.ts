@@ -1,8 +1,40 @@
-import Database from 'better-sqlite3';
+import {DatabaseSync,type StatementSync,type SQLInputValue} from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export type Db=Database.Database;
+/** Тонкая обёртка над встроенным node:sqlite с привычным синхронным API: prepare().run/get/all, exec, transaction, pragma, backup.
+ *  Нативных модулей нет, поэтому одна и та же сборка работает в Docker и на обычном ПК под Windows. */
+type Row=Record<string,unknown>;
+const plain=(r:unknown)=>r==null?undefined:Object.assign({},r as Row);
+/** Подготовленный запрос: строки возвращаются обычными объектами (node:sqlite отдаёт их без прототипа). */
+export class Stmt{
+ private readonly s:StatementSync;
+ constructor(s:StatementSync){this.s=s;}
+ run(...args:SQLInputValue[]){return this.s.run(...args);}
+ get(...args:SQLInputValue[]):Row|undefined{return plain(this.s.get(...args));}
+ all(...args:SQLInputValue[]):Row[]{return this.s.all(...args).map(r=>plain(r) as Row);}
+}
+export class Db{
+ readonly raw:DatabaseSync;
+ constructor(file:string,options:{readonly?:boolean}={}){this.raw=new DatabaseSync(file,{readOnly:options.readonly===true});}
+ prepare(sql:string):Stmt{return new Stmt(this.raw.prepare(sql));}
+ exec(sql:string){this.raw.exec(sql);}
+ pragma(expr:string):unknown{const rows=this.raw.prepare('pragma '+expr).all();return rows.length===1?Object.values(rows[0] as object)[0]:rows;}
+ /** Функция внутри одной транзакции; при исключении изменения откатываются. Вложенные вызовы идут в той же транзакции. */
+ transaction<A extends unknown[],R>(fn:(...args:A)=>R):(...args:A)=>R{
+  return (...args:A)=>{
+   if(this.depth>0){return fn(...args);}
+   this.raw.exec('begin immediate');this.depth++;
+   try{const r=fn(...args);this.raw.exec('commit');return r;}
+   catch(e){try{this.raw.exec('rollback');}catch{}throw e;}
+   finally{this.depth--;}
+  };
+ }
+ private depth=0;
+ /** Целостная копия базы средствами SQLite, работает и во время записи. */
+ backup(file:string){if(fs.existsSync(file))fs.unlinkSync(file);this.raw.exec(`vacuum into '${file.replaceAll("'","''")}'`);}
+ close(){this.raw.close();}
+}
 
 /** Схема базы отделения. Каждая запись в массиве — одна миграция; версии хранятся в таблице schema и накатываются по порядку при старте. */
 const migrations:string[]=[`
@@ -83,8 +115,8 @@ create index audit_at on audit(at);
 
 export function openDb(file:string):Db{
  if(file!==':memory:')fs.mkdirSync(path.dirname(file),{recursive:true});
- const db=new Database(file);
- db.pragma('journal_mode = WAL');
+ const db=new Db(file);
+ if(file!==':memory:')db.pragma('journal_mode = WAL');
  db.pragma('foreign_keys = ON');
  db.pragma('busy_timeout = 5000');
  migrate(db);
@@ -108,4 +140,4 @@ export function getDb():Db{
  return shared;
 }
 /** Копия базы для бэкапа средствами SQLite: целостный файл даже под нагрузкой. */
-export async function backupTo(db:Db,file:string){fs.mkdirSync(path.dirname(file),{recursive:true});await db.backup(file);}
+export function backupTo(db:Db,file:string){fs.mkdirSync(path.dirname(file),{recursive:true});db.backup(file);}

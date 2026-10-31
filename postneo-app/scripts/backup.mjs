@@ -1,7 +1,7 @@
 // Резервная копия базы средствами SQLite: целостный файл даже во время работы.
 // Внутри контейнера:  docker exec postneo-kart node scripts/backup.mjs /data/backups
 // Файл: postneo-ГГГГММДД-ЧЧММ.sqlite; хранятся 30 последних копий.
-import Database from 'better-sqlite3';
+import {DatabaseSync} from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -10,8 +10,8 @@ const source=process.env.DATABASE_FILE||path.join(process.env.DATA_DIR||'/data',
 fs.mkdirSync(dir,{recursive:true});
 const stamp=new Date().toISOString().replace(/[-:]/g,'').replace('T','-').slice(0,13);
 const target=path.join(dir,`postneo-${stamp}.sqlite`);
-const db=new Database(source,{readonly:true});
-await db.backup(target);
+const db=new DatabaseSync(source,{readOnly:true});
+db.exec(`vacuum into '${target.replaceAll("'","''")}'`);
 db.close();
 const keep=30;
 const old=fs.readdirSync(dir).filter(f=>/^postneo-\d{8}-\d{4}\.sqlite$/.test(f)).sort().reverse().slice(keep);

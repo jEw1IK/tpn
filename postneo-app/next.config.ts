@@ -6,8 +6,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
   basePath,
-  serverExternalPackages: ["better-sqlite3"],
-  env: { NEXT_PUBLIC_BASE_PATH: basePath },
+  env: { NEXT_PUBLIC_BASE_PATH: basePath, NEXT_PUBLIC_HEARTBEAT: "1" },
 };
 
 export default nextConfig;

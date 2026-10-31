@@ -7,3 +7,7 @@ tsconfig.tsbuildinfo
 next.config.ts.bak
 .env
 .hallmark
+dist
+dist-build.log
+desktop/.cache
+desktop/launcher/*.syso
