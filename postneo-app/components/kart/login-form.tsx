@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {BrandMark} from '@/components/brand-mark';
-import {api} from '@/lib/base';
+import {api,withBase} from '@/lib/base';
 
 /** Вход и первый запуск на одной форме: setup=true заводит администратора, пока в базе нет людей. */
 export function LoginForm({setup=false}:{setup?:boolean}){
@@ -21,5 +21,6 @@ export function LoginForm({setup=false}:{setup?:boolean}){
   <label className="f"><span className="l">Пароль{setup?' (не короче 8 символов)':''}</span><span className="w"><input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete={setup?'new-password':'current-password'} required/></span></label>
   {error&&<p className="err" role="alert">{error}</p>}
   <button className="btn primary" type="submit" disabled={busy}>{setup?'Создать и войти':'Войти'}</button>
+  {!setup&&<p className="hint">Есть код приглашения? <a href={withBase('/join')}>Зарегистрироваться</a></p>}
  </form></div>;
 }

@@ -119,6 +119,25 @@ alter table patients add column enc text;
 alter table weights add column enc text;
 alter table sheets add column enc text;
 alter table sheets add column valid integer not null default 0;
+`,`
+-- Вход специалистов: приглашения вместо выдачи паролей администратором, защита от перебора.
+create table invites(
+ id integer primary key autoincrement,
+ code_hash text not null unique,
+ role text not null check(role in ('admin','doctor','nurse')),
+ note text not null default '',
+ created_by integer references users(id),
+ created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+ expires_at text not null,
+ used_by integer references users(id),
+ used_at text
+);
+create table login_attempts(
+ id integer primary key autoincrement,
+ key text not null,
+ at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+create index login_attempts_key on login_attempts(key,at);
 `];
 
 export function openDb(file:string):Db{

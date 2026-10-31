@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {openDb} from '../lib/server/db.ts';
-import {createUser,login,userByToken,logout,countUsers,setDisabled,audit,listAudit,verifyPassword,hashPassword} from '../lib/server/auth.ts';
+import {createUser,login,userByToken,logout,countUsers,setDisabled,audit,listAudit,verifyPassword,hashPassword,setPassword,changeOwnPassword,createInvite,inviteByCode,redeemInvite,listInvites,deleteInvite,tooManyAttempts,noteFailedAttempt,clearAttempts} from '../lib/server/auth.ts';
 import {createPatient,updatePatient,listPatients,getPatient,putSheet,signSheet,unsignSheet,deleteDraft,listWeights,listSheets,getSheet,setPatientStatus,upsertWeight,encryptLegacy} from '../lib/server/patients.ts';
 import {createVaultRecord,getVault,updateVaultRecord,plainCounts} from '../lib/server/vault.ts';
 
@@ -72,3 +72,32 @@ test('ключ отделения: создание один раз, обнов�
  updateVaultRecord(db,{wrapped_key:'v1.e.f'});assert.equal(getVault(db).wrapped_key,'v1.e.f');assert.equal(getVault(db).recovery_wrapped_key,'v1.c.d');
 });
 
+
+test('приглашения: код одноразовый, роль из кода, истёкший и чужой не работают', () => {
+ const db=fresh();const admin=createUser(db,{login:'admin',name:'А',role:'admin',password:'secret123'});
+ const inv=createInvite(db,'doctor','Иванов',admin.id);
+ assert.match(inv.code,/^[A-Z0-9]{8}$/);assert.equal(inviteByCode(db,inv.code.toLowerCase()).role,'doctor');
+ assert.equal(inviteByCode(db,'NOPE1234'),null);
+ const doc=redeemInvite(db,inv.code,{login:'ivanov',name:'Иванов',password:'secret123'});
+ assert.equal(doc.role,'doctor');assert.equal(inviteByCode(db,inv.code),null);
+ assert.throws(()=>redeemInvite(db,inv.code,{login:'x2',name:'',password:'secret123'}),/не подходит/);
+ assert.equal(listInvites(db)[0].used_login,'ivanov');
+ const old=createInvite(db,'nurse','',admin.id,0);assert.equal(inviteByCode(db,old.code),null);
+ const open=createInvite(db,'nurse','',admin.id);deleteInvite(db,open.id);assert.equal(inviteByCode(db,open.code),null);
+ // логин занят: приглашение не гасится
+ const again=createInvite(db,'nurse','',admin.id);assert.throws(()=>redeemInvite(db,again.code,{login:'ivanov',name:'',password:'secret123'}));assert.ok(inviteByCode(db,again.code));
+});
+
+test('перебор: после 5 неверных попыток вход закрыт, удачный вход очищает счётчик; смена пароля закрывает чужие сессии', () => {
+ const db=fresh();const u=createUser(db,{login:'doc',name:'Врач',role:'doctor',password:'secret123'});
+ const keys=['login:doc','ip:10.0.0.1'];
+ for(let i=0;i<4;i++)noteFailedAttempt(db,keys);assert.equal(tooManyAttempts(db,keys),0);
+ noteFailedAttempt(db,keys);assert.ok(tooManyAttempts(db,keys)>=5);assert.ok(tooManyAttempts(db,['login:other','ip:10.0.0.1'])>=5);assert.equal(tooManyAttempts(db,['login:other','ip:10.0.0.2']),0);
+ clearAttempts(db,keys);assert.equal(tooManyAttempts(db,keys),0);
+ const s1=login(db,'doc','secret123'),s2=login(db,'doc','secret123');
+ assert.throws(()=>changeOwnPassword(db,u.id,'wrong','newpass123'),/неверный/);
+ changeOwnPassword(db,u.id,'secret123','newpass123',s1.token);
+ assert.ok(userByToken(db,s1.token));assert.equal(userByToken(db,s2.token),null);
+ assert.ok(login(db,'doc','newpass123'));assert.equal(login(db,'doc','secret123'),null);
+ setPassword(db,u.id,'another123');assert.equal(userByToken(db,s1.token),null);
+});

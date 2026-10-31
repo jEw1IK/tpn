@@ -8,6 +8,7 @@ import {ThemeToggle} from '@/components/theme-toggle';
 import {api} from '@/lib/base';
 import {roleNames,type User} from '@/lib/roles';
 import {useVault} from './vault';
+import {PasswordButton} from './password-dialog';
 
 export function KartBar({user}:{user:User}){
  const path=usePathname();const router=useRouter();const vault=useVault();
@@ -19,6 +20,6 @@ export function KartBar({user}:{user:User}){
   {user.role==='admin'&&link('/users','Пользователи')}
   {user.role==='admin'&&link('/journal','Журнал')}
   {user.role==='admin'&&link('/vault','Ключ')}
-  <span className="who"><b>{user.name}</b><span>{roleNames[user.role]}</span><ThemeToggle/>{vault.status==='ready'&&<button type="button" className="tb" onClick={vault.forget} title="Забыть ключ отделения на этом компьютере"><KeyRound size={14} aria-hidden="true"/>Закрыть ключ</button>}<button type="button" className="tb" onClick={out}><LogOut size={14} aria-hidden="true"/>Выйти</button></span>
+  <span className="who"><b>{user.name}</b><span>{roleNames[user.role]}</span><ThemeToggle/><PasswordButton/>{vault.status==='ready'&&<button type="button" className="tb" onClick={vault.forget} title="Забыть ключ отделения на этом компьютере"><KeyRound size={14} aria-hidden="true"/>Закрыть ключ</button>}<button type="button" className="tb" onClick={out}><LogOut size={14} aria-hidden="true"/>Выйти</button></span>
  </nav>;
 }

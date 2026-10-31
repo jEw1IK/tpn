@@ -27,7 +27,55 @@ export function createUser(db:Db,user:{login:string;name:string;role:Role;passwo
 }
 export function getUser(db:Db,id:number):User|null{return (db.prepare('select id,login,name,role,disabled,created_at from users where id=?').get(id) as User|undefined)??null;}
 export function listUsers(db:Db):User[]{return db.prepare('select id,login,name,role,disabled,created_at from users order by role,login').all() as User[];}
-export function setPassword(db:Db,id:number,password:string){if(password.length<8)throw new Error('Пароль не короче 8 символов');db.prepare('update users set password_hash=? where id=?').run(hashPassword(password),id);}
+/** Смена пароля закрывает все сессии пользователя: на других компьютерах войдут заново. Текущую можно оставить по токену. */
+export function setPassword(db:Db,id:number,password:string,keepToken?:string){
+ if(password.length<8)throw new Error('Пароль не короче 8 символов');
+ db.prepare('update users set password_hash=? where id=?').run(hashPassword(password),id);
+ if(keepToken)db.prepare('delete from sessions where user_id=? and token_hash<>?').run(id,hashToken(keepToken));
+ else db.prepare('delete from sessions where user_id=?').run(id);
+}
+/** Смена своего пароля: нужен старый. */
+export function changeOwnPassword(db:Db,id:number,oldPassword:string,newPassword:string,keepToken?:string){
+ const row=db.prepare('select password_hash from users where id=?').get(id) as {password_hash:string}|undefined;
+ if(!row||!verifyPassword(oldPassword,row.password_hash))throw new Error('Текущий пароль неверный');
+ if(oldPassword===newPassword)throw new Error('Новый пароль совпадает со старым');
+ setPassword(db,id,newPassword,keepToken);
+}
+
+/** Защита от перебора: не больше 5 неверных попыток за 15 минут на логин и на адрес. */
+export const attemptLimit=5;export const attemptWindowMin=15;
+export function tooManyAttempts(db:Db,keys:string[]):number{
+ db.prepare(`delete from login_attempts where at<strftime('%Y-%m-%dT%H:%M:%fZ','now','-${attemptWindowMin} minutes')`).run();
+ let max=0;
+ for(const k of keys){const c=(db.prepare('select count(*) as c from login_attempts where key=?').get(k) as {c:number}).c;if(c>max)max=c;}
+ return max>=attemptLimit?max:0;
+}
+export function noteFailedAttempt(db:Db,keys:string[]){for(const k of keys)db.prepare('insert into login_attempts(key) values (?)').run(k);}
+export function clearAttempts(db:Db,keys:string[]){for(const k of keys)db.prepare('delete from login_attempts where key=?').run(k);}
+
+/** Приглашение: администратор создаёт код, врач по нему сам заводит логин и пароль. Код одноразовый, живёт 7 дней. */
+export function createInvite(db:Db,role:Role,note:string,createdBy:number,days=7):{code:string;id:number;expires_at:string}{
+ const code=randomBytes(6).toString('base64url').replace(/[-_]/g,'x').slice(0,8).toUpperCase();
+ const expires=new Date(Date.now()+days*86400000).toISOString();
+ const info=db.prepare('insert into invites(code_hash,role,note,created_by,expires_at) values (?,?,?,?,?)').run(hashToken(code),role,note.trim().slice(0,80),createdBy,expires);
+ return {code,id:Number(info.lastInsertRowid),expires_at:expires};
+}
+export type Invite={id:number;role:Role;note:string;created_at:string;expires_at:string;used_by:number|null;used_at:string|null;used_login:string|null};
+export function listInvites(db:Db):Invite[]{return db.prepare('select i.id,i.role,i.note,i.created_at,i.expires_at,i.used_by,i.used_at,u.login as used_login from invites i left join users u on u.id=i.used_by order by i.id desc limit 100').all() as Invite[];}
+export function deleteInvite(db:Db,id:number){db.prepare('delete from invites where id=? and used_by is null').run(id);}
+export function inviteByCode(db:Db,code:string):{id:number;role:Role;note:string}|null{
+ const row=db.prepare("select id,role,note from invites where code_hash=? and used_by is null and expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now')").get(hashToken(code.trim().toUpperCase())) as {id:number;role:Role;note:string}|undefined;
+ return row??null;
+}
+/** Регистрация по приглашению: пользователь и погашение кода в одной транзакции. */
+export function redeemInvite(db:Db,code:string,user:{login:string;name:string;password:string}):User{
+ const inv=inviteByCode(db,code);if(!inv)throw new Error('Код приглашения не подходит или истёк');
+ return db.transaction(()=>{
+  const created=createUser(db,{...user,role:inv.role});
+  db.prepare("update invites set used_by=?,used_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') where id=? and used_by is null").run(created.id,inv.id);
+  return created;
+ })();
+}
 export function setDisabled(db:Db,id:number,disabled:boolean){db.prepare('update users set disabled=? where id=?').run(disabled?1:0,id);if(disabled)db.prepare('delete from sessions where user_id=?').run(id);}
 
 export function login(db:Db,loginName:string,password:string,meta:{ip?:string;ua?:string}={}):{token:string;user:User}|null{
