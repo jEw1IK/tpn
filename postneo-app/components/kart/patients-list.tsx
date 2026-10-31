@@ -28,6 +28,7 @@ export function PatientsList({status,canEdit}:{status:'active'|'discharged';canE
   <div className="khead"><h1>{status==='active'?'Пациенты в отделении':'Выписанные'}</h1><span className="hint">{rows?rows.length:'…'}</span><span className="sp"/>
    <label className="f" style={{minWidth:220}}><span className="w"><Search size={15} aria-hidden="true"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="фамилия или № истории" aria-label="Поиск пациента"/></span></label>
    <Link className="btn" href={status==='active'?'/patients?status=discharged':'/patients'}>{status==='active'?'Выписанные':'В отделении'}</Link>
+   {canEdit&&status==='active'&&<Link className="btn" href="/patients/import">Списком</Link>}
    {canEdit&&<Link className="btn primary" href="/patients/new"><Plus size={15} aria-hidden="true"/>Новый пациент</Link>}
   </div>
   {error&&<p className="err" role="alert">{error}</p>}

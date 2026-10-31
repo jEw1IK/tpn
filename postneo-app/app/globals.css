@@ -642,3 +642,18 @@ fieldset.form:disabled .cell,fieldset.form:disabled .f .w,fieldset.form:disabled
 @media (max-width:900px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}.prow .st{grid-column:1/-1;justify-self:start}.two-col{grid-template-columns:minmax(0,1fr)}}
 .app .app{min-height:auto;padding:0}
 .app .app::before{display:none}
+/* Пациенты списком */
+.imp-text{width:100%;min-height:220px;border:1px solid var(--line2);border-radius:12px;background:var(--field);color:var(--fg);font:inherit;font-size:13px;padding:10px 12px;resize:vertical}
+.imp{display:grid;gap:6px}
+.imp-row{display:grid;grid-template-columns:28px minmax(0,2.4fr) minmax(0,1fr) 84px 140px 140px 70px 84px;gap:8px;align-items:start;padding:8px 12px;border-radius:12px;background:var(--panel);box-shadow:0 1px 0 var(--line)}
+.imp-row input:not([type=checkbox]),.imp-row select{width:100%;min-width:0;height:34px;border:1px solid var(--line2);border-radius:8px;background:var(--field);color:var(--fg);font:inherit;font-size:14px;padding:0 8px}
+.imp-row input[type=checkbox]{width:18px;height:18px;margin-top:8px;accent-color:var(--acc)}
+.imp-row :focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.imp-row.off{opacity:.55}
+.imp-row.done{opacity:.7}
+.imp-h{background:none;box-shadow:none;padding-top:0;padding-bottom:0;color:var(--mute);font-size:12px}
+.imp-name{display:flex;flex-direction:column;gap:3px;min-width:0}
+.imp-name small{color:var(--mute);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.imp-name small.warn{color:var(--warn);white-space:normal}
+.imp-name small.ok{color:var(--ok)}
+@media (max-width:900px){.imp-row{grid-template-columns:28px repeat(2,minmax(0,1fr))}.imp-name{grid-column:2/-1}.imp-h{display:none}}
