@@ -2,7 +2,7 @@
 # Статический сайт POSTNEO: next export с относительными путями, каталог _next → nx, результат в ../postneo (его раздают сервер и Pages).
 # Запуск из любого места: bash postneo-app/deploy/build-site.sh
 set -euo pipefail
-APP="$(cd "$(dirname "$0")/.." && pwd)"; OUT="$APP/../postneo"
+APP="$(cd "$(dirname "$0")/.." && pwd)"; OUT="${OUT:-$APP/../postneo}"; mkdir -p "$OUT"
 cd "$APP"
 cp next.config.ts next.config.ts.bak
 cat > next.config.ts <<'CFG'

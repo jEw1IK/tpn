@@ -79,6 +79,39 @@ html:has(.home) { background: var(--home-bg); scrollbar-color: var(--home-scroll
 .access p { margin-top: var(--space-xs); color: var(--color-ink-2); }
 .access .hm-link { margin-top: var(--space-xs); min-height: 40px; padding: 0; }
 
+/* figures: one number per card, the engine's own */
+.fig { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--space-xs) var(--space-sm); font: 700 var(--text-3xl)/1 var(--font-display); letter-spacing: var(--tracking-display); color: var(--color-ink); font-variant-numeric: tabular-nums; max-width: none; }
+.fig small { font: 400 var(--text-md)/1.3 var(--font-body); color: var(--color-ink-2); letter-spacing: 0; }
+.fig--lit { color: var(--color-accent); }
+
+/* instruments: six readings of one child, lit on the dark paper */
+.hm-inst { padding-top: var(--section-gap); }
+.hm-inst .hm-head { margin-bottom: var(--space-2xl); }
+.inst { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap-columns); margin: 0; padding: 0; list-style: none; }
+.inst li { display: flex; flex-direction: column; gap: var(--space-md); min-width: 0; min-height: 220px; padding: var(--space-lg); border-radius: var(--radius-card); background: linear-gradient(180deg, var(--color-paper-3), var(--color-paper-2)); box-shadow: var(--shadow-paper); }
+.inst h3 { font-size: var(--text-sm); font-weight: 500; letter-spacing: 0; color: var(--color-muted); }
+.inst .bar { display: block; height: 2px; border-radius: 1px; background: var(--color-rule); overflow: hidden; }
+.inst .bar i { display: block; height: 100%; background: var(--color-ink); }
+.inst .bar i.lit { background: var(--color-accent); }
+.inst p:last-child { margin-top: auto; font-size: var(--text-sm); color: var(--color-ink-2); }
+
+/* sheets: both sides, two papers on the desk */
+.hm-sheets { padding-top: var(--section-gap); }
+.hm-sheets .hm-head { margin-bottom: var(--space-2xl); }
+.sheets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-columns); }
+
+/* reference: two counts under a rule */
+.hm-ref { padding-top: var(--section-gap); }
+.refs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-columns); }
+.refs > div { padding-top: var(--space-md); border-top: 1px solid var(--color-rule); min-width: 0; }
+.refs > div > p:last-child { margin-top: var(--space-md); color: var(--color-ink-2); }
+
+/* a soft light behind the hero object */
+.hm-hero__fig { position: relative; }
+.hm-hero__fig::before { content: ""; position: absolute; left: 10%; right: 10%; top: -12%; height: 60%; z-index: 0; pointer-events: none; background: radial-gradient(ellipse 60% 70% at 50% 0%, var(--glow), transparent 70%); }
+.home { --glow: oklch(68% 0.17 25 / 0.16); }
+.hm-paper__sheet, .hm-shot--hero { position: relative; z-index: 1; }
+
 /* bento: the engine's own numbers and the two sides of the sheet */
 .hm-bento { padding: var(--section-gap) 0 0; }
 .hm-bento h2 { margin-bottom: var(--space-2xl); }
@@ -142,6 +175,8 @@ html:has(.home) { background: var(--home-bg); scrollbar-color: var(--home-scroll
  .hm-hero__in { grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); min-height: 0; }
  .hm-shot--hero { aspect-ratio: 4 / 5; max-width: 420px; }
  .access { grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); }
+ .inst { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+ .sheets, .refs { grid-template-columns: minmax(0, 1fr); }
  .tile, .tile--lead, .tile--shot, .tile--shot + .tile--shot { grid-column: span 6; }
  .tile--shot { aspect-ratio: 3 / 2; }
  .hm-split, .hm-close__in { grid-template-columns: minmax(0, 1fr); }
@@ -161,6 +196,8 @@ html:has(.home) { background: var(--home-bg); scrollbar-color: var(--home-scroll
  .cmp td.num::before { content: attr(data-label); color: var(--color-muted); }
  .tile, .tile--lead, .tile--shot, .tile--shot + .tile--shot { grid-column: span 12; }
  .tile { padding: var(--space-lg); }
+ .inst { grid-template-columns: minmax(0, 1fr); }
+ .inst li { min-height: 0; }
  .hm-brand span { font-size: var(--text-md); }
  .hm-nav__in .btn { min-height: 44px; padding: 0 var(--space-md); }
  .hm-nav__act .hm-link { display: none; }
