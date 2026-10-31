@@ -16,6 +16,19 @@ done
 [ -n "$NGX" ] || { echo "конфиг nginx с сайтом не найден"; exit 1; }
 echo "конфиг: $NGX"
 
+# 0. Порт 443 должен быть свободен: иначе nginx не перечитает конфиг и HTTPS не поднимется.
+if ss -ltnp | grep -q ':443 ' && ! ss -ltnp | grep ':443 ' | grep -q nginx; then
+  echo "порт 443 занят не nginx:"; ss -ltnp | grep ':443 ' | sed 's/^/  /'
+  echo "освободите порт (см. deploy/README.md, раздел про SSH на 443) и запустите скрипт снова"; exit 1
+fi
+
+# 0a. Прошлый запуск с принудительным редиректом оставил блок «return 404» для запросов по IP: из больницы сайт по http перестал бы открываться.
+#     Возвращаем конфиг из копии до certbot и настраиваем заново без редиректа.
+if grep -q "return 404; # managed by Certbot" "$NGX"; then
+  BAK="$(ls -1t "$NGX".bak-https-* 2>/dev/null | tail -1)"
+  if [ -n "$BAK" ]; then cp -a "$NGX" "$NGX.bak-redirect-$(date +%Y%m%d%H%M%S)"; cp -a "$BAK" "$NGX"; echo "конфиг возвращён из $BAK (без редиректа certbot)"; fi
+fi
+
 # 1. Имя сервера в блоке server: certbot находит блок по server_name.
 if ! grep -qE "server_name[^;]*\b$HOST\b" "$NGX"; then
   cp -a "$NGX" "$NGX.bak-https-$(date +%Y%m%d%H%M%S)"
@@ -43,7 +56,8 @@ fi
 certbot --version
 
 # 3. Сертификат на имя; при лимите — на IP (короткоживущий, продлевается сам дважды в день).
-COMMON=(--nginx --non-interactive --agree-tos --register-unsafely-without-email --no-eff-email --redirect)
+# без --redirect: по http сайт нужен больничным сетям, где https к нашему адресу не пускают
+COMMON=(--nginx --non-interactive --agree-tos --register-unsafely-without-email --no-eff-email --no-redirect)
 if certbot "${COMMON[@]}" -d "$HOST" 2>&1 | tee /tmp/certbot-host.log | tail -5 && grep -q "Successfully\|Certificate not yet due\|already" /tmp/certbot-host.log; then
   URL="https://$HOST/"
 else
@@ -61,6 +75,13 @@ fi
 
 systemctl list-timers --no-pager 2>/dev/null | grep -i certbot || true
 nginx -t && systemctl reload nginx
+sleep 1
+ss -ltnp | grep ':443 ' | grep -q nginx && echo "nginx слушает 443" || { echo "nginx не занял 443, смотрите tail /var/log/nginx/error.log"; exit 1; }
+# блоки /kart/ и /download/ ставит install-kart-server.sh; если он уже запускался, добавим их заново в обновлённый конфиг
+if systemctl is-enabled postneo-kart >/dev/null 2>&1; then
+  echo "переустанавливаю блоки /kart/ и /download/"
+  curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/postneo-app/deploy/install-kart-server.sh | bash
+fi
 echo "--- проверка"
 { curl -sI --max-time 10 "${URL}postneo/" || echo "(локальная проверка не прошла, откройте адрес в браузере)"; } | grep -i "^HTTP" || true
 certbot certificates 2>/dev/null | grep -E "Identifiers|Expiry" | sed 's/^ */  /' || true
