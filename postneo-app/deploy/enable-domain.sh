@@ -40,8 +40,23 @@ LIVE="/etc/letsencrypt/live/$DOMAIN"
 [ -s "$LIVE/fullchain.pem" ] || { echo "сертификат не выдан, лог /tmp/certbot-domain.log"; exit 1; }
 
 # 4. Отдельный блок server для домена: копия блока с listen 443, своё имя и свой сертификат.
-if ! grep -q "POSTNEO domain $DOMAIN" "$NGX"; then
-  cp -a "$NGX" "$NGX.bak-domain-$(date +%Y%m%d%H%M%S)"
+#    Повторный запуск пересобирает блок заново (старый удаляется), так что скрипт чинит и сам себя.
+BAK="$NGX.bak-domain-$(date +%Y%m%d%H%M%S)"; cp -a "$NGX" "$BAK"
+python3 - "$NGX" "$DOMAIN" <<'PYDEL'
+import re,sys
+f,domain=sys.argv[1],sys.argv[2];s=open(f).read()
+m=re.search(r'\n*[ \t]*server[ \t]*\{\n[ \t]*# POSTNEO domain '+re.escape(domain)+r':',s)
+if m:
+    st=m.start();j=s.index('{',st);depth=0
+    while j<len(s):
+        if s[j]=='{':depth+=1
+        elif s[j]=='}':
+            depth-=1
+            if depth==0:break
+        j+=1
+    s=s[:st]+s[j+1:];open(f,'w').write(s.rstrip()+'\n');print('прежний блок домена убран, собираю заново')
+PYDEL
+if true; then
   python3 - "$NGX" "$DOMAIN" "$LIVE" "${NAMES[*]}" <<'PY'
 import re,sys
 f,domain,live,names=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
@@ -65,11 +80,17 @@ blk=re.sub(r'^([ \t]*)server_name[^;]*;[^\n]*\n',lambda m:'',blk,flags=re.M)
 blk=re.sub(r'(server[ \t]*\{)',lambda m:m.group(1)+f'\n    # POSTNEO domain {domain}: свой сертификат, выбирается по имени (SNI)\n    server_name {names};',blk,count=1)
 blk=re.sub(r'(ssl_certificate[ \t]+)[^;]+;',rf'\g<1>{live}/fullchain.pem;',blk)
 blk=re.sub(r'(ssl_certificate_key[ \t]+)[^;]+;',rf'\g<1>{live}/privkey.pem;',blk)
-blk=blk.replace(' default_server','').replace(' ipv6only=on','')
+# параметры listen (default_server, reuseport, backlog, ipv6only) задаются один раз на адрес: в копии только простые строки
+blk=re.sub(r'^([ \t]*)listen[ \t]+\[::\]:443[^;]*;[^\n]*$',r'\1listen [::]:443 ssl;',blk,flags=re.M)
+blk=re.sub(r'^([ \t]*)listen[ \t]+(?!\[)[^;]*443[^;]*;[^\n]*$',r'\1listen 443 ssl;',blk,flags=re.M)
 open(f,'w').write(s.rstrip()+'\n\n'+blk+'\n')
 PY
 fi
-nginx -t && systemctl reload nginx
+if ! nginx -t; then
+  echo "nginx не принял блок домена — возвращаю прежний конфиг, сайт по IP работает как раньше"
+  cp -a "$BAK" "$NGX"; nginx -t && systemctl reload nginx; exit 1
+fi
+systemctl reload nginx
 sleep 1
 
 # 5. Проверка: по имени — сертификат домена, по IP — прежний.
