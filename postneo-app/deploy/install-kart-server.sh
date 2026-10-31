@@ -141,27 +141,11 @@ NGX=""
 for f in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do
   [ -f "$f" ] && grep -q "postneo" "$f" && { NGX="$(readlink -f "$f")"; break; }
 done
-# короткие адреса: корень → главная, /calculator → калькулятор
-if [ -n "$NGX" ] && ! grep -q "POSTNEO short" "$NGX"; then
-  cp -a "$NGX" "$NGX.bak-short-$(date +%Y%m%d%H%M%S)"
-  python3 - "$NGX" <<'PYSHORT'
-import re,sys
-f=sys.argv[1];s=open(f).read()
-block="""
-    # POSTNEO short: короткие адреса ведут на сайт
-    location = / { return 302 /postneo/; }
-    location = /calculator { return 302 /postneo/calculator.html; }
-    location = /calculator.html { return 302 /postneo/calculator.html; }
-"""
-starts=[m.start() for m in re.finditer(r'^\s*server\s*\{',s,re.M)]
-for st in reversed(starts):
-    brace=s.find('{',st)+1
-    end=s.find('\n}',st)
-    if 'POSTNEO short' not in s[st:end]:
-        s=s[:brace]+block+s[brace:]
-open(f,'w').write(s)
-PYSHORT
-  nginx -t && systemctl reload nginx && echo "nginx: короткие адреса добавлены"
+# короткие адреса: только /calculator (корень принадлежит странице сервера). Заодно лечим прежние вставки.
+if [ -n "$NGX" ]; then
+  BAKH="$NGX.bak-heal-$(date +%Y%m%d%H%M%S)"; cp -a "$NGX" "$BAKH"
+  curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/postneo-app/deploy/nginx-heal.py -o /tmp/postneo-nginx-heal.py && python3 /tmp/postneo-nginx-heal.py "$NGX"
+  if nginx -t 2>/dev/null; then systemctl reload nginx; else echo "nginx: конфиг не принят после лечения, возвращаю копию"; cp -a "$BAKH" "$NGX"; fi
 fi
 if [ -n "$NGX" ] && ! grep -q "location /download/" "$NGX"; then
   cp -a "$NGX" "$NGX.bak-dl-$(date +%Y%m%d%H%M%S)"

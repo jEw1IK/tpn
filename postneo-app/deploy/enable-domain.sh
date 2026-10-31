@@ -15,6 +15,12 @@ done
 command -v certbot >/dev/null || { echo "сначала deploy/enable-https.sh (ставит certbot)"; exit 1; }
 grep -q "listen 443" "$NGX" || { echo "в $NGX нет блока с listen 443: сначала deploy/enable-https-ip.sh"; exit 1; }
 
+# 0. Конфиг nginx должен проходить проверку до любых изменений. Прежние вставки установщика лечатся здесь же.
+curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/postneo-app/deploy/nginx-heal.py -o /tmp/postneo-nginx-heal.py
+cp -a "$NGX" "$NGX.bak-preheal-$(date +%Y%m%d%H%M%S)"; python3 /tmp/postneo-nginx-heal.py "$NGX"
+if ! nginx -t; then echo "конфиг nginx не проходит проверку и до домена — пришлите вывод nginx -t"; exit 1; fi
+systemctl reload nginx
+
 # 1. DNS: домен должен указывать на этот сервер (проверяем через публичный DNS, локальный кэш может помнить «нет такого»).
 resolve(){ curl -fsS --max-time 10 "https://dns.google/resolve?name=$1&type=A" | python3 -c "import sys,json;print(' '.join(a['data'] for a in json.load(sys.stdin).get('Answer',[]) if a.get('type')==1))" 2>/dev/null || true; }
 NAMES=()
