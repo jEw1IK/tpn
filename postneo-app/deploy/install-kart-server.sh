@@ -164,15 +164,18 @@ open(f,'w').write(s)
 PYNGX
   nginx -t && systemctl reload nginx
 fi
-if [ -n "$NGX" ] && ! grep -q "location /kart/" "$NGX"; then
+# ранняя версия ставила редирект /kart → /kart/, а приложение отвечает обратным редиректом: убираем петлю
+if [ -n "$NGX" ] && grep -q "location = /kart { return 301 /kart/; }" "$NGX"; then
+  sed -i '/location = \/kart { return 301 \/kart\/; }/d; s#location /kart/ {#location /kart {#' "$NGX" && nginx -t && systemctl reload nginx && echo "nginx: петля /kart исправлена"
+fi
+if [ -n "$NGX" ] && ! grep -q "location /kart" "$NGX"; then
   cp -a "$NGX" "$NGX.bak-kart-$(date +%Y%m%d%H%M%S)"
   python3 - "$NGX" "$PORT" <<'PY'
 import re,sys
 f,port=sys.argv[1],sys.argv[2];s=open(f).read()
 block=f'''
     # POSTNEO Карточки: приложение на node, слушает только 127.0.0.1
-    location = /kart {{ return 301 /kart/; }}
-    location /kart/ {{
+    location /kart {{
         proxy_pass http://127.0.0.1:{port};
         proxy_http_version 1.1;
         proxy_set_header Host $host;
