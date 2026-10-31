@@ -2,7 +2,8 @@ import './home.css';
 import {calculate,blank,drugs,enteralFormulas,type Inputs} from '@/lib/tpn';
 import {formatNumber as f} from '@/lib/format';
 import {BrandMark} from '@/components/brand-mark';
-import {href,asset} from '@/lib/links';
+import {href,asset,staticSite} from '@/lib/links';
+import {redirect} from 'next/navigation';
 
 const examplePdf=asset('/examples/nurse-sheet-p.pdf');
 /* Учебный пациент, на котором страница показывает расчёт: 1450 г, 2-е сутки, 110 мл/кг, глюкоза 5 мг/кг/мин, белок 2 г/кг, жиры 1,5 г/кг, грудное молоко по часам. */
@@ -15,6 +16,8 @@ const changelog:[string,string,string][]=[
 ];
 
 export default function HomePage(){
+ // На сервере корень приложения ведёт сразу к пациентам (а они — ко входу); главная живёт только в статическом сайте.
+ if(!staticSite)redirect(process.env.KART_DISABLED==='1'?'/calculator':'/patients');
  const lead=calculate(patient('5'));
  const rows=['5','10','15'].map(ml=>{const r=calculate(patient(ml));return {ml,enteral:r.enteralMl,glucose:r.glucoseGrams,gir:r.girIv,aa:r.aaMl,fat:r.fatLineMl,base:r.base,kcal:r.kr.perKg};});
  const groups=new Set(drugs.map(d=>d.group)).size;
