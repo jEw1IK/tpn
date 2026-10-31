@@ -87,7 +87,25 @@ export function VaultGate({children}:{children:React.ReactNode}){
  if(v.status==='error')return <div className="kwrap"><p className="err" role="alert">{v.error}</p><button type="button" className="btn" onClick={()=>v.refresh()}>Повторить</button></div>;
  if(v.status==='none')return v.user.role==='admin'?<SetupVault/>:<div className="kwrap"><div className="card"><h2>Отделение ещё не настроено</h2><p className="lead">Администратор ещё не создал ключ шифрования. Попробуйте позже.</p></div></div>;
  if(v.status==='locked')return <UnlockVault/>;
- return <>{children}</>;
+ return <><WrapReminder/>{children}</>;
+}
+
+/** Ключ открыт на этом компьютере, а копии под паролем на сервере ещё нет (переход со старой фразы без нового входа).
+ *  Один раз подтвердить пароль — и на других компьютерах, и после «Выйти» отделение откроется паролем. */
+function WrapReminder(){
+ const v=useVault();const [need,setNeed]=useState(false);const [p,setP]=useState('');const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [done,setDone]=useState(false);
+ useEffect(()=>{let alive=true;api<{keyWrap:KeyWrap|null}>('/api/me').then(r=>{if(alive)setNeed(!r.keyWrap);}).catch(()=>{});return()=>{alive=false;};},[]);
+ if(done)return <div className="kwrap"><p className="hint" role="status">Готово: теперь отделение открывается вашим паролем на любом компьютере.</p></div>;
+ if(!need||!v.rawKey)return null;
+ const submit=async(e:React.FormEvent)=>{e.preventDefault();setBusy(true);setError('');
+  try{await api('/api/login',{method:'POST',json:{login:v.user.login,password:p}});await api('/api/me',{method:'PUT',json:{keyWrap:await wrapForPassword(v.rawKey!,p)}});setDone(true);setNeed(false);}
+  catch(err){setError((err as Error).message.includes('Неверный')?'Пароль не подошёл':(err as Error).message);}finally{setBusy(false);}};
+ return <div className="kwrap"><form className="card" onSubmit={submit} style={{display:'flex',gap:12,alignItems:'end',flexWrap:'wrap'}}>
+  <p className="lead" style={{flex:'1 1 320px',margin:0}}>Подтвердите пароль один раз: после этого отделение будет открываться им на любом компьютере, без старой фразы.</p>
+  <label className="f" style={{minWidth:220}}><span className="l">Ваш пароль</span><span className="w"><input type="password" value={p} onChange={e=>setP(e.target.value)} autoComplete="current-password" required/></span></label>
+  <button className="btn primary" type="submit" disabled={busy||!p}>{busy?'Сохраняю…':'Подтвердить'}</button>
+  {error&&<p className="err" role="alert" style={{width:'100%'}}>{error}</p>}
+ </form></div>;
 }
 
 /** Лист восстановления показывается один раз сразу после создания ключа. */
