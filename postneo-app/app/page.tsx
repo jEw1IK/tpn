@@ -32,8 +32,8 @@ export default function HomePage(){
     </div>
     <figure className="hm-shot hm-shot--hero" data-slot="hero" data-kind="product" data-alt="Калькулятор с заполненным учебным листом: блоки ввода слева, полученная инфузия справа">
      <picture>
-      <source media="(max-width: 60rem)" srcSet="/images/calculator-phone-result.png" width="780" height="1688"/>
-      <img src="/images/calculator-desktop.png" width="2400" height="1920" alt="Экран калькулятора: потребность, растворы, электролиты, смесь и панель «Полученная инфузия»" fetchPriority="high"/>
+      <source media="(max-width: 60rem)" srcSet="/images/calculator-phone-result.webp" width="780" height="1688"/>
+      <img src="/images/calculator-desktop.webp" width="1600" height="1280" alt="Экран калькулятора: потребность, растворы, электролиты, смесь и панель «Полученная инфузия»" fetchPriority="high"/>
      </picture>
     </figure>
    </div></section>
@@ -53,11 +53,11 @@ export default function HomePage(){
       <p className="tile__note">110 мл/кг, глюкоза 5 мг/кг/мин, белок 2 и жиры 1,5 г/кг, грудное молоко по 5 мл восемь раз.</p>
      </article>
      <figure className="tile tile--shot" data-slot="sheet-front" data-kind="product" data-alt="Лицевая сторона печатного листа">
-      <img src="/images/nurse-sheet-front-p.png" width="1123" height="794" alt="Лист интенсивной терапии: инфузии, лекарственные назначения и клетки 24 часов" loading="lazy"/>
+      <img src="/images/nurse-sheet-front-p.webp" width="1123" height="794" alt="Лист интенсивной терапии: инфузии, лекарственные назначения и клетки 24 часов" loading="lazy"/>
       <figcaption data-keep>Лист А4: инфузии, препараты, клетки на 24 часа</figcaption>
      </figure>
      <figure className="tile tile--shot" data-slot="sheet-back" data-kind="product" data-alt="Оборот печатного листа">
-      <img src="/images/nurse-sheet-back-p.png" width="1123" height="794" alt="Оборот листа: кормления, КОС, респираторная поддержка, диурез" loading="lazy"/>
+      <img src="/images/nurse-sheet-back-p.webp" width="1123" height="794" alt="Оборот листа: кормления, КОС, респираторная поддержка, диурез" loading="lazy"/>
       <figcaption data-keep>Оборот: кормления, КОС, диурез</figcaption>
      </figure>
      <article className="tile">
@@ -102,7 +102,7 @@ export default function HomePage(){
      <p className="hm-close__act"><a className="btn" href="/calculator">Открыть калькулятор</a></p>
     </div>
     <figure className="hm-shot hm-shot--phone" data-slot="phone" data-kind="product" data-alt="Калькулятор на телефоне">
-     <img src="/images/calculator-phone.png" width="780" height="1688" alt="Калькулятор на экране телефона: блоки ввода в одну колонку" loading="lazy"/>
+     <img src="/images/calculator-phone.webp" width="780" height="1688" alt="Калькулятор на экране телефона: блоки ввода в одну колонку" loading="lazy"/>
     </figure>
    </div></section>
   </main>
