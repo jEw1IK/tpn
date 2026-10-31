@@ -1,7 +1,7 @@
 /** Разбор списка больных, скопированного из МИС (печать «Список больных»), в черновики карточек.
  *  Работает только в браузере: текст никуда не отправляется, на сервер уходят уже зашифрованные карточки. */
 
-export type ImportRow={surname:string;sex:''|'male'|'female';diagnosis:string;historyNumber?:string;birthDate?:string;birthFromAge?:boolean;admittedOn?:string};
+export type ImportRow={surname:string;sex:''|'male'|'female';diagnosis:string;historyNumber?:string;birthDate?:string;birthFromAge?:boolean;admittedOn?:string;birthWeight?:string};
 
 const cap=(w:string)=>w.toLowerCase().replace(/(^|[-(])([а-яёa-z])/g,(_,p:string,c:string)=>p+c.toUpperCase());
 const TWIN:Record<string,{sex:'male'|'female'}>={'ПЕРВЫЙ':{sex:'male'},'ВТОРОЙ':{sex:'male'},'ТРЕТИЙ':{sex:'male'},'ПЕРВАЯ':{sex:'female'},'ВТОРАЯ':{sex:'female'},'ТРЕТЬЯ':{sex:'female'}};
@@ -42,12 +42,16 @@ function parseTable(src:string,today:string):ImportRow[]|null{
  if(h<0)return null;
  const sep=lines[h].includes('\t')?'\t':';';const cells=(l:string)=>l.split(sep).map(c=>c.replace(/^"|"$/g,'').replace(/""/g,'"').trim());
  const head=cells(lines[h]);const col=(re:RegExp)=>head.findIndex(c=>re.test(c));
- const c={fio:col(/ФИО/i),sex:col(/^пол/i),hist:col(/(^|\s)ИБ|истори/i),birth:col(/рожд/i),age:col(/возраст/i),adm:col(/госпитал|поступ/i),dx:col(/диагноз/i)};
+ const c={fio:col(/ФИО/i),sex:col(/^пол/i),hist:col(/(^|\s)ИБ|истори/i),birth:col(/рожд/i),age:col(/возраст/i),adm:col(/госпитал|поступ/i),dx:col(/диагноз/i),wt:col(/(вес|масса).*рожд/i)};
  const rows:ImportRow[]=[];
  for(const l of lines.slice(h+1)){const v=cells(l);const get=(i:number)=>i>=0?v[i]??'':'';
   const fio=flat(get(c.fio));if(!fio)continue;
-  const named=parseName(fio);const birth=ruDate(get(c.birth));const approx=!birth&&c.age>=0?birthFromAge(get(c.age),today):'';
-  rows.push({surname:named.surname,sex:SEX(get(c.sex))||named.sex,diagnosis:flat(get(c.dx)),historyNumber:get(c.hist),birthDate:birth||approx,birthFromAge:!birth&&!!approx,admittedOn:ruDate(get(c.adm))});}
+  const named=parseName(fio);const exact=ruDate(get(c.birth));const adm=ruDate(get(c.adm));const byAge=!exact&&c.age>=0?birthFromAge(get(c.age),today):'';
+  // В отделение поступают при рождении: дата госпитализации и есть дата рождения, если возраст из МИС этому не противоречит.
+  const sameDay=!!adm&&(!byAge||Math.abs(Date.parse(adm)-Date.parse(byAge))<=2*864e5);
+  const birthDate=exact||(sameDay?adm:byAge);
+  const wt=get(c.wt).replace(',','.').replace(/[^\d.]/g,'');
+  rows.push({surname:named.surname,sex:SEX(get(c.sex))||named.sex,diagnosis:flat(get(c.dx)),historyNumber:get(c.hist),birthDate,birthFromAge:!exact&&!sameDay&&!!byAge,admittedOn:adm,birthWeight:wt&&Number(wt)>0?String(Math.round(Number(wt))):''});}
  return rows;
 }
 

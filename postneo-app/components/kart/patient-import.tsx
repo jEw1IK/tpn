@@ -20,7 +20,7 @@ export function PatientImport(){
  useEffect(()=>{let alive=true;(async()=>{try{const {patients}=await api<{patients:PatientRowWire[]}>('/api/patients?status=active');const s=new Set<string>();
   for(const r of patients){try{const p=await readPatient(v.key,r);s.add(nameKey(p.surname));if(p.historyNumber.trim())s.add('#'+p.historyNumber.trim());}catch{}}if(alive)setKnown(s);}catch{}})();return()=>{alive=false;};},[v.key]);
  const parse=()=>{const list=parsePatientList(text);setNote(list.length?'':'В тексте не нашлось ни одного пациента');
-  setRows(list.map((p,i)=>{const dup=known.has(nameKey(p.surname))||(!!p.historyNumber&&known.has('#'+p.historyNumber));return {id:i,sel:!dup,surname:p.surname,historyNumber:p.historyNumber??'',sex:p.sex,birthDate:p.birthDate??'',admittedOn:p.admittedOn??'',gw:'',weight:'',diagnosis:p.diagnosis,approx:!!p.birthFromAge,dup,done:false,msg:dup?'уже в отделении':''};}));};
+  setRows(list.map((p,i)=>{const dup=known.has(nameKey(p.surname))||(!!p.historyNumber&&known.has('#'+p.historyNumber));return {id:i,sel:!dup,surname:p.surname,historyNumber:p.historyNumber??'',sex:p.sex,birthDate:p.birthDate??'',admittedOn:p.admittedOn??'',gw:'',weight:p.birthWeight??'',diagnosis:p.diagnosis,approx:!!p.birthFromAge,dup,done:false,msg:dup?'уже в отделении':''};}));};
  const set=(id:number,patch:Partial<Row>)=>setRows(old=>old&&old.map(r=>r.id===id?{...r,...patch}:r));
  const problems=(r:Row)=>validatePatient(toData(r));
  const todo=useMemo(()=>(rows??[]).filter(r=>r.sel&&!r.done),[rows]);
@@ -42,7 +42,7 @@ export function PatientImport(){
    {note&&<p className="err" role="alert">{note}</p>}</div>}
   {rows&&<>
    <div className="card"><h2>2. Отметьте тех, кто сейчас в отделении, и заполните пустое</h2>
-    <p className="hint">Обязательны № истории, пол и дата рождения. Поступление пустое = дата рождения. Умерших и переведённых снимите галочкой. Масса при рождении необязательна, текущие веса вносятся в листах.</p>
+    <p className="hint">Обязательны № истории, пол и дата рождения. Если в таблице нет даты рождения, берётся дата госпитализации. Пустое поступление = дата рождения. Умерших и переведённых снимите галочкой. Масса при рождении необязательна, текущие веса вносятся в листах.</p>
     <div className="khead"><button className="btn" type="button" onClick={()=>setRows(rows.map(r=>r.done?r:{...r,sel:true}))}>Отметить всех</button><button className="btn" type="button" onClick={()=>setRows(rows.map(r=>({...r,sel:false})))}>Снять все</button><button className="btn" type="button" onClick={()=>{setRows(null);setNote('');}}>Другой список</button><span className="sp"/><span className="hint">отмечено {todo.length}, готово {ready.length}</span></div>
    </div>
    <div className="imp">
