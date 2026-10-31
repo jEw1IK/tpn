@@ -9,6 +9,7 @@ import {carriers,feedingHours,feedingRoutes} from '@/lib/directory';
 import {formatNumber as f} from '@/lib/format';
 import {patientHeader,sexNames} from '@/lib/patient-header';
 import {BrandMark} from '@/components/brand-mark';
+import {href} from '@/lib/links';
 import {ThemeToggle} from '@/components/theme-toggle';
 import {ReferenceDrawer,type RefTab} from '@/components/reference-drawer';
 import {NurseSheet} from '@/components/nurse-sheet';
@@ -62,7 +63,7 @@ export function Calculator({initial,initialUi,onChange,locked=false,lockedNote,f
  const softBad=(value:string)=>value.trim()!==''&&!((numeric(value)??0)>0);
  return <div className="app">
   <header className="top">
-   <a className="brand" href="/" aria-label="POSTNEO — главная"><BrandMark/></a>
+   <a className="brand" href={href('/')} aria-label="POSTNEO — главная"><BrandMark/></a>
    {toolbar}
    <span className="sp"/>
    {allowNew&&<button type="button" className="tb" onClick={()=>update({...blank(),enteralMode:'feeds8',drugFluid:p.drugFluid,lowGlucose:'5',highGlucose:'40',fatHours:'20'})} title="Очистить лист"><Eraser size={15} aria-hidden="true"/>Новый</button>}

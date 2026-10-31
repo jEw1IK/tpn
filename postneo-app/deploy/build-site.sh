@@ -13,10 +13,10 @@ CFG
 rm -rf out
 # Серверные маршруты в статический сайт не входят: на время сборки убираем их в сторону.
 HIDE="$APP/.export-hidden"; rm -rf "$HIDE"; mkdir -p "$HIDE"
-for d in app/api app/login app/setup "app/(kart)"; do [ -e "$d" ] && mkdir -p "$HIDE/$(dirname "$d")" && mv "$d" "$HIDE/$d"; done
-restore(){ mv -f next.config.ts.bak next.config.ts 2>/dev/null; for d in app/api app/login app/setup "app/(kart)"; do [ -e "$HIDE/$d" ] && mv "$HIDE/$d" "$d"; done; rm -rf "$HIDE"; }
+for d in app/api app/login app/setup app/join "app/(kart)"; do [ -e "$d" ] && mkdir -p "$HIDE/$(dirname "$d")" && mv "$d" "$HIDE/$d"; done
+restore(){ mv -f next.config.ts.bak next.config.ts 2>/dev/null; for d in app/api app/login app/setup app/join "app/(kart)"; do [ -e "$HIDE/$d" ] && mv "$HIDE/$d" "$d"; done; rm -rf "$HIDE"; }
 trap restore EXIT
-npx next build > build.log 2>&1 || { tail -40 build.log; exit 1; }
+NEXT_PUBLIC_STATIC=1 npx next build > build.log 2>&1 || { tail -40 build.log; exit 1; }
 restore; trap - EXIT
 rm -rf "$OUT/nx" && cp -r out/_next "$OUT/nx" && cp out/calculator.html out/index.html out/favicon-p.svg out/favicon.svg "$OUT/" && cp -r out/images out/examples "$OUT/"
 python3 - "$OUT" <<'PY'

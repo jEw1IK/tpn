@@ -2,8 +2,9 @@ import './home.css';
 import {calculate,blank,drugs,enteralFormulas,type Inputs} from '@/lib/tpn';
 import {formatNumber as f} from '@/lib/format';
 import {BrandMark} from '@/components/brand-mark';
+import {href,asset} from '@/lib/links';
 
-const examplePdf='/examples/nurse-sheet-p.pdf';
+const examplePdf=asset('/examples/nurse-sheet-p.pdf');
 /* Учебный пациент, на котором страница показывает расчёт: 1450 г, 2-е сутки, 110 мл/кг, глюкоза 5 мг/кг/мин, белок 2 г/кг, жиры 1,5 г/кг, грудное молоко по часам. */
 const patient=(feedMl:string):Inputs=>({...blank(),weight:'1450',weightToday:'1450',day:'2',gestation:'32',start:'08:00',fluid:'110',aa:'2',aaPercent:'10',aaHours:'24',fat:'1.5',fatPercent:'20',fatHours:'24',gir:'5',baseHours:'24',calciumMlPerKg:'1',calciumContent:'0.225',lowGlucose:'5',highGlucose:'40',heparin:'0.5',enteralMode:'feeds8',formulaId:'grudnoe-moloko',feeds:Array(8).fill(feedMl),medicines:[],drugFluid:'extra',trophicRule:'kr'});
 const changelog:[string,string,string][]=[
@@ -20,20 +21,20 @@ export default function HomePage(){
  return <div className="home">
   <a className="skip" href="#home-main">К содержимому</a>
   <header className="hm-nav"><div className="hm-wrap hm-nav__in">
-   <a className="hm-brand" href="/" aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a>
-   <a className="btn btn--quiet" href="/calculator">Открыть калькулятор</a>
+   <a className="hm-brand" href={href('/')} aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a>
+   <a className="btn btn--quiet" href={href('/calculator')}>Открыть калькулятор</a>
   </div></header>
   <main id="home-main">
    <section className="hm-hero" aria-labelledby="home-title"><div className="hm-wrap hm-hero__in">
     <div className="hm-hero__text">
      <h1 id="home-title">Суточный расчёт питания и лист назначений.</h1>
      <p className="lead">Жидкость, глюкоза, белок и препараты новорождённого по КР 2015, с печатью на А4.</p>
-     <p className="hm-hero__act"><a className="btn" href="/calculator">Открыть калькулятор</a><a className="hm-link" href={examplePdf}>Пример листа в PDF</a></p>
+     <p className="hm-hero__act"><a className="btn" href={href('/calculator')}>Открыть калькулятор</a><a className="hm-link" href={examplePdf}>Пример листа в PDF</a></p>
     </div>
     <figure className="hm-shot hm-shot--hero" data-slot="hero" data-kind="product" data-alt="Калькулятор с заполненным учебным листом: блоки ввода слева, полученная инфузия справа">
      <picture>
-      <source media="(max-width: 60rem)" srcSet="/images/calculator-phone-result.webp" width="780" height="1688"/>
-      <img src="/images/calculator-desktop.webp" width="1600" height="1280" alt="Экран калькулятора: потребность, растворы, электролиты, смесь и панель «Полученная инфузия»" fetchPriority="high"/>
+      <source media="(max-width: 60rem)" srcSet={asset('/images/calculator-phone-result.webp')} width="780" height="1688"/>
+      <img src={asset('/images/calculator-desktop.webp')} width="1600" height="1280" alt="Экран калькулятора: потребность, растворы, электролиты, смесь и панель «Полученная инфузия»" fetchPriority="high"/>
      </picture>
     </figure>
    </div></section>
@@ -53,11 +54,11 @@ export default function HomePage(){
       <p className="tile__note">110 мл/кг, глюкоза 5 мг/кг/мин, белок 2 и жиры 1,5 г/кг, грудное молоко по 5 мл восемь раз.</p>
      </article>
      <figure className="tile tile--shot" data-slot="sheet-front" data-kind="product" data-alt="Лицевая сторона печатного листа">
-      <img src="/images/nurse-sheet-front-p.webp" width="1123" height="794" alt="Лист интенсивной терапии: инфузии, лекарственные назначения и клетки 24 часов" loading="lazy"/>
+      <img src={asset('/images/nurse-sheet-front-p.webp')} width="1123" height="794" alt="Лист интенсивной терапии: инфузии, лекарственные назначения и клетки 24 часов" loading="lazy"/>
       <figcaption data-keep>Лист А4: инфузии, препараты, клетки на 24 часа</figcaption>
      </figure>
      <figure className="tile tile--shot" data-slot="sheet-back" data-kind="product" data-alt="Оборот печатного листа">
-      <img src="/images/nurse-sheet-back-p.webp" width="1123" height="794" alt="Оборот листа: кормления, КОС, респираторная поддержка, диурез" loading="lazy"/>
+      <img src={asset('/images/nurse-sheet-back-p.webp')} width="1123" height="794" alt="Оборот листа: кормления, КОС, респираторная поддержка, диурез" loading="lazy"/>
       <figcaption data-keep>Оборот: кормления, КОС, диурез</figcaption>
      </figure>
      <article className="tile">
@@ -99,16 +100,16 @@ export default function HomePage(){
     <div className="hm-close__text">
      <h2 id="close-title">Пример уже внутри</h2>
      <p className="lead">Открывается без регистрации, с вымышленным ребёнком внутри. Проверьте цифры или очистите форму и начните свой лист.</p>
-     <p className="hm-close__act"><a className="btn" href="/calculator">Открыть калькулятор</a></p>
+     <p className="hm-close__act"><a className="btn" href={href('/calculator')}>Открыть калькулятор</a></p>
     </div>
     <figure className="hm-shot hm-shot--phone" data-slot="phone" data-kind="product" data-alt="Калькулятор на телефоне">
-     <img src="/images/calculator-phone.webp" width="780" height="1688" alt="Калькулятор на экране телефона: блоки ввода в одну колонку" loading="lazy"/>
+     <img src={asset('/images/calculator-phone.webp')} width="780" height="1688" alt="Калькулятор на экране телефона: блоки ввода в одну колонку" loading="lazy"/>
     </figure>
    </div></section>
   </main>
   <footer className="hm-foot"><div className="hm-wrap">
    <p className="hm-foot__line">Расчёт питания и инфузий для отделения новорождённых, собранный неонатологами.</p>
-   <div className="hm-foot__row"><a className="hm-brand" href="/" aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a><nav aria-label="Ссылки"><a href="/calculator">Калькулятор</a><a href="#possibilities">Возможности</a><a href="#start">Первый лист</a><a href={examplePdf}>Пример листа</a></nav><small>Тестовая версия 0.2</small></div>
+   <div className="hm-foot__row"><a className="hm-brand" href={href('/')} aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a><nav aria-label="Ссылки"><a href={href('/calculator')}>Калькулятор</a><a href="#possibilities">Возможности</a><a href="#start">Первый лист</a><a href={examplePdf}>Пример листа</a></nav><small>Тестовая версия 0.2</small></div>
   </div></footer>
   <script dangerouslySetInnerHTML={{__html:"window.hallmarkSlots=(m)=>{for(const [k,v] of Object.entries(m)){const s=document.querySelector(`[data-slot=\"${k}\"]`);if(!s)continue;const im=new Image();im.src=typeof v==='string'?v:v.src;im.alt=(typeof v==='object'&&v.alt)||s.dataset.alt||'';s.querySelectorAll(':scope > img').forEach((o)=>o.remove());s.prepend(im);}};document.querySelectorAll('[data-slot] img').forEach((i)=>{i.addEventListener('error',()=>i.remove(),{once:true});});"}}/>
  </div>;
