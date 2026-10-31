@@ -51,8 +51,10 @@ BAK="$NGX.bak-domain-$(date +%Y%m%d%H%M%S)"; cp -a "$NGX" "$BAK"
 python3 - "$NGX" "$DOMAIN" <<'PYDEL'
 import re,sys
 f,domain=sys.argv[1],sys.argv[2];s=open(f).read()
-m=re.search(r'\n*[ \t]*server[ \t]*\{\n[ \t]*# POSTNEO domain '+re.escape(domain)+r':',s)
-if m:
+n=0
+while True:
+    m=re.search(r'\n*[ \t]*server[ \t]*\{\n[ \t]*# POSTNEO domain '+re.escape(domain)+r':',s)
+    if not m:break
     st=m.start();j=s.index('{',st);depth=0
     while j<len(s):
         if s[j]=='{':depth+=1
@@ -60,7 +62,8 @@ if m:
             depth-=1
             if depth==0:break
         j+=1
-    s=s[:st]+s[j+1:];open(f,'w').write(s.rstrip()+'\n');print('прежний блок домена убран, собираю заново')
+    s=s[:st]+s[j+1:];n+=1
+if n:open(f,'w').write(s.rstrip()+'\n');print('прежних блоков домена убрано:',n,'— собираю заново')
 PYDEL
 if true; then
   python3 - "$NGX" "$DOMAIN" "$LIVE" "${NAMES[*]}" <<'PY'
