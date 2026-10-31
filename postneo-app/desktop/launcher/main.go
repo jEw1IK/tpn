@@ -213,6 +213,18 @@ func tail(p string, n int) string {
 // Без Edge и Chrome открывается браузер по умолчанию, а сервер сам выключится через полторы минуты после закрытия вкладки.
 func openWindow(port int, data string, server *os.Process) error {
 	url := fmt.Sprintf("http://127.0.0.1:%d/", port)
+	// Режим окна-приложения (--app с отдельным профилем) в некоторых корпоративных Windows не доходит до страницы.
+	// По умолчанию открываем обычную вкладку браузера пользователя; режим окна включается файлом window-app.txt рядом с exe.
+	if !fileExists(filepath.Join(filepath.Dir(data), "program", "window-app.txt")) && os.Getenv("POSTNEO_APP_WINDOW") != "1" {
+		if err := openDefaultBrowser(url); err != nil {
+			return fmt.Errorf("не удалось открыть браузер: %v\nОткройте адрес вручную: %s", err, url)
+		}
+		// сервер живёт, пока вкладка шлёт пинги; без пингов гаснет сам через полторы минуты
+		if server != nil {
+			waitServer(server)
+		}
+		return nil
+	}
 	if browser := findAppBrowser(); browser != "" {
 		profile := filepath.Join(data, "window")
 		cmd := exec.Command(browser,
@@ -240,4 +252,9 @@ func openWindow(port int, data string, server *os.Process) error {
 		return nil
 	}
 	return openDefaultBrowser(url)
+}
+
+// waitServer держит лаунчер живым, пока работает сервер: иначе Windows считает программу завершённой сразу.
+func waitServer(p *os.Process) {
+	_, _ = p.Wait()
 }
