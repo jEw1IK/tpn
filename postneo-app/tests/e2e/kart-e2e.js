@@ -1,0 +1,76 @@
+// Сквозная проверка «Карточек» с шифрованием: первый вход, ключ отделения, пациент, лист, подпись, второй браузер с фразой.
+const {chromium}=require('playwright');
+const BASE=process.env.BASE||'http://127.0.0.1:18790';
+const OUT=(process.env.OUT||'.')+'/';
+const step=(n)=>console.log('·',n);
+const pick=async(page,id,label)=>{await page.click('#'+id);await page.click('[role="option"]:has-text("'+label+'")');};
+(async()=>{
+ const browser=await chromium.launch();
+ const errors=[];
+ const ctx=await browser.newContext({viewport:{width:1440,height:900},locale:'ru-RU'});
+ const page=await ctx.newPage();page.on('pageerror',e=>errors.push('pageerror: '+e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+ step('первый запуск: администратор');
+ await page.goto(BASE+'/setup');await page.fill('input[autocomplete="username"]','admin');await page.fill('input[autocomplete="name"]','Админ');await page.fill('input[type="password"]','secret123');await page.click('button[type="submit"]');
+ await page.waitForURL('**/patients');
+ step('ключ отделения');
+ await page.waitForSelector('text=Ключ отделения');
+ const pw=page.locator('input[type="password"]');await pw.nth(0).fill('тёплое молоко отделения 2026');await pw.nth(1).fill('тёплое молоко отделения 2026');
+ await page.click('button:has-text("Создать ключ")');
+ await page.waitForSelector('text=Лист восстановления',{timeout:60000});
+ const code=(await page.locator('p[style*="monospace"]').first().textContent()).trim();console.log('  код восстановления:',code);
+ await page.check('input[type="checkbox"]');await page.click('button:has-text("Продолжить")');
+ await page.waitForSelector('text=Пока никого нет');
+ await page.screenshot({path:OUT+'01-empty.png'});
+ step('новый пациент');
+ await page.click('text=Новый пациент');await page.waitForURL('**/patients/new');
+ await page.fill('#surname','Ярошенко');await page.fill('#historyNumber','1111');await pick(page,'sex','Мужской');await page.fill('#birthDate','2026-10-28');await page.fill('#admittedOn','2026-10-28');await page.fill('#gestationWeeks','30');await page.fill('#gestationDays','2');await page.fill('#birthWeight','1450');
+ await page.click('button:has-text("Завести")');await page.waitForURL(/\/patients\/\d+$/);
+ await page.waitForSelector('h1:has-text("Ярошенко")');await page.screenshot({path:OUT+'02-card.png'});
+ const pid=page.url().match(/\/patients\/(\d+)$/)[1];
+ step('лист на сегодня');
+ await page.click('text=Новый лист на сегодня');await page.waitForURL(/\/sheet\/\d{4}-\d{2}-\d{2}$/);
+ await page.waitForSelector('text=лист на',{timeout:30000});
+ await page.waitForTimeout(1500);
+ // заполнить массу сегодня и подождать автосохранение
+ const wt=page.locator('#weightToday');if(await wt.count()){await wt.fill('1400');}
+ for(const [id,val] of [['fluid','80'],['gir','4'],['aa','2'],['fat','1'],['calciumMlPerKg','1']]){const el=page.locator('#'+id);if(await el.count())await el.fill(val);}
+ await page.waitForTimeout(1200);await page.waitForSelector('text=/сохранено/',{timeout:15000});
+ await page.screenshot({path:OUT+'03-sheet.png'});
+ step('подпись');
+ await page.click('button:has-text("Подписать")');try{await page.waitForSelector('.savestate:has-text("подписан")',{timeout:15000});}catch(e){console.log('  состояние:',await page.locator('.savestate').textContent());await page.screenshot({path:OUT+'03b-sign-fail.png'});throw e;}
+ step('сервер хранит только шифротекст');
+ const bundle=await page.evaluate(async(id)=>{const r=await fetch('/api/patients/'+id);return r.json();},pid);
+ const sheetRow=bundle.sheets[0];
+ if(bundle.patient.surname!==''||!bundle.patient.enc?.startsWith('v1.'))throw new Error('карточка не зашифрована: '+JSON.stringify(bundle.patient).slice(0,200));
+ if(sheetRow.inputs_json!==null||!sheetRow.enc?.startsWith('v1.'))throw new Error('лист не зашифрован');
+ if(sheetRow.status!=='signed'||sheetRow.valid!==1)throw new Error('подпись не сохранилась: '+JSON.stringify({status:sheetRow.status,valid:sheetRow.valid}));
+ if(!bundle.weights.every(w=>w.enc&&w.grams===null))throw new Error('вес не зашифрован: '+JSON.stringify(bundle.weights));
+ const raw=JSON.stringify(bundle);if(raw.includes('Ярошенко')||raw.includes('1111'))throw new Error('ПДн в ответе сервера');
+ console.log('  карточка, лист и веса на сервере: шифротекст, фамилии в ответе нет; весов:',bundle.weights.length);
+ step('список и поиск');
+ await page.goto(BASE+'/patients');await page.waitForSelector('text=Ярошенко');await page.fill('input[aria-label="Поиск пациента"]','яро');await page.waitForSelector('a.prow');
+ await page.screenshot({path:OUT+'04-list.png'});
+ step('второй компьютер: фраза отделения');
+ const ctx2=await browser.newContext({viewport:{width:1280,height:800},locale:'ru-RU'});const p2=await ctx2.newPage();p2.on('pageerror',e=>errors.push('pageerror2: '+e.message));
+ await p2.goto(BASE+'/login');await p2.fill('input[autocomplete="username"]','admin');await p2.fill('input[type="password"]','secret123');await p2.click('button[type="submit"]');await p2.waitForURL('**/patients');
+ await p2.waitForSelector('text=Фраза отделения');await p2.screenshot({path:OUT+'05-unlock.png'});
+ await p2.fill('input[type="password"]','неправильная фраза совсем');await p2.click('button:has-text("Открыть")');await p2.waitForSelector('text=Фраза не подошла');
+ await p2.fill('input[type="password"]','тёплое молоко отделения 2026');await p2.click('button:has-text("Открыть")');await p2.waitForSelector('text=Ярошенко',{timeout:60000});
+ console.log('  второй браузер открыл данные фразой');
+ step('код восстановления открывает ключ');
+ const ctx3=await browser.newContext({locale:'ru-RU'});const p3=await ctx3.newPage();
+ await p3.goto(BASE+'/login');await p3.fill('input[autocomplete="username"]','admin');await p3.fill('input[type="password"]','secret123');await p3.click('button[type="submit"]');await p3.waitForURL('**/patients');
+ await p3.click('text=Забыл фразу: код восстановления');await p3.fill('input[type="text"]',code);await p3.click('button:has-text("Открыть")');await p3.waitForSelector('text=Ярошенко',{timeout:60000});
+ console.log('  код восстановления сработал');
+ step('медсестра: без прав на правку, с ключом');
+ await page.goto(BASE+'/users');await page.fill('#u-login','nurse1');await page.fill('#u-name','Сестра');await pick(page,'u-role','Медсестра');await page.fill('#u-pass','secret123');await page.click('button:has-text("Завести")');await page.waitForSelector('td:has-text("nurse1")');
+ const ctx4=await browser.newContext({locale:'ru-RU'});const p4=await ctx4.newPage();
+ await p4.goto(BASE+'/login');await p4.fill('input[autocomplete="username"]','nurse1');await p4.fill('input[type="password"]','secret123');await p4.click('button[type="submit"]');await p4.waitForURL('**/patients');
+ await p4.fill('input[type="password"]','тёплое молоко отделения 2026');await p4.click('button:has-text("Открыть")');await p4.waitForSelector('text=Ярошенко',{timeout:60000});
+ if(await p4.locator('text=Новый пациент').count())throw new Error('медсестра видит кнопку создания');
+ await p4.goto(BASE+'/patients/'+pid);await p4.waitForSelector('h1:has-text("Ярошенко")');
+ console.log('  медсестра читает карточку, кнопки правки нет');
+ await browser.close();
+ console.log(errors.length?'ОШИБКИ В БРАУЗЕРЕ:\n'+errors.join('\n'):'браузер без ошибок');
+ console.log('E2E OK');
+})().catch(e=>{console.error('E2E FAIL:',e.message);process.exit(1);});

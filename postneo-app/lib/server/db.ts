@@ -111,6 +111,14 @@ create table audit(
  ip text
 );
 create index audit_at on audit(at);
+`,`
+-- Шифрование ключом отделения: карточки, веса и листы лежат шифротекстом в enc, открытые поля старых записей
+-- остаются до перешифровки администратором. Открытыми остаются только служебные поля: статус, даты листов, подписи.
+create table settings(key text primary key, value text not null, updated_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')));
+alter table patients add column enc text;
+alter table weights add column enc text;
+alter table sheets add column enc text;
+alter table sheets add column valid integer not null default 0;
 `];
 
 export function openDb(file:string):Db{
@@ -141,3 +149,7 @@ export function getDb():Db{
 }
 /** Копия базы для бэкапа средствами SQLite: целостный файл даже под нагрузкой. */
 export function backupTo(db:Db,file:string){fs.mkdirSync(path.dirname(file),{recursive:true});db.backup(file);}
+
+/** Настройки приложения, в том числе обёртки ключа отделения. */
+export function getSetting(db:Db,key:string):string|null{const r=db.prepare('select value from settings where key=?').get(key) as {value:string}|undefined;return r?r.value:null;}
+export function setSetting(db:Db,key:string,value:string){db.prepare("insert into settings(key,value) values (?,?) on conflict(key) do update set value=excluded.value,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')").run(key,value);}
