@@ -9,7 +9,7 @@ git -C "$REPO" worktree add --detach "$WT" HEAD >/dev/null 2>&1
 cd "$WT"
 git checkout -q --orphan desktop-dist
 git rm -rfq . >/dev/null 2>&1 || true
-rm -rf ./* .[!.]* 2>/dev/null || true
+find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
 cp "$PUB"/kart-app-*.zip "$PUB"/kart-version.json "$PUB"/POSTNEO-Kartochki.exe "$PUB"/README.txt .
 cat > README.md <<'MD'
 # POSTNEO Карточки: раздача пакета для ПК
