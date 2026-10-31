@@ -17,7 +17,10 @@ if ss -ltnp | grep -q ':443 ' && ! ss -ltnp | grep ':443 ' | grep -q nginx; then
 grep -q "listen 443" "$NGX" || { echo "в $NGX нет блока с listen 443: сначала deploy/enable-https.sh"; exit 1; }
 
 # 1. Папка для проверок ACME и location под неё в каждом блоке server с listen 80: так продление будет работать всегда.
-WEBROOT=/var/www/letsencrypt; mkdir -p "$WEBROOT/.well-known/acme-challenge"; chmod -R a+rX /var/www/letsencrypt
+WEBROOT=/var/www/letsencrypt
+EXISTING="$(grep -A3 "acme-challenge" "$NGX" 2>/dev/null | grep -oE 'root\s+[^;]+' | head -1 | awk '{print $2}' || true)"
+[ -n "$EXISTING" ] && WEBROOT="$EXISTING" && echo "в конфиге уже есть путь для ACME: $WEBROOT"
+mkdir -p "$WEBROOT/.well-known/acme-challenge"; chmod -R a+rX "$WEBROOT"
 if ! grep -q "acme-challenge" "$NGX"; then
   cp -a "$NGX" "$NGX.bak-ip-$(date +%Y%m%d%H%M%S)"
   python3 - "$NGX" "$WEBROOT" <<'PY'
@@ -39,7 +42,16 @@ open(f,'w').write(s)
 PY
   nginx -t && systemctl reload nginx && echo "nginx: добавлен location для проверок ACME"
 fi
-echo ok > "$WEBROOT/.well-known/acme-challenge/test"; curl -fsS "http://127.0.0.1/.well-known/acme-challenge/test" >/dev/null && echo "проверка ACME-пути: ок" || { echo "ACME-путь не отдаётся по http://127.0.0.1/.well-known/acme-challenge/test"; exit 1; }; rm -f "$WEBROOT/.well-known/acme-challenge/test"
+# Проверка так, как придёт Let's Encrypt: на этот IP, с Host = IP.
+echo ok > "$WEBROOT/.well-known/acme-challenge/test"
+if curl -fsS -H "Host: $IP" "http://127.0.0.1/.well-known/acme-challenge/test" >/dev/null; then echo "проверка ACME-пути: ок"
+else
+  echo "ACME-путь не отдаётся. Что есть в конфиге:"; grep -n -B1 -A2 "acme-challenge" "$NGX" | sed 's/^/  /'
+  echo "блоки server и их listen/server_name:"; grep -n -E "server \{|listen|server_name|return 404" "$NGX" | sed 's/^/  /'
+  ls -1 /etc/nginx/sites-enabled/ | sed 's/^/  sites-enabled: /'
+  rm -f "$WEBROOT/.well-known/acme-challenge/test"; exit 1
+fi
+rm -f "$WEBROOT/.well-known/acme-challenge/test"
 
 # 2. Сертификат на IP: webroot, профиль shortlived. После каждого продления nginx перечитывает конфиг.
 certbot certonly --webroot -w "$WEBROOT" --ip-address "$IP" --preferred-profile shortlived --cert-name "ip-$IP" \
