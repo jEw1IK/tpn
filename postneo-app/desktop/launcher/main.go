@@ -60,6 +60,10 @@ func run() error {
 		ensureShortcut(exe, base, data)
 	}
 
+	// Скачанный ранее новый лаунчер встаёт на место текущего и запускается вместо него.
+	if applyPendingExe(exe, data) {
+		return nil
+	}
 	// Сервер уже работает (окно закрыли меньше полутора минут назад или открыли второй раз) — просто показываем окно.
 	if port, ok := runningPort(data); ok && healthy(port) {
 		go checkForUpdate(base, data)
@@ -216,6 +220,8 @@ func openWindow(port int, data string, server *os.Process) error {
 			"--user-data-dir="+profile,
 			"--no-first-run",
 			"--no-default-browser-check",
+			// окно говорит только с 127.0.0.1: больничный прокси для него не нужен и даже вреден
+			"--no-proxy-server",
 			"--disable-features=Translate,msEdgeSidebar",
 			"--window-size=1440,920",
 		)

@@ -51,11 +51,15 @@ PUB="dist/publish"; rm -rf "$PUB"; mkdir -p "$PUB"
 ( cd "$OUT/app" && zip -qr "$APP/$PUB/kart-app-$COMMIT.zip" . )
 APPZIP="$PUB/kart-app-$COMMIT.zip"
 SHA="$(sha256sum "$APPZIP" | cut -d' ' -f1)"; SIZE="$(stat -c %s "$APPZIP")"
-cat > "$PUB/kart-version.json" <<JSON
-{"commit":"$COMMIT","version":"$VER","app_url":"kart-app-$COMMIT.zip","sha256":"$SHA","size":$SIZE,"built":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","target":"$TARGET"}
-JSON
+EXE_JSON=""
 if [ "$TARGET" = windows ]; then
   cp "$OUT/POSTNEO-Kartochki.exe" "$OUT/README.txt" "$PUB/"
+  EXE_JSON=",\"exe_url\":\"POSTNEO-Kartochki.exe\",\"exe_sha256\":\"$(sha256sum "$PUB/POSTNEO-Kartochki.exe" | cut -d' ' -f1)\",\"exe_size\":$(stat -c %s "$PUB/POSTNEO-Kartochki.exe")"
+fi
+cat > "$PUB/kart-version.json" <<JSON
+{"commit":"$COMMIT","version":"$VER","app_url":"kart-app-$COMMIT.zip","sha256":"$SHA","size":$SIZE,"built":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","target":"$TARGET"$EXE_JSON}
+JSON
+if [ "$TARGET" = windows ]; then
   NAME="POSTNEO-Kartochki-win64-$VER.zip"
   ( cd dist && rm -f "$NAME" && zip -qr "$NAME" "postneo-kart-$TARGET" )
   cp "dist/$NAME" "$PUB/POSTNEO-Kartochki-win64.zip"

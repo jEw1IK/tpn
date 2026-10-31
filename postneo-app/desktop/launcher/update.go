@@ -19,11 +19,85 @@ import (
 const defaultUpdateURL = "http://89.169.32.9/download/kart-version.json"
 
 type versionInfo struct {
-	Commit string `json:"commit"`
-	AppURL string `json:"app_url"`
-	SHA256 string `json:"sha256"`
-	Size   int64  `json:"size"`
-	Built  string `json:"built"`
+	Commit    string `json:"commit"`
+	AppURL    string `json:"app_url"`
+	SHA256    string `json:"sha256"`
+	Size      int64  `json:"size"`
+	Built     string `json:"built"`
+	ExeURL    string `json:"exe_url"`
+	ExeSHA256 string `json:"exe_sha256"`
+	ExeSize   int64  `json:"exe_size"`
+}
+
+func fileSHA256(p string) string {
+	f, err := os.Open(p)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return ""
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// applyPendingExe: рядом лежит скачанный новый лаунчер (<exe>.new) — текущий переименовывается в .old,
+// новый встаёт на его место и запускается. Работающий exe в Windows переименовать можно, удалить нельзя.
+func applyPendingExe(exe, data string) bool {
+	next := exe + ".new"
+	if !fileExists(next) {
+		return false
+	}
+	old := exe + ".old"
+	_ = os.Remove(old)
+	if err := os.Rename(exe, old); err != nil {
+		ulog(data, "не удалось отложить текущий лаунчер: %v", err)
+		return false
+	}
+	if err := os.Rename(next, exe); err != nil {
+		_ = os.Rename(old, exe)
+		ulog(data, "не удалось поставить новый лаунчер: %v", err)
+		return false
+	}
+	ulog(data, "лаунчер обновлён")
+	if err := relaunch(exe); err != nil {
+		ulog(data, "новый лаунчер не запустился: %v, возвращаю старый", err)
+		_ = os.Rename(exe, next)
+		_ = os.Rename(old, exe)
+		return false
+	}
+	return true
+}
+
+// updateExe качает новый лаунчер, если его контрольная сумма отличается от текущей.
+func updateExe(base, data, baseURL string, v versionInfo) {
+	if v.ExeURL == "" || len(v.ExeSHA256) != 64 {
+		return
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return
+	}
+	_ = os.Remove(exe + ".old")
+	if strings.EqualFold(fileSHA256(exe), v.ExeSHA256) || strings.EqualFold(fileSHA256(exe+".new"), v.ExeSHA256) {
+		return
+	}
+	url := v.ExeURL
+	if !strings.HasPrefix(url, "http") {
+		url = baseURL + url
+	}
+	tmp := exe + ".download"
+	if err := download(url, tmp, v.ExeSHA256, v.ExeSize); err != nil {
+		ulog(data, "лаунчер: загрузка не удалась: %v", err)
+		_ = os.Remove(tmp)
+		return
+	}
+	if err := os.Rename(tmp, exe+".new"); err != nil {
+		_ = os.Remove(tmp)
+		return
+	}
+	ulog(data, "новый лаунчер скачан, встанет при следующем запуске")
 }
 
 func updateURL(base string) string {
@@ -126,6 +200,8 @@ func checkForUpdate(base, data string) {
 	if json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&v) != nil || v.Commit == "" || v.AppURL == "" || len(v.SHA256) != 64 {
 		return
 	}
+	baseURL := url[:strings.LastIndex(url, "/")+1]
+	updateExe(base, data, baseURL, v)
 	cur := readCommit(filepath.Join(base, "app"))
 	next := filepath.Join(base, "app.next")
 	if v.Commit == cur || v.Commit == readCommit(next) {
@@ -134,7 +210,7 @@ func checkForUpdate(base, data string) {
 	// относительная ссылка считается от адреса version.json
 	appURL := v.AppURL
 	if !strings.HasPrefix(appURL, "http") {
-		appURL = url[:strings.LastIndex(url, "/")+1] + appURL
+		appURL = baseURL + appURL
 	}
 	ulog(data, "доступна версия %s (сейчас %s), качаю %s", v.Commit, cur, appURL)
 	tmpZip := filepath.Join(base, "app.next.zip")
