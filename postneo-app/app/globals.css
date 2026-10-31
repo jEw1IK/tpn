@@ -557,7 +557,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offse
 .nurse-page .foot .pno{grid-area:pno;font-size:6.4pt;color:var(--mute);white-space:nowrap}
 .nurse-page .two{display:grid;grid-template-columns:1fr 1fr;gap:4mm;align-items:start}
 .nurse-page table.obs th[scope=row]{font-weight:600;font-size:7.4pt;vertical-align:middle;padding:.4mm 1.4mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nurse-page table.obs tr td{height:5.6mm;padding:0}
+.nurse-page table.obs tr td{height:5.1mm;padding:0}
 .nurse-page table.obs tr.t th,.nurse-page table.obs tr.t td{background:var(--shade);height:5.8mm}
 .nurse-page table.obs col.l{width:30mm}
 .nurse-page table.feed tr td{height:6.6mm}
@@ -566,6 +566,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offse
 .nurse-page table.diur col.l{width:46mm}.nurse-page table.diur col.sum{width:26mm}
 .nurse-page table.diur th[scope=row]{font-weight:600;font-size:7.6pt;vertical-align:middle;padding:.4mm 1.4mm}
 .nurse-page table.diur tr td{height:7.4mm;padding:0}
+.nurse-page h2.gap{margin-top:3.5mm}
+.nurse-page .notes{flex:1;min-height:14mm;margin-bottom:1.5mm;border:.3mm solid var(--ink);background:repeating-linear-gradient(to bottom,transparent 0 6.8mm,var(--rule) 6.8mm 7mm);background-origin:content-box;padding-top:.2mm}
 @media print{
  @page{size:A4 landscape;margin:0}
  html,body{background:#fff!important}

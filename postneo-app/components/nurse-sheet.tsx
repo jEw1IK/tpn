@@ -105,8 +105,10 @@ export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}
     {extraRows.length>0&&<tr><th scope="row">Энтерально всего</th><td className="v">{show(r.enteralMl,0)}</td><td className="k">{show(en.volumePerKg,0)}</td>{hours.map(x=><td key={x.index} className={hourClass(x)}/>)}</tr>}
    </tbody></table>
    <div className="two">{obs('КОС и лаборатория',labRows)}{obs('Респираторная поддержка',respRows)}</div>
-   <h2>Диурез и смена положения<small>раз в 3 часа · диурез в мл, положение буквой: С спина · Л левый бок · П правый бок · Ж живот</small></h2>
+   <h2 className="gap">Диурез и смена положения<small>раз в 3 часа · диурез в мл, положение буквой: С спина · Л левый бок · П правый бок · Ж живот</small></h2>
    <table className="diur"><colgroup><col className="l"/>{every3.map(x=><col key={x.index}/>)}<col className="sum"/></colgroup><thead><tr><th className="n">Показатель</th>{every3.map(x=><th key={x.index} className={x.nextDay?'d1':undefined}>{x.time.slice(0,2)}{x.nextDay&&<sup>+1</sup>}–{String((Number(x.time.slice(0,2))+3)%24).padStart(2,'0')}</th>)}<th>за сутки</th></tr></thead><tbody>{['Диурез, мл','Смена положения'].map(l=><tr key={l}><th scope="row">{l}</th>{every3.map(x=><td key={x.index} className={x.time.startsWith('00:')?'d0':undefined}/>)}<td/></tr>)}</tbody></table>
+   <h2 className="gap">Заметки<small>динамика, консультации, манипуляции — время и подпись</small></h2>
+   <div className="notes" aria-label="Заметки"/>
    <Foot p={p} page={total} pages={total} note={<>Баланс за сутки: в/в фактически ______ мл · энтерально ______ мл · диурез ______ мл · масса утром ______ г</>}/>
   </section>
  </article>;
