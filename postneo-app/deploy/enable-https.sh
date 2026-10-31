@@ -62,6 +62,6 @@ fi
 systemctl list-timers --no-pager 2>/dev/null | grep -i certbot || true
 nginx -t && systemctl reload nginx
 echo "--- проверка"
-curl -sI --max-time 10 "$URL" | head -1
-curl -sI --max-time 10 "${URL}postneo/" | grep -i "^HTTP\|strict-transport" || true
-echo "готово: сайт по адресу ${URL}postneo/"
+{ curl -sI --max-time 10 "${URL}postneo/" || echo "(локальная проверка не прошла, откройте адрес в браузере)"; } | grep -i "^HTTP" || true
+certbot certificates 2>/dev/null | grep -E "Identifiers|Expiry" | sed 's/^ */  /' || true
+echo "готово: сайт ${URL}postneo/ · Карточки после установки: ${URL}kart/"
