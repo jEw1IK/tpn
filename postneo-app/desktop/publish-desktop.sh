@@ -4,7 +4,7 @@
 set -euo pipefail
 APP="$(cd "$(dirname "$0")/.." && pwd)"; REPO="$(cd "$APP/.." && pwd)"; PUB="$APP/dist/publish"
 [ -s "$PUB/kart-version.json" ] || { echo "сначала bash desktop/build-desktop.sh"; exit 1; }
-WT="$APP/dist/publish-wt"; rm -rf "$WT"; git -C "$REPO" worktree prune
+WT="$APP/dist/publish-wt"; rm -rf "$WT"; git -C "$REPO" worktree prune; git -C "$REPO" branch -D desktop-dist >/dev/null 2>&1 || true
 git -C "$REPO" worktree add --detach "$WT" HEAD >/dev/null 2>&1
 cd "$WT"
 git checkout -q --orphan desktop-dist
