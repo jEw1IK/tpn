@@ -20,6 +20,10 @@ process.env.DATA_DIR=dataDir;
 process.env.NODE_ENV='production';
 process.env.NEXT_TELEMETRY_DISABLED='1';
 process.env.HOSTNAME=process.env.HOSTNAME||'127.0.0.1';
+// Приложение на ПК — калькулятор с печатью, без базы пациентов и входа. База живёт на сервере отделения.
+// Включить базу локально: POSTNEO_DESKTOP_KART=1.
+const kartEnabled=process.env.POSTNEO_DESKTOP_KART==='1';
+if(!kartEnabled)process.env.KART_DISABLED='1';
 
 /** Копия базы при каждом запуске, одна на день, хранится 30 последних. Делается до открытия базы сервером. */
 function backupOnStart(){
@@ -42,7 +46,7 @@ function backupOnStart(){
 function freePort(){return new Promise((resolve,reject)=>{const s=net.createServer();s.unref();s.on('error',reject);s.listen(0,'127.0.0.1',()=>{const {port}=s.address();s.close(()=>resolve(port));});});}
 
 const runFile=path.join(dataDir,'run.json');
-function writeRun(port){fs.writeFileSync(runFile,JSON.stringify({port,pid:process.pid,startedAt:new Date().toISOString(),url:`http://127.0.0.1:${port}/`}));}
+function writeRun(port){fs.writeFileSync(runFile,JSON.stringify({port,pid:process.pid,startedAt:new Date().toISOString(),url:`http://127.0.0.1:${port}/${kartEnabled?'':'calculator'}`,path:kartEnabled?'/':'/calculator'}));}
 function clearRun(){try{const r=JSON.parse(fs.readFileSync(runFile,'utf8'));if(r.pid===process.pid)fs.unlinkSync(runFile);}catch{}}
 
 /** Сторожевой таймер: окно шлёт /api/ping раз в 10 с. Нет пингов 90 с после первого или 5 мин с запуска — сервер не нужен. */
@@ -64,12 +68,12 @@ process.on('SIGINT',()=>shutdown(0));process.on('SIGTERM',()=>shutdown(0));proce
 process.on('uncaughtException',e=>{log('ошибка:',e&&e.stack||e);});
 
 (async()=>{
- backupOnStart();
+ if(kartEnabled)backupOnStart();
  const port=Number(process.env.PORT)||await freePort();
  process.env.PORT=String(port);
  writeRun(port);
  log(`данные: ${dataDir}`);
- log(`сервер: http://127.0.0.1:${port}/`);
+ log(`сервер: http://127.0.0.1:${port}/ · режим: ${kartEnabled?'база пациентов':'только калькулятор'}`);
  watchdog();
  require(path.join(here,'server.js'));
 })().catch(e=>{log('не удалось запустить:',e&&e.stack||e);process.exit(1);});

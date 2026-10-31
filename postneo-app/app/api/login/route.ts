@@ -1,8 +1,9 @@
 import {getDb} from '@/lib/server/db';
 import {attemptLimit,attemptWindowMin,audit,clearAttempts,login as signIn,noteFailedAttempt,tooManyAttempts} from '@/lib/server/auth';
-import {clientIp,fail,readJson,sessionCookie} from '@/lib/server/session';
+import {clientIp,fail,kartDisabled,readJson,sessionCookie} from '@/lib/server/session';
 export const dynamic='force-dynamic';
 export async function POST(req:Request){
+ if(kartDisabled())return fail('Калькулятор без базы',404);
  const body=await readJson<{login:string;password:string}>(req);if(!body?.login||!body?.password)return fail('Введите логин и пароль');
  const db=getDb();const ip=clientIp(req)??'';const loginName=body.login.trim().toLowerCase().slice(0,32);
  const keys=['login:'+loginName,'ip:'+ip];

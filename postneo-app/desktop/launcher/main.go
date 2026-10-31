@@ -212,7 +212,10 @@ func tail(p string, n int) string {
 // Когда это окно закрывают, сервер, который запустил этот лаунчер, останавливается сразу.
 // Без Edge и Chrome открывается браузер по умолчанию, а сервер сам выключится через полторы минуты после закрытия вкладки.
 func openWindow(port int, data string, server *os.Process) error {
-	url := fmt.Sprintf("http://127.0.0.1:%d/", port)
+	url := fmt.Sprintf("http://127.0.0.1:%d/calculator", port)
+	if os.Getenv("POSTNEO_DESKTOP_KART") == "1" {
+		url = fmt.Sprintf("http://127.0.0.1:%d/", port)
+	}
 	// Режим окна-приложения (--app с отдельным профилем) в некоторых корпоративных Windows не доходит до страницы.
 	// По умолчанию открываем обычную вкладку браузера пользователя; режим окна включается файлом window-app.txt рядом с exe.
 	if !fileExists(filepath.Join(filepath.Dir(data), "program", "window-app.txt")) && os.Getenv("POSTNEO_APP_WINDOW") != "1" {
