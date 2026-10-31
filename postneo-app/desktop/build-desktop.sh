@@ -14,12 +14,14 @@ echo "1/4 сборка сервера (standalone)"
 NEXT_TELEMETRY_DISABLED=1 BASE_PATH= npm run build > dist-build.log 2>&1 || { tail -30 dist-build.log; exit 1; }
 
 echo "2/4 раскладка"
+COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo dev)"
 rm -rf "$OUT"; mkdir -p "$OUT/app" "$OUT/node"
 cp -r .next/standalone/. "$OUT/app/"
 mkdir -p "$OUT/app/.next"; cp -r .next/static "$OUT/app/.next/static"
 cp -r public "$OUT/app/public"
 cp desktop/desktop-server.cjs "$OUT/app/"
 rm -rf "$OUT/app/node_modules/.cache"
+echo "$COMMIT" > "$OUT/app/COMMIT"
 
 echo "3/4 node и лаунчер"
 if [ "$TARGET" = windows ]; then
@@ -43,12 +45,22 @@ else
   cp desktop/README.txt "$OUT/"
 fi
 
-echo "4/4 архив"
+echo "4/4 архивы"
+PUB="dist/publish"; rm -rf "$PUB"; mkdir -p "$PUB"
+# архив приложения для автообновления: содержимое папки app/ в корне
+( cd "$OUT/app" && zip -qr "$APP/$PUB/kart-app-$COMMIT.zip" . )
+APPZIP="$PUB/kart-app-$COMMIT.zip"
+SHA="$(sha256sum "$APPZIP" | cut -d' ' -f1)"; SIZE="$(stat -c %s "$APPZIP")"
+cat > "$PUB/kart-version.json" <<JSON
+{"commit":"$COMMIT","version":"$VER","app_url":"kart-app-$COMMIT.zip","sha256":"$SHA","size":$SIZE,"built":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","target":"$TARGET"}
+JSON
 if [ "$TARGET" = windows ]; then
+  cp "$OUT/POSTNEO-Kartochki.exe" "$OUT/README.txt" "$PUB/"
   NAME="POSTNEO-Kartochki-win64-$VER.zip"
   ( cd dist && rm -f "$NAME" && zip -qr "$NAME" "postneo-kart-$TARGET" )
-  ls -la "dist/$NAME"; du -sh "$OUT" | cut -f1 | sed 's/^/распаковано: /'
+  cp "dist/$NAME" "$PUB/POSTNEO-Kartochki-win64.zip"
+  ls -la "dist/$NAME" "$PUB"; du -sh "$OUT" | cut -f1 | sed 's/^/распаковано: /'
 else
   du -sh "$OUT"
 fi
-echo "готово: $OUT"
+echo "готово: $OUT · раздача: $PUB (commit $COMMIT)"

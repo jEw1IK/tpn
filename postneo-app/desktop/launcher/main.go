@@ -55,8 +55,21 @@ func run() error {
 
 	// Сервер уже работает (окно закрыли меньше полутора минут назад или открыли второй раз) — просто показываем окно.
 	if port, ok := runningPort(data); ok && healthy(port) {
+		go checkForUpdate(base, data)
 		return openWindow(port, data, nil)
 	}
+	// Сервер не запущен: безопасный момент подменить папку приложения, если обновление уже скачано.
+	applyPendingUpdate(base, data)
+	for attempt := 0; ; attempt++ {
+		err := startAndOpen(base, data, nodeExe, appDir)
+		if err != nil && attempt == 0 && rollbackUpdate(base, data) {
+			continue
+		}
+		return err
+	}
+}
+
+func startAndOpen(base, data, nodeExe, appDir string) error {
 
 	port, err := freePort()
 	if err != nil {
@@ -100,6 +113,7 @@ func run() error {
 			return fmt.Errorf("сервер не ответил за 60 секунд.\nПодробности: %s\n\n%s", logPath, tail(logPath, 12))
 		}
 	}
+	go checkForUpdate(base, data)
 	return openWindow(port, data, cmd.Process)
 }
 

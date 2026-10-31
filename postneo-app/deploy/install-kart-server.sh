@@ -113,16 +113,57 @@ RandomizedDelaySec=2min
 [Install]
 WantedBy=timers.target
 UNIT
+cat > /etc/systemd/system/$SVC-mirror.service <<UNIT
+[Unit]
+Description=POSTNEO Карточки: зеркало пакета для ПК в /opt/postneo/download
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/postneo-app/deploy/kart-mirror.sh | bash'
+UNIT
+cat > /etc/systemd/system/$SVC-mirror.timer <<UNIT
+[Unit]
+Description=POSTNEO Карточки: проверка нового пакета для ПК каждые 15 минут
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=15min
+RandomizedDelaySec=2min
+[Install]
+WantedBy=timers.target
+UNIT
 systemctl daemon-reload
-systemctl enable -q $SVC $SVC-backup.timer $SVC-update.timer
+systemctl enable -q $SVC $SVC-backup.timer $SVC-update.timer $SVC-mirror.timer
 systemctl restart $SVC
-systemctl start $SVC-backup.timer $SVC-update.timer
+systemctl start $SVC-backup.timer $SVC-update.timer $SVC-mirror.timer
+mkdir -p /opt/postneo/download
 
 echo "6/6 nginx"
 NGX=""
 for f in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do
   [ -f "$f" ] && grep -q "postneo" "$f" && { NGX="$(readlink -f "$f")"; break; }
 done
+if [ -n "$NGX" ] && ! grep -q "location /download/" "$NGX"; then
+  cp -a "$NGX" "$NGX.bak-dl-$(date +%Y%m%d%H%M%S)"
+  python3 - "$NGX" <<'PYNGX'
+import re,sys
+f=sys.argv[1];s=open(f).read()
+block="""
+    # POSTNEO: пакет для ПК и его обновления, по обычному http тоже (больничные сети не всегда пускают https)
+    location /download/ {
+        alias /opt/postneo/download/;
+        autoindex off;
+        add_header Cache-Control "no-cache" always;
+    }
+"""
+# в каждый блок server, с конца, чтобы смещения не сбивались
+starts=[m.start() for m in re.finditer(r'^\s*server\s*\{',s,re.M)]
+for st in reversed(starts):
+    end=s.find('\n}',st)
+    if end!=-1 and 'location /download/' not in s[st:end]:
+        s=s[:end]+block+s[end:]
+open(f,'w').write(s)
+PYNGX
+  nginx -t && systemctl reload nginx
+fi
 if [ -n "$NGX" ] && ! grep -q "location /kart/" "$NGX"; then
   cp -a "$NGX" "$NGX.bak-kart-$(date +%Y%m%d%H%M%S)"
   python3 - "$NGX" "$PORT" <<'PY'
@@ -158,5 +199,7 @@ for i in $(seq 1 40); do curl -fsS "http://127.0.0.1:$PORT$BASE_PATH/api/health"
 echo "--- состояние"
 systemctl is-active $SVC
 curl -sS "http://127.0.0.1:$PORT$BASE_PATH/api/health"; echo
+systemctl start $SVC-mirror.service || true
 echo "cookie secure: $SECURE (1 = только по HTTPS)"
+echo "пакет для ПК: http://<сервер>/download/"
 echo "готово: откройте https://<имя сервера>/kart/ — первый вход создаст администратора"
