@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parsePatientList,parseName,nameKey} from '../lib/patient-import.ts';
+import {parsePatientList,parseName,nameKey,birthFromAge} from '../lib/patient-import.ts';
 
 // Вымышленные пациенты в формате печати «Список больных» из МИС.
 const SAMPLE=`               Список больных (WIDEMEMO) 01.09.2026 07:00 - 31.10.2026 07:00
@@ -44,4 +44,18 @@ test('без отчества пол не угадывается, без нум�
  assert.deepEqual(parseName('ГУСЕВ НЕИЗВЕСТНО ПЕРВЫЙ'),{surname:'Гусев Неизвестно Первый',sex:'male'});
  assert.deepEqual(parsePatientList('Иванова\n\nПетров Пётр Петрович\n').map(r=>r.surname),['Иванова','Петров Пётр Петрович']);
  assert.equal(nameKey('Ежов  Пётр'),nameKey('ЕЖОВ ПЕТР'));
+});
+
+test('таблица из МИС: пол, ИБ, возраст → дата рождения, госпитализация', () => {
+ const tsv='\tПол\tВозраст (текущий)\tИБ №\tФИО\tДата госпитализации\tКойко-день\n'+
+  '\tМ\t2 мес. 16 дн.\t643452-26\tКОТОВ ПЁТР ДМИТРИЕВИЧ\t15.08.2026 21:13:29\t77\n'+
+  '\tЖ\t5 дн.\t702452-26\tЛИСИЦЫНА НЕИЗВЕСТНО\t27.10.2026 08:41:53\t4\n';
+ const rows=parsePatientList(tsv,'2026-10-31');
+ assert.deepEqual(rows[0],{surname:'Котов Пётр Дмитриевич',sex:'male',diagnosis:'',historyNumber:'643452-26',birthDate:'2026-08-15',birthFromAge:true,admittedOn:'2026-08-15'});
+ assert.equal(rows[1].sex,'female');assert.equal(rows[1].birthDate,'2026-10-26');assert.equal(rows[1].surname,'Лисицына Неизвестно');
+ const csv='"ФИО";"Пол";"Дата рождения";"ИБ №"\n"ЕЖОВ ИВАН";"Мужской";"03.10.2026";"1-26"\n';
+ assert.deepEqual(parsePatientList(csv,'2026-10-31')[0],{surname:'Ежов Иван',sex:'male',diagnosis:'',historyNumber:'1-26',birthDate:'2026-10-03',birthFromAge:false,admittedOn:''});
+ assert.equal(birthFromAge('1 мес. 15 дн.','2026-10-31'),'2026-09-16');
+ assert.equal(birthFromAge('1 мес.','2026-03-31'),'2026-02-28');
+ assert.equal(birthFromAge('','2026-10-31'),'');
 });
