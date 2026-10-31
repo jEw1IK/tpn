@@ -55,7 +55,7 @@ i=s.rfind('}')
 open(f,'w').write(s[:i]+block+s[i:])
 PY
   if nginx -t; then
-    systemctl reload nginx; echo "nginx перечитал конфиг"
+    systemctl reload nginx; echo "nginx перечитал конфиг"; sleep 2
   else
     cp -a "$BAK" "$NGX"; echo "nginx -t не прошёл, конфиг возвращён из копии"; exit 1
   fi
