@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# POSTNEO · свой домен: сертификат Let's Encrypt на домен (и www), nginx отвечает по нему, старые имена остаются как запасные.
+# POSTNEO · свой домен рядом с адресом по IP. Сертификат на домен (и www) через webroot, отдельный блок server для домена:
+# браузер, пришедший по имени, получает сертификат домена, а пришедший по IP — прежний сертификат на IP. Ничего не ломается.
 # Запуск:  curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/postneo-app/deploy/enable-domain.sh | sudo bash -s -- postneo.ru
 set -euo pipefail
 [ "$(id -u)" = 0 ] || { echo "нужен root: sudo bash"; exit 1; }
@@ -12,43 +13,67 @@ for f in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do
 done
 [ -n "$NGX" ] || { echo "конфиг nginx с сайтом не найден"; exit 1; }
 command -v certbot >/dev/null || { echo "сначала deploy/enable-https.sh (ставит certbot)"; exit 1; }
+grep -q "listen 443" "$NGX" || { echo "в $NGX нет блока с listen 443: сначала deploy/enable-https-ip.sh"; exit 1; }
 
-# 1. DNS: домен должен указывать на этот сервер, иначе Let's Encrypt не выдаст сертификат.
-NAMES=("$DOMAIN"); OK=1
+# 1. DNS: домен должен указывать на этот сервер (проверяем через публичный DNS, локальный кэш может помнить «нет такого»).
+resolve(){ curl -fsS --max-time 10 "https://dns.google/resolve?name=$1&type=A" | python3 -c "import sys,json;print(' '.join(a['data'] for a in json.load(sys.stdin).get('Answer',[]) if a.get('type')==1))" 2>/dev/null || true; }
+NAMES=()
 for n in "$DOMAIN" "www.$DOMAIN"; do
-  R="$(getent ahostsv4 "$n" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ' || true)"
-  if echo " $R" | grep -q " $IP"; then echo "DNS: $n → $IP"; [ "$n" = "www.$DOMAIN" ] && NAMES+=("www.$DOMAIN")
-  else echo "DNS: $n → ${R:-ничего}"; [ "$n" = "$DOMAIN" ] && OK=0; fi
+  R="$(resolve "$n")"
+  if echo " $R " | grep -q " $IP "; then echo "DNS: $n → $IP"; NAMES+=("$n"); else echo "DNS: $n → ${R:-пока нет}"; fi
 done
-[ "$OK" = 1 ] || { echo "A-запись $DOMAIN ещё не указывает на $IP: подождите 10–30 минут после сохранения записи и повторите"; exit 1; }
+[ "${NAMES[0]:-}" = "$DOMAIN" ] || { echo "A-запись $DOMAIN ещё не видна: подождите 10–30 минут и повторите"; exit 1; }
 
-# 2. Имя домена в каждом блоке server с server_name.
-if ! grep -qE "server_name[^;]*\b$DOMAIN\b" "$NGX"; then
-  cp -a "$NGX" "$NGX.bak-domain-$(date +%Y%m%d%H%M%S)"
-  python3 - "$NGX" "$DOMAIN" <<'PY'
-import re,sys
-f,d=sys.argv[1],sys.argv[2];s=open(f).read()
-out=[];done=set()
-for line in s.split('\n'):
-    out.append(line)
-    m=re.match(r'^(\s*)server_name\s+([^;]+);\s*$',line)
-    if m and m.group(2).strip()!='_' and d not in m.group(2):
-        out.append(f"{m.group(1)}server_name {d} www.{d};")
-open(f,'w').write('\n'.join(out))
-PY
-  nginx -t && systemctl reload nginx && echo "server_name $DOMAIN добавлен"
-fi
+# 2. Путь для проверок Let's Encrypt (тот же, что для сертификата на IP).
+WEBROOT=/var/www/letsencrypt
+EXISTING="$(grep -A3 "acme-challenge" "$NGX" 2>/dev/null | grep -oE 'root\s+[^;]+' | head -1 | awk '{print $2}' || true)"
+[ -n "$EXISTING" ] && WEBROOT="$EXISTING"
+mkdir -p "$WEBROOT/.well-known/acme-challenge"; chmod -R a+rX "$WEBROOT"
+grep -q "acme-challenge" "$NGX" || { echo "в конфиге нет location для ACME: сначала deploy/enable-https-ip.sh"; exit 1; }
 
-# 3. Сертификат через nginx-плагин: он сам пройдёт проверку и пропишет пути в блок с listen 443.
+# 3. Сертификат на домен (90 дней, продлевается сам), после продления nginx перечитывает конфиг.
 ARGS=(); for n in "${NAMES[@]}"; do ARGS+=(-d "$n"); done
-certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email --no-eff-email --no-redirect \
-  --cert-name "$DOMAIN" "${ARGS[@]}" 2>&1 | tee /tmp/certbot-domain.log | tail -6
-grep -q "Successfully\|Certificate not yet due\|already" /tmp/certbot-domain.log || { echo "сертификат не выдан, лог /tmp/certbot-domain.log"; exit 1; }
-nginx -t && systemctl reload nginx
+certbot certonly --webroot -w "$WEBROOT" --cert-name "$DOMAIN" "${ARGS[@]}" \
+  --non-interactive --agree-tos --register-unsafely-without-email --no-eff-email \
+  --deploy-hook "systemctl reload nginx" 2>&1 | tee /tmp/certbot-domain.log | tail -6
+LIVE="/etc/letsencrypt/live/$DOMAIN"
+[ -s "$LIVE/fullchain.pem" ] || { echo "сертификат не выдан, лог /tmp/certbot-domain.log"; exit 1; }
 
-# 4. Проверка и подсказка про старые сертификаты.
+# 4. Отдельный блок server для домена: копия блока с listen 443, своё имя и свой сертификат.
+if ! grep -q "POSTNEO domain $DOMAIN" "$NGX"; then
+  cp -a "$NGX" "$NGX.bak-domain-$(date +%Y%m%d%H%M%S)"
+  python3 - "$NGX" "$DOMAIN" "$LIVE" "${NAMES[*]}" <<'PY'
+import re,sys
+f,domain,live,names=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
+s=open(f).read()
+def blocks(text):
+    out=[];i=0
+    for m in re.finditer(r'^[ \t]*server[ \t]*\{',text,re.M):
+        st=m.start();depth=0;j=text.index('{',st)
+        while j<len(text):
+            if text[j]=='{':depth+=1
+            elif text[j]=='}':
+                depth-=1
+                if depth==0:break
+            j+=1
+        out.append((st,j+1))
+    return out
+cand=[(a,b) for a,b in blocks(s) if 'listen 443' in s[a:b] and 'postneo' in s[a:b]]
+if not cand: sys.exit('не найден блок server с listen 443 и сайтом postneo')
+a,b=cand[0];blk=s[a:b]
+blk=re.sub(r'^([ \t]*)server_name[^;]*;[^\n]*\n',lambda m:'',blk,flags=re.M)
+blk=re.sub(r'(server[ \t]*\{)',lambda m:m.group(1)+f'\n    # POSTNEO domain {domain}: свой сертификат, выбирается по имени (SNI)\n    server_name {names};',blk,count=1)
+blk=re.sub(r'(ssl_certificate[ \t]+)[^;]+;',rf'\g<1>{live}/fullchain.pem;',blk)
+blk=re.sub(r'(ssl_certificate_key[ \t]+)[^;]+;',rf'\g<1>{live}/privkey.pem;',blk)
+blk=blk.replace(' default_server','').replace(' ipv6only=on','')
+open(f,'w').write(s.rstrip()+'\n\n'+blk+'\n')
+PY
+fi
+nginx -t && systemctl reload nginx
 sleep 1
-curl -fsS --max-time 10 -o /dev/null "https://$DOMAIN/postneo/" && echo "https://$DOMAIN/postneo/ → ок, сертификат проходит проверку" || echo "https://$DOMAIN/postneo/ не открылся: nginx -T | grep -n ssl_certificate"
+
+# 5. Проверка: по имени — сертификат домена, по IP — прежний.
+curl -fsS --max-time 10 -o /dev/null --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/postneo/" && echo "https://$DOMAIN/postneo/ → ок, сертификат домена" || echo "https://$DOMAIN/postneo/ не открылся: nginx -T | grep -n ssl_certificate"
+curl -fsS --max-time 10 -o /dev/null "https://$IP/postneo/" && echo "https://$IP/postneo/ → ок, сертификат на IP на месте" || echo "внимание: https://$IP/postneo/ перестал проходить проверку"
 certbot certificates 2>/dev/null | grep -E "Certificate Name|Identifiers|Expiry" | sed 's/^ */  /'
 echo "готово. Ссылки: https://$DOMAIN/postneo/ · https://$DOMAIN/kart/ · https://$DOMAIN/download/"
-echo "Карточки на сервере: COOKIE_SECURE уже 1; пакет для ПК начнёт искать обновления по домену после следующей публикации."
