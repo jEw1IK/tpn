@@ -48,3 +48,7 @@ func openDefaultBrowser(url string) error {
 }
 
 func ensureShortcut(exe, base, data string) { _ = filepath.Join }
+
+func isRemotePath(p string) bool { return false }
+
+func notify(text string) { fmt.Fprintln(os.Stderr, appTitle+": "+text) }

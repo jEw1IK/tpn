@@ -43,6 +43,13 @@ func run() error {
 	if err := os.MkdirAll(filepath.Join(data, "logs"), 0o755); err != nil {
 		return fmt.Errorf("не удалось создать папку данных %s: %v", data, err)
 	}
+	// с сетевого диска, флешки или из загрузок программа переезжает в локальную папку пользователя и работает оттуда
+	if localExe, ok := ensureLocalInstall(exe, base, data); ok {
+		if err := relaunch(localExe); err == nil {
+			return nil
+		}
+		ulog(data, "не удалось запустить локальную копию %s, работаю отсюда", localExe)
+	}
 	noShortcut := false
 	for _, a := range os.Args[1:] {
 		if a == "--no-shortcut" {
@@ -101,7 +108,7 @@ func startAndOpen(base, data, nodeExe, appDir string) error {
 	exited := make(chan error, 1)
 	go func() { exited <- cmd.Wait() }()
 
-	deadline := time.Now().Add(60 * time.Second)
+	deadline := time.Now().Add(150 * time.Second)
 	for !healthy(port) {
 		select {
 		case err := <-exited:
@@ -110,7 +117,7 @@ func startAndOpen(base, data, nodeExe, appDir string) error {
 		}
 		if time.Now().After(deadline) {
 			_ = cmd.Process.Kill()
-			return fmt.Errorf("сервер не ответил за 60 секунд.\nПодробности: %s\n\n%s", logPath, tail(logPath, 12))
+			return fmt.Errorf("сервер не ответил за 150 секунд.\nЕсли программа лежит на сетевом диске, скопируйте папку на локальный диск, например C:\\POSTNEO.\nПодробности: %s\n\n%s", logPath, tail(logPath, 12))
 		}
 	}
 	go checkForUpdate(base, data)

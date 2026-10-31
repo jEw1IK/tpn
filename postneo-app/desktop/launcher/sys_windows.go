@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"unicode/utf16"
 	"unsafe"
@@ -61,8 +62,8 @@ func openDefaultBrowser(url string) error {
 
 // ensureShortcut один раз кладёт ярлык «POSTNEO Карточки» на рабочий стол пользователя.
 func ensureShortcut(exe, base, data string) {
-	marker := filepath.Join(data, "shortcut-v1")
-	if _, err := os.Stat(marker); err == nil {
+	marker := filepath.Join(data, "shortcut-v2")
+	if b, err := os.ReadFile(marker); err == nil && strings.EqualFold(strings.TrimSpace(string(b)), exe) {
 		return
 	}
 	script := `$d=[Environment]::GetFolderPath('Desktop'); if(-not $d){exit 0}
@@ -81,6 +82,31 @@ $s.Save()`
 	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", base64.StdEncoding.EncodeToString(b))
 	hideWindow(cmd)
 	if cmd.Run() == nil {
-		_ = os.WriteFile(marker, []byte("ok"), 0o644)
+		_ = os.WriteFile(marker, []byte(exe), 0o644)
 	}
+}
+
+var (
+	kernel32         = syscall.NewLazyDLL("kernel32.dll")
+	procGetDriveType = kernel32.NewProc("GetDriveTypeW")
+)
+
+// isRemotePath: UNC-путь или сетевой диск.
+func isRemotePath(p string) bool {
+	if strings.HasPrefix(p, `\\`) {
+		return true
+	}
+	vol := filepath.VolumeName(p)
+	if vol == "" {
+		return false
+	}
+	root, _ := syscall.UTF16PtrFromString(vol + `\`)
+	r, _, _ := procGetDriveType.Call(uintptr(unsafe.Pointer(root)))
+	return r == 4 // DRIVE_REMOTE
+}
+
+func notify(text string) {
+	t, _ := syscall.UTF16PtrFromString(text)
+	title, _ := syscall.UTF16PtrFromString(appTitle)
+	procMessageBox.Call(0, uintptr(unsafe.Pointer(t)), uintptr(unsafe.Pointer(title)), 0x40)
 }
