@@ -2,6 +2,7 @@ import './home.css';
 import {calculate,blank,drugs,enteralFormulas,type Inputs} from '@/lib/tpn';
 import {formatNumber as f} from '@/lib/format';
 import {BrandMark} from '@/components/brand-mark';
+import {KartLink} from '@/components/kart-link';
 import {href,asset,staticSite} from '@/lib/links';
 import {redirect} from 'next/navigation';
 
@@ -25,7 +26,7 @@ export default function HomePage(){
   <a className="skip" href="#home-main">К содержимому</a>
   <header className="hm-nav"><div className="hm-wrap hm-nav__in">
    <a className="hm-brand" href={href('/')} aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a>
-   <a className="btn btn--quiet" href={href('/calculator')}>Открыть калькулятор</a>
+   <div className="hm-nav__act"><a className="hm-link" href={href('/calculator')}>Калькулятор</a><KartLink className="btn btn--quiet" path="/login">Войти в отделение</KartLink></div>
   </div></header>
   <main id="home-main">
    <section className="hm-hero" aria-labelledby="home-title"><div className="hm-wrap hm-hero__in">
@@ -93,9 +94,19 @@ export default function HomePage(){
    <section className="hm-faq" aria-labelledby="faq-title"><div className="hm-wrap hm-split">
     <div className="hm-head"><h2 id="faq-title">Три вопроса перед первым листом</h2></div>
     <dl className="faq">
-     <div><dt>Где хранятся данные?</dt><dd>В браузере на вашем компьютере. На сервер ничего не отправляется, после очистки браузера лист исчезает.</dd></div>
+     <div><dt>Где хранятся данные?</dt><dd>Калькулятор держит лист в браузере этого компьютера. В отделении карточки и листы лежат на сервере зашифрованными ключом отделения: сервер их прочитать не может.</dd></div>
      <div><dt>Кто отвечает за дозы?</dt><dd>Врач. Подсказки у препаратов ориентировочные, калькулятор считает объёмы и показывает, где расчёт выходит за рамки КР.</dd></div>
      <div><dt>Работает на телефоне?</dt><dd>Да, блоки выстраиваются в одну колонку, итог открывается шторкой снизу. Печатать удобнее с компьютера.</dd></div>
+    </dl>
+   </div></section>
+
+   <section className="hm-dept" id="otdelenie" aria-labelledby="dept-title"><div className="hm-wrap hm-split">
+    <div className="hm-head"><h2 id="dept-title">Отделение</h2><p className="lead">Пациенты, листы по дням и подписи, общие для всех врачей. Вход только для своих.</p>
+     <p className="hm-close__act"><KartLink className="btn" path="/login">Войти в отделение</KartLink></p></div>
+    <dl className="faq">
+     <div><dt>Есть логин и пароль</dt><dd>Войдите, затем один раз на этом компьютере введите фразу отделения. <KartLink className="hm-link" path="/login">Вход</KartLink></dd></div>
+     <div><dt>Есть код приглашения</dt><dd>Код выдаёт заведующий. Логин и пароль придумываете сами, их никто не знает. <KartLink className="hm-link" path="/join">Регистрация по коду</KartLink></dd></div>
+     <div><dt>Нет ни того ни другого</dt><dd>Калькулятор и печать листа работают без входа. Чтобы вести пациентов, попросите код у заведующего.</dd></div>
     </dl>
    </div></section>
 
@@ -112,7 +123,7 @@ export default function HomePage(){
   </main>
   <footer className="hm-foot"><div className="hm-wrap">
    <p className="hm-foot__line">Расчёт питания и инфузий для отделения новорождённых, собранный неонатологами.</p>
-   <div className="hm-foot__row"><a className="hm-brand" href={href('/')} aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a><nav aria-label="Ссылки"><a href={href('/calculator')}>Калькулятор</a><a href="#possibilities">Возможности</a><a href="#start">Первый лист</a><a href={examplePdf}>Пример листа</a></nav><small>Тестовая версия 0.2</small></div>
+   <div className="hm-foot__row"><a className="hm-brand" href={href('/')} aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a><nav aria-label="Ссылки"><a href={href('/calculator')}>Калькулятор</a><KartLink path="/login">Отделение</KartLink><a href="#possibilities">Возможности</a><a href="#start">Первый лист</a><a href={examplePdf}>Пример листа</a></nav><small>Тестовая версия 0.2</small></div>
   </div></footer>
   <script dangerouslySetInnerHTML={{__html:"window.hallmarkSlots=(m)=>{for(const [k,v] of Object.entries(m)){const s=document.querySelector(`[data-slot=\"${k}\"]`);if(!s)continue;const im=new Image();im.src=typeof v==='string'?v:v.src;im.alt=(typeof v==='object'&&v.alt)||s.dataset.alt||'';s.querySelectorAll(':scope > img').forEach((o)=>o.remove());s.prepend(im);}};document.querySelectorAll('[data-slot] img').forEach((i)=>{i.addEventListener('error',()=>i.remove(),{once:true});});"}}/>
  </div>;

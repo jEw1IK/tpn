@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
-import {BookOpen,Eraser,Printer,X} from 'lucide-react';
+import {BookOpen,Eraser,Printer,X,Users} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogContent,DialogDescription,DialogTitle} from '@/components/ui/dialog';
 import {blank,calculate,enteralFormulas,example,newEnteralRow,numeric,trophicThresholdMlPerKg,type EnteralRow,type Inputs,type Result} from '@/lib/tpn';
@@ -10,6 +10,7 @@ import {formatNumber as f} from '@/lib/format';
 import {patientHeader,sexNames} from '@/lib/patient-header';
 import {BrandMark} from '@/components/brand-mark';
 import {href} from '@/lib/links';
+import {KartLink} from '@/components/kart-link';
 import {ThemeToggle} from '@/components/theme-toggle';
 import {ReferenceDrawer,type RefTab} from '@/components/reference-drawer';
 import {NurseSheet} from '@/components/nurse-sheet';
@@ -66,6 +67,7 @@ export function Calculator({initial,initialUi,onChange,locked=false,lockedNote,f
    <a className="brand" href={href('/')} aria-label="POSTNEO — главная"><BrandMark/></a>
    {toolbar}
    <span className="sp"/>
+   {!fixedHeader&&<KartLink className="tb" path="/login" title="Пациенты отделения: вход по логину"><Users size={15} aria-hidden="true"/>Отделение</KartLink>}
    {allowNew&&<button type="button" className="tb" onClick={()=>update({...blank(),enteralMode:'feeds8',drugFluid:p.drugFluid,lowGlucose:'5',highGlucose:'40',fatHours:'20'})} title="Очистить лист"><Eraser size={15} aria-hidden="true"/>Новый</button>}
    <button type="button" className="tb" onClick={()=>setPrintOpen(true)}><Printer size={15} aria-hidden="true"/>Печать</button>
    <button type="button" className="tb" onClick={()=>openRef()} aria-haspopup="dialog"><BookOpen size={15} aria-hidden="true"/>Методичка</button>

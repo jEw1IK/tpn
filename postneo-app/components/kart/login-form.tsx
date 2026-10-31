@@ -22,5 +22,6 @@ export function LoginForm({setup=false}:{setup?:boolean}){
   {error&&<p className="err" role="alert">{error}</p>}
   <button className="btn primary" type="submit" disabled={busy}>{setup?'Создать и войти':'Войти'}</button>
   {!setup&&<p className="hint">Есть код приглашения? <a href={withBase('/join')}>Зарегистрироваться</a></p>}
+  {!setup&&<p className="hint"><a href="/postneo/calculator.html">Калькулятор без входа</a> · <a href="/postneo/">Главная</a></p>}
  </form></div>;
 }

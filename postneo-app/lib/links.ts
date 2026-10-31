@@ -8,3 +8,8 @@ export const href=(path:string)=>staticSite?(map[path]??path.replace(/^\//,'')):
 /** Картинки и файлы из public: в статике относительно страницы. */
 export const asset=(path:string)=>staticSite?path.replace(/^\//,''):base+path;
 export {staticSite};
+
+/** Публичный адрес отделения. Им пользуются приложение на ПК и копия сайта на GitHub Pages. */
+export const kartPublicUrl=(process.env.NEXT_PUBLIC_KART_URL||'https://89.169.32.9/kart').replace(/\/$/,'');
+/** Ссылка в отделение: на сервере относительная (работает и по IP, и по домену), на ПК — публичный адрес. */
+export const kartHref=(path:string)=>staticSite?'../kart'+path:base?base+path:kartPublicUrl+path;

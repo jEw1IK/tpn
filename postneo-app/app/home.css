@@ -88,7 +88,8 @@
 .log li:last-child { border-bottom: 1px solid var(--color-rule); }
 .log time { font-weight: 600; }
 .log p { color: var(--color-ink-2); }
-.hm-faq { padding-top: var(--section-gap); }
+.hm-faq, .hm-dept { padding-top: var(--section-gap); }
+.hm-nav__act { display: flex; align-items: center; gap: var(--space-sm) var(--space-md); }
 .faq { margin: 0; }
 .faq div { padding: var(--space-lg) 0; border-top: 1px solid var(--color-rule); }
 .faq div:last-child { border-bottom: 1px solid var(--color-rule); }
@@ -143,5 +144,6 @@
  .tile { padding: var(--space-lg); }
  .hm-brand span { font-size: var(--text-md); }
  .hm-nav__in .btn { min-height: 44px; padding: 0 var(--space-md); }
+ .hm-nav__act .hm-link { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .btn, .hm-link { transition: none; } }

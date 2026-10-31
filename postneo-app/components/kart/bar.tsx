@@ -17,6 +17,7 @@ export function KartBar({user}:{user:User}){
  return <nav className="kbar" aria-label="Разделы">
   <Link href="/patients" className="brand" aria-label="Пациенты"><BrandMark/></Link>
   {link('/patients','Пациенты')}
+  {link('/calculator','Калькулятор')}
   {user.role==='admin'&&link('/users','Пользователи')}
   {user.role==='admin'&&link('/journal','Журнал')}
   {user.role==='admin'&&link('/vault','Ключ')}

@@ -41,7 +41,8 @@ cat > "$DL/index.html" <<HTML
 <h1>POSTNEO Карточки для Windows</h1>
 <p>Версия <code>$COMMIT</code>. Распакуйте архив целиком и запустите <code>POSTNEO-Kartochki.exe</code>. Обновления приходят сами при запуске.</p>
 <p><a class="b" href="POSTNEO-Kartochki-win64.zip">Скачать архив</a></p>
-<p><a href="README.txt">Инструкция</a> · <a href="kart-version.json">версия</a></p>
+<p>Это калькулятор с печатью, без входа и базы. Пациенты отделения ведутся на сервере: <a href="../kart/login">войти в отделение</a>.</p>
+<p><a href="README.txt">Инструкция</a> · <a href="kart-version.json">версия</a> · <a href="../postneo/">сайт</a></p>
 HTML
 chmod -R a+rX "$DL"
 echo "готово: $DL ($COMMIT)"
