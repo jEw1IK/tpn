@@ -16,7 +16,8 @@ import (
 	"time"
 )
 
-const defaultUpdateURL = "http://89.169.32.9/download/kart-version.json"
+// Сначала HTTPS по IP: больничный фильтр режет открытый HTTP к адресу, а TLS без имени пропускает. HTTP остаётся запасным.
+var defaultUpdateURLs = []string{"https://89.169.32.9/download/kart-version.json", "http://89.169.32.9/download/kart-version.json"}
 
 type versionInfo struct {
 	Commit    string `json:"commit"`
@@ -100,16 +101,43 @@ func updateExe(base, data, baseURL string, v versionInfo) {
 	ulog(data, "новый лаунчер скачан, встанет при следующем запуске")
 }
 
-func updateURL(base string) string {
+func updateURLs(base string) []string {
 	if u := strings.TrimSpace(os.Getenv("POSTNEO_UPDATE_URL")); u != "" {
-		return u
+		return []string{u}
 	}
 	if b, err := os.ReadFile(filepath.Join(base, "update-url.txt")); err == nil {
-		if u := strings.TrimSpace(string(b)); u != "" {
-			return u
+		var out []string
+		for _, line := range strings.Split(string(b), "\n") {
+			if u := strings.TrimSpace(line); u != "" {
+				out = append(out, u)
+			}
+		}
+		if len(out) > 0 {
+			return out
 		}
 	}
-	return defaultUpdateURL
+	return defaultUpdateURLs
+}
+
+// fetchVersion пробует адреса по очереди и возвращает первый ответивший.
+func fetchVersion(base string) (versionInfo, string, bool) {
+	client := http.Client{Timeout: 15 * time.Second}
+	for _, url := range updateURLs(base) {
+		if url == "off" {
+			return versionInfo{}, "", false
+		}
+		resp, err := client.Get(url)
+		if err != nil {
+			continue
+		}
+		var v versionInfo
+		ok := resp.StatusCode == 200 && json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&v) == nil && v.Commit != "" && v.AppURL != "" && len(v.SHA256) == 64
+		resp.Body.Close()
+		if ok {
+			return v, url, true
+		}
+	}
+	return versionInfo{}, "", false
 }
 
 func readCommit(dir string) string {
@@ -183,21 +211,8 @@ func rollbackUpdate(base, data string) bool {
 // checkForUpdate работает в фоне: без интернета молча выходит.
 func checkForUpdate(base, data string) {
 	defer func() { _ = recover() }()
-	url := updateURL(base)
-	if url == "off" {
-		return
-	}
-	client := http.Client{Timeout: 15 * time.Second}
-	resp, err := client.Get(url)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return
-	}
-	var v versionInfo
-	if json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&v) != nil || v.Commit == "" || v.AppURL == "" || len(v.SHA256) != 64 {
+	v, url, ok := fetchVersion(base)
+	if !ok {
 		return
 	}
 	baseURL := url[:strings.LastIndex(url, "/")+1]
