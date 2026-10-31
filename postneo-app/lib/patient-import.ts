@@ -4,20 +4,18 @@
 export type ImportRow={surname:string;sex:''|'male'|'female';diagnosis:string};
 
 const cap=(w:string)=>w.toLowerCase().replace(/(^|[-(])([а-яёa-z])/g,(_,p:string,c:string)=>p+c.toUpperCase());
-const TWIN:Record<string,{n:number;sex:'male'|'female'}>={'ПЕРВЫЙ':{n:1,sex:'male'},'ВТОРОЙ':{n:2,sex:'male'},'ТРЕТИЙ':{n:3,sex:'male'},'ПЕРВАЯ':{n:1,sex:'female'},'ВТОРАЯ':{n:2,sex:'female'},'ТРЕТЬЯ':{n:3,sex:'female'}};
+const TWIN:Record<string,{sex:'male'|'female'}>={'ПЕРВЫЙ':{sex:'male'},'ВТОРОЙ':{sex:'male'},'ТРЕТИЙ':{sex:'male'},'ПЕРВАЯ':{sex:'female'},'ВТОРАЯ':{sex:'female'},'ТРЕТЬЯ':{sex:'female'}};
 
-/** «ЛИБЕС НЕИЗВЕСТНО ВТОРАЯ» → «Либес, двойня 2», пол по отчеству или по слову «первый/первая». */
+/** Имя остаётся как в МИС, только без капса: «ЛИБЕС НЕИЗВЕСТНО ВТОРАЯ» → «Либес Неизвестно Вторая».
+ *  Пол по отчеству или по слову «первый/первая» у двоен. */
 export function parseName(raw:string):{surname:string;sex:''|'male'|'female'}{
  const words=raw.replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
- let sex:''|'male'|'female'='';let twin=0;const kept:string[]=[];
- for(const w of words){const u=w.toUpperCase();
-  if(u==='НЕИЗВЕСТНО'||u==='НЕИЗВЕСТНЫЙ'||u==='НЕИЗВЕСТНАЯ')continue;
-  if(TWIN[u]){twin=TWIN[u].n;sex=TWIN[u].sex;continue;}
-  kept.push(w);}
- const last=kept.length>=3?kept[kept.length-1].toUpperCase():'';
+ let sex:''|'male'|'female'='';
+ for(const w of words){const t=TWIN[w.toUpperCase()];if(t)sex=t.sex;}
+ const named=words.filter(w=>!TWIN[w.toUpperCase()]&&!/^НЕИЗВЕСТН/i.test(w));
+ const last=named.length>=3?named[named.length-1].toUpperCase():'';
  if(/(ВИЧ|ИЧ|ОГЛЫ|УУЛУ)$/.test(last))sex='male';else if(/(ВНА|ЧНА|КЫЗЫ)$/.test(last))sex='female';
- const name=kept.map(cap).join(' ');
- return {surname:twin?name+', двойня '+twin:name,sex};
+ return {surname:words.map(cap).join(' '),sex};
 }
 
 const flat=(s:string)=>s.replace(/\s+/g,' ').trim();

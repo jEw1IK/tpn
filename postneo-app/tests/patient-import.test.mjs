@@ -31,7 +31,7 @@ test('список из МИС: имена, пол, диагнозы и опер
  const rows=parsePatientList(SAMPLE);
  assert.equal(rows.length,4);
  assert.deepEqual(rows[0],{surname:'Петров (Сидоров) Иван Иванович',sex:'male',diagnosis:'P37.9 Врожденная инфекционная или паразитарная болезнь неуточненная, P59.0 Неонатальная желтуха, связанная с преждевременным родоразрешением'});
- assert.equal(rows[1].surname,'Котова, двойня 2');assert.equal(rows[1].sex,'female');
+ assert.equal(rows[1].surname,'Котова Неизвестно Вторая');assert.equal(rows[1].sex,'female');
  assert.match(rows[1].diagnosis,/рожденная в стационаре$/);
  assert.equal(rows[2].surname,'Ежов Пётр Павлович');
  assert.equal(rows[2].diagnosis,'P27.1 Бронхолегочная дисплазия, возникшая в перинатальном периоде\nОперация: Вентрикулостомия 24.08.2026');
@@ -40,8 +40,8 @@ test('список из МИС: имена, пол, диагнозы и опер
 });
 
 test('без отчества пол не угадывается, без нумерации — строка на пациента', () => {
- assert.deepEqual(parseName('СОКОЛОВ НЕИЗВЕСТНО'),{surname:'Соколов',sex:''});
- assert.deepEqual(parseName('ГУСЕВ НЕИЗВЕСТНО ПЕРВЫЙ'),{surname:'Гусев, двойня 1',sex:'male'});
+ assert.deepEqual(parseName('СОКОЛОВ НЕИЗВЕСТНО'),{surname:'Соколов Неизвестно',sex:''});
+ assert.deepEqual(parseName('ГУСЕВ НЕИЗВЕСТНО ПЕРВЫЙ'),{surname:'Гусев Неизвестно Первый',sex:'male'});
  assert.deepEqual(parsePatientList('Иванова\n\nПетров Пётр Петрович\n').map(r=>r.surname),['Иванова','Петров Пётр Петрович']);
  assert.equal(nameKey('Ежов  Пётр'),nameKey('ЕЖОВ ПЕТР'));
 });
