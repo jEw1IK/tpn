@@ -32,3 +32,19 @@ test('смена фразы не трогает ключ данных; код в
  assert.equal(normalizeRecoveryCode('abc-d0 oil'),'ABCD0011');
  assert.deepEqual([...fromB64(toB64(new Uint8Array([1,2,255])))],[1,2,255]);
 });
+
+test('ключ без фразы: пароль врача и код приглашения открывают ту же копию, чужой нет', async () => {
+ const {createVaultForAdmin,unlockWithRecovery,wrapForPassword,unwrapWithPassword,generateInviteCode,inviteCodeId,wrapForInvite,unwrapWithInvite,toB64}=await import('../lib/crypto.ts');
+ const {record,recoveryCode,rawKey,adminWrap}=await createVaultForAdmin('admin-password-1');
+ assert.equal(record.wrapped_key,'');
+ assert.equal(toB64(await unwrapWithPassword(adminWrap,'admin-password-1')),toB64(rawKey));
+ assert.equal(toB64(await unlockWithRecovery({...record,created_at:''},recoveryCode)),toB64(rawKey));
+ await assert.rejects(unwrapWithPassword(adminWrap,'admin-password-2'),/другой ключ/);
+ const code=generateInviteCode();assert.match(code,/^[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/);
+ const id=await inviteCodeId(code);assert.match(id,/^[0-9a-f]{64}$/);assert.equal(await inviteCodeId(code.toLowerCase().replaceAll('-',' ')),id);
+ const inv=await wrapForInvite(rawKey,code);
+ const fromInvite=await unwrapWithInvite(inv,code.toLowerCase());
+ const doctorWrap=await wrapForPassword(fromInvite,'doctor-pass-1');
+ assert.equal(toB64(await unwrapWithPassword(doctorWrap,'doctor-pass-1')),toB64(rawKey));
+ await assert.rejects(unwrapWithInvite(inv,generateInviteCode()));
+});

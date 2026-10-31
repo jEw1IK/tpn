@@ -3,12 +3,15 @@
 import {useState} from 'react';
 import {KeyRound} from 'lucide-react';
 import {api} from '@/lib/base';
+import {wrapForPassword} from '@/lib/crypto';
+import {useVault} from './vault';
 
 /** Смена своего пароля из шапки. */
 export function PasswordButton(){
+ const v=useVault();
  const [open,setOpen]=useState(false);const [o,setO]=useState('');const [n1,setN1]=useState('');const [n2,setN2]=useState('');const [msg,setMsg]=useState('');const [error,setError]=useState('');const [busy,setBusy]=useState(false);
  const submit=async(e:React.FormEvent)=>{e.preventDefault();setError('');setMsg('');if(n1!==n2){setError('Новые пароли не совпадают');return;}setBusy(true);
-  try{await api('/api/me',{method:'PATCH',json:{oldPassword:o,newPassword:n1}});setMsg('Пароль изменён. На других компьютерах нужно будет войти заново.');setO('');setN1('');setN2('');}
+  try{const keyWrap=v.rawKey?await wrapForPassword(v.rawKey,n1):null;await api('/api/me',{method:'PATCH',json:{oldPassword:o,newPassword:n1,keyWrap}});setMsg('Пароль изменён. На других компьютерах нужно будет войти заново.');setO('');setN1('');setN2('');}
   catch(err){setError((err as Error).message);}finally{setBusy(false);}};
  return <>
   <button type="button" className="tb" onClick={()=>setOpen(true)} title="Сменить свой пароль"><KeyRound size={14} aria-hidden="true"/>Пароль</button>

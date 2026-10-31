@@ -4,8 +4,8 @@ import type {Db} from './db.ts';
 import {type Role,type User,roleNames} from '../roles.ts';
 export type {Role,User};export {roleNames};
 export const cookieName='postneo_session';
-/** Сессия живёт 12 часов с последнего действия: смена закончилась — вход заново. */
-export const sessionHours=12;
+/** Вход держится, пока человек сам не нажмёт «Выйти» (год с последнего действия). Смена пароля и отключение закрывают все сессии. */
+export const sessionHours=24*365;
 
 export function hashPassword(password:string):string{
  const salt=randomBytes(16).toString('hex');
@@ -28,18 +28,20 @@ export function createUser(db:Db,user:{login:string;name:string;role:Role;passwo
 export function getUser(db:Db,id:number):User|null{return (db.prepare('select id,login,name,role,disabled,created_at from users where id=?').get(id) as User|undefined)??null;}
 export function listUsers(db:Db):User[]{return db.prepare('select id,login,name,role,disabled,created_at from users order by role,login').all() as User[];}
 /** Смена пароля закрывает все сессии пользователя: на других компьютерах войдут заново. Текущую можно оставить по токену. */
-export function setPassword(db:Db,id:number,password:string,keepToken?:string){
+export function setPassword(db:Db,id:number,password:string,keepToken?:string,keyWrap?:KeyWrapRec|null){
  if(password.length<8)throw new Error('Пароль не короче 8 символов');
  db.prepare('update users set password_hash=? where id=?').run(hashPassword(password),id);
+ // старая копия ключа открывалась старым паролем: заменяем новой или убираем (откроется кодом восстановления у администратора)
+ setUserWrap(db,id,keyWrap??null);
  if(keepToken)db.prepare('delete from sessions where user_id=? and token_hash<>?').run(id,hashToken(keepToken));
  else db.prepare('delete from sessions where user_id=?').run(id);
 }
 /** Смена своего пароля: нужен старый. */
-export function changeOwnPassword(db:Db,id:number,oldPassword:string,newPassword:string,keepToken?:string){
+export function changeOwnPassword(db:Db,id:number,oldPassword:string,newPassword:string,keepToken?:string,keyWrap?:KeyWrapRec|null){
  const row=db.prepare('select password_hash from users where id=?').get(id) as {password_hash:string}|undefined;
  if(!row||!verifyPassword(oldPassword,row.password_hash))throw new Error('Текущий пароль неверный');
  if(oldPassword===newPassword)throw new Error('Новый пароль совпадает со старым');
- setPassword(db,id,newPassword,keepToken);
+ setPassword(db,id,newPassword,keepToken,keyWrap);
 }
 
 /** Защита от перебора: не больше 5 неверных попыток за 15 минут на логин и на адрес. */
@@ -53,25 +55,37 @@ export function tooManyAttempts(db:Db,keys:string[]):number{
 export function noteFailedAttempt(db:Db,keys:string[]){for(const k of keys)db.prepare('insert into login_attempts(key) values (?)').run(k);}
 export function clearAttempts(db:Db,keys:string[]){for(const k of keys)db.prepare('delete from login_attempts where key=?').run(k);}
 
-/** Приглашение: администратор создаёт код, врач по нему сам заводит логин и пароль. Код одноразовый, живёт 7 дней. */
-export function createInvite(db:Db,role:Role,note:string,createdBy:number,days=7):{code:string;id:number;expires_at:string}{
- const code=randomBytes(6).toString('base64url').replace(/[-_]/g,'x').slice(0,8).toUpperCase();
+/** Копия ключа данных: обёртка, соль, итерации. Проверяется только форма, открыть её сервер не может. */
+export type KeyWrapRec={wrap:string;salt:string;iter:number};
+export function checkWrap(k:unknown):KeyWrapRec{
+ const w=k as KeyWrapRec;
+ if(!w||typeof w.wrap!=='string'||!/^v1\.[A-Za-z0-9+/=]+\.[A-Za-z0-9+/=]+$/.test(w.wrap)||w.wrap.length>512||typeof w.salt!=='string'||w.salt.length<8||w.salt.length>64||!Number.isInteger(w.iter)||w.iter<100000||w.iter>5000000)throw new Error('Неверная копия ключа');
+ return {wrap:w.wrap,salt:w.salt,iter:w.iter};
+}
+export function getUserWrap(db:Db,id:number):KeyWrapRec|null{const r=db.prepare('select key_wrap from users where id=?').get(id) as {key_wrap:string|null}|undefined;return r?.key_wrap?JSON.parse(r.key_wrap) as KeyWrapRec:null;}
+export function setUserWrap(db:Db,id:number,k:KeyWrapRec|null){db.prepare('update users set key_wrap=? where id=?').run(k?JSON.stringify(checkWrap(k)):null,id);}
+/** Приглашение: код создаёт браузер администратора, сервер получает только его SHA-256 (codeId) и копию ключа под кодом.
+ *  Код одноразовый, живёт 7 дней. */
+export function createInvite(db:Db,role:Role,note:string,createdBy:number,codeId:string,keyWrap:KeyWrapRec|null,days=7):{id:number;expires_at:string}{
+ if(!/^[0-9a-f]{64}$/.test(codeId))throw new Error('Неверный код приглашения');
  const expires=new Date(Date.now()+days*86400000).toISOString();
- const info=db.prepare('insert into invites(code_hash,role,note,created_by,expires_at) values (?,?,?,?,?)').run(hashToken(code),role,note.trim().slice(0,80),createdBy,expires);
- return {code,id:Number(info.lastInsertRowid),expires_at:expires};
+ const info=db.prepare('insert into invites(code_hash,role,note,created_by,expires_at,key_wrap) values (?,?,?,?,?,?)').run(hashToken(codeId),role,note.trim().slice(0,80),createdBy,expires,keyWrap?JSON.stringify(checkWrap(keyWrap)):null);
+ return {id:Number(info.lastInsertRowid),expires_at:expires};
 }
 export type Invite={id:number;role:Role;note:string;created_at:string;expires_at:string;used_by:number|null;used_at:string|null;used_login:string|null};
 export function listInvites(db:Db):Invite[]{return db.prepare('select i.id,i.role,i.note,i.created_at,i.expires_at,i.used_by,i.used_at,u.login as used_login from invites i left join users u on u.id=i.used_by order by i.id desc limit 100').all() as Invite[];}
 export function deleteInvite(db:Db,id:number){db.prepare('delete from invites where id=? and used_by is null').run(id);}
-export function inviteByCode(db:Db,code:string):{id:number;role:Role;note:string}|null{
- const row=db.prepare("select id,role,note from invites where code_hash=? and used_by is null and expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now')").get(hashToken(code.trim().toUpperCase())) as {id:number;role:Role;note:string}|undefined;
- return row??null;
+export function inviteByCode(db:Db,codeId:string):{id:number;role:Role;note:string;keyWrap:KeyWrapRec|null}|null{
+ if(!/^[0-9a-f]{64}$/.test(codeId))return null;
+ const row=db.prepare("select id,role,note,key_wrap from invites where code_hash=? and used_by is null and expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now')").get(hashToken(codeId)) as {id:number;role:Role;note:string;key_wrap:string|null}|undefined;
+ return row?{id:row.id,role:row.role,note:row.note,keyWrap:row.key_wrap?JSON.parse(row.key_wrap) as KeyWrapRec:null}:null;
 }
-/** Регистрация по приглашению: пользователь и погашение кода в одной транзакции. */
-export function redeemInvite(db:Db,code:string,user:{login:string;name:string;password:string}):User{
- const inv=inviteByCode(db,code);if(!inv)throw new Error('Код приглашения не подходит или истёк');
+/** Регистрация по приглашению: пользователь, его копия ключа и погашение кода в одной транзакции. */
+export function redeemInvite(db:Db,codeId:string,user:{login:string;name:string;password:string},keyWrap?:KeyWrapRec|null):User{
+ const inv=inviteByCode(db,codeId);if(!inv)throw new Error('Код приглашения не подходит или истёк');
  return db.transaction(()=>{
   const created=createUser(db,{...user,role:inv.role});
+  if(keyWrap)setUserWrap(db,created.id,keyWrap);
   db.prepare("update invites set used_by=?,used_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') where id=? and used_by is null").run(created.id,inv.id);
   return created;
  })();

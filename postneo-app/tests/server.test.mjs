@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {openDb} from '../lib/server/db.ts';
-import {createUser,login,userByToken,logout,countUsers,setDisabled,audit,listAudit,verifyPassword,hashPassword,setPassword,changeOwnPassword,createInvite,inviteByCode,redeemInvite,listInvites,deleteInvite,tooManyAttempts,noteFailedAttempt,clearAttempts} from '../lib/server/auth.ts';
+import {createUser,login,userByToken,logout,countUsers,setDisabled,audit,listAudit,verifyPassword,hashPassword,setPassword,changeOwnPassword,createInvite,inviteByCode,redeemInvite,listInvites,deleteInvite,tooManyAttempts,noteFailedAttempt,clearAttempts,getUserWrap,setUserWrap} from '../lib/server/auth.ts';
+import {createHash} from 'node:crypto';
 import {createPatient,updatePatient,listPatients,getPatient,putSheet,signSheet,unsignSheet,deleteDraft,listWeights,listSheets,getSheet,setPatientStatus,upsertWeight,encryptLegacy} from '../lib/server/patients.ts';
 import {createVaultRecord,getVault,updateVaultRecord,plainCounts} from '../lib/server/vault.ts';
 
@@ -65,27 +66,35 @@ test('старые открытые записи отдаются как ест�
 
 test('ключ отделения: создание один раз, обновление обёрток, проверка полей', () => {
  const db=fresh();assert.equal(getVault(db),null);
- const rec={kdf_salt:'c2FsdA==',kdf_iterations:600000,wrapped_key:'v1.a.b',recovery_wrapped_key:'v1.c.d',key_version:1};
+ const rec={kdf_salt:'c2FsdA==',kdf_iterations:600000,wrapped_key:'',recovery_wrapped_key:'v1.c.d',key_version:2};
  const v=createVaultRecord(db,rec);assert.equal(v.kdf_iterations,600000);assert.ok(v.created_at);
  assert.throws(()=>createVaultRecord(db,rec),/уже создан/);
  assert.throws(()=>updateVaultRecord(db,{kdf_iterations:10}),/итераций/);
- updateVaultRecord(db,{wrapped_key:'v1.e.f'});assert.equal(getVault(db).wrapped_key,'v1.e.f');assert.equal(getVault(db).recovery_wrapped_key,'v1.c.d');
+ updateVaultRecord(db,{recovery_wrapped_key:'v1.e.f'});assert.equal(getVault(db).recovery_wrapped_key,'v1.e.f');assert.equal(getVault(db).wrapped_key,'');
 });
 
 
-test('приглашения: код одноразовый, роль из кода, истёкший и чужой не работают', () => {
+test('приглашения: по SHA-256 кода, одноразово, с копией ключа; копия переходит к врачу', () => {
  const db=fresh();const admin=createUser(db,{login:'admin',name:'А',role:'admin',password:'secret123'});
- const inv=createInvite(db,'doctor','Иванов',admin.id);
- assert.match(inv.code,/^[A-Z0-9]{8}$/);assert.equal(inviteByCode(db,inv.code.toLowerCase()).role,'doctor');
- assert.equal(inviteByCode(db,'NOPE1234'),null);
- const doc=redeemInvite(db,inv.code,{login:'ivanov',name:'Иванов',password:'secret123'});
- assert.equal(doc.role,'doctor');assert.equal(inviteByCode(db,inv.code),null);
- assert.throws(()=>redeemInvite(db,inv.code,{login:'x2',name:'',password:'secret123'}),/не подходит/);
+ const id=n=>createHash('sha256').update('code'+n).digest('hex');
+ const wrap={wrap:'v1.'+Buffer.from('iv').toString('base64')+'.'+Buffer.from('ct').toString('base64'),salt:'c2FsdHNhbHQ=',iter:200000};
+ assert.throws(()=>createInvite(db,'doctor','',admin.id,'ABCD',null),/Неверный код/);
+ assert.throws(()=>createInvite(db,'doctor','',admin.id,id(0),{...wrap,iter:10}),/копия ключа/);
+ const inv=createInvite(db,'doctor','Иванов',admin.id,id(1),wrap);
+ assert.ok(inv.id>0);const found=inviteByCode(db,id(1));assert.equal(found.role,'doctor');assert.deepEqual(found.keyWrap,wrap);
+ assert.equal(inviteByCode(db,id(9)),null);assert.equal(inviteByCode(db,'не-хэш'),null);
+ const doctorWrap={...wrap,salt:'ZG9jdG9yc2FsdA==',iter:310000};
+ const doc=redeemInvite(db,id(1),{login:'ivanov',name:'Иванов',password:'secret123'},doctorWrap);
+ assert.equal(doc.role,'doctor');assert.equal(inviteByCode(db,id(1)),null);assert.deepEqual(getUserWrap(db,doc.id),doctorWrap);
+ assert.throws(()=>redeemInvite(db,id(1),{login:'x2',name:'',password:'secret123'}),/не подходит/);
  assert.equal(listInvites(db)[0].used_login,'ivanov');
- const old=createInvite(db,'nurse','',admin.id,0);assert.equal(inviteByCode(db,old.code),null);
- const open=createInvite(db,'nurse','',admin.id);deleteInvite(db,open.id);assert.equal(inviteByCode(db,open.code),null);
- // логин занят: приглашение не гасится
- const again=createInvite(db,'nurse','',admin.id);assert.throws(()=>redeemInvite(db,again.code,{login:'ivanov',name:'',password:'secret123'}));assert.ok(inviteByCode(db,again.code));
+ createInvite(db,'nurse','',admin.id,id(2),null,0);assert.equal(inviteByCode(db,id(2)),null);
+ const open=createInvite(db,'nurse','',admin.id,id(3),null);deleteInvite(db,open.id);assert.equal(inviteByCode(db,id(3)),null);
+ createInvite(db,'nurse','',admin.id,id(4),null);assert.throws(()=>redeemInvite(db,id(4),{login:'ivanov',name:'',password:'secret123'}));assert.ok(inviteByCode(db,id(4)));
+ // смена пароля заменяет копию ключа; без новой копии старая убирается
+ setPassword(db,doc.id,'another123',undefined,{...doctorWrap,salt:'bmV3c2FsdHNhbHQ='});assert.equal(getUserWrap(db,doc.id).salt,'bmV3c2FsdHNhbHQ=');
+ setPassword(db,doc.id,'third12345');assert.equal(getUserWrap(db,doc.id),null);
+ setUserWrap(db,doc.id,doctorWrap);assert.deepEqual(getUserWrap(db,doc.id),doctorWrap);
 });
 
 test('перебор: после 5 неверных попыток вход закрыт, удачный вход очищает счётчик; смена пароля закрывает чужие сессии', () => {

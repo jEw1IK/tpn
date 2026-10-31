@@ -138,6 +138,11 @@ create table login_attempts(
  at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 create index login_attempts_key on login_attempts(key,at);
+`,`
+-- Ключ без фразы отделения: копия ключа данных у пользователя (под его паролем) и в приглашении (под кодом).
+-- Сервер хранит только обёртки и SHA-256 кода; открыть их без пароля или кода он не может.
+alter table users add column key_wrap text;
+alter table invites add column key_wrap text;
 `];
 
 export function openDb(file:string):Db{

@@ -1,5 +1,6 @@
 import {getDb} from '@/lib/server/db';
-import {attemptLimit,attemptWindowMin,audit,clearAttempts,login as signIn,noteFailedAttempt,tooManyAttempts} from '@/lib/server/auth';
+import {attemptLimit,attemptWindowMin,audit,clearAttempts,getUserWrap,login as signIn,noteFailedAttempt,tooManyAttempts} from '@/lib/server/auth';
+import {getVault} from '@/lib/server/vault';
 import {clientIp,fail,kartDisabled,readJson,sessionCookie} from '@/lib/server/session';
 export const dynamic='force-dynamic';
 export async function POST(req:Request){
@@ -13,5 +14,7 @@ export async function POST(req:Request){
   const left=tooManyAttempts(db,keys)?0:attemptLimit;return fail(left?'Неверный логин или пароль':`Неверный логин или пароль. Вход закрыт на ${attemptWindowMin} минут`,401);}
  clearAttempts(db,keys);
  audit(db,s.user,'login','user',s.user.id,'',ip||undefined);
- return Response.json({user:s.user},{headers:{'Set-Cookie':sessionCookie(s.token)}});
+ // копия ключа под паролем пользователя и параметры хранилища: браузер откроет ключ сразу, без фразы
+ const v=getVault(db);const vault=v?{...v,recovery_wrapped_key:s.user.role==='admin'?v.recovery_wrapped_key:''}:null;
+ return Response.json({user:s.user,keyWrap:getUserWrap(db,s.user.id),vault},{headers:{'Set-Cookie':sessionCookie(s.token)}});
 }

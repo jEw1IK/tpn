@@ -8,14 +8,14 @@ export function getVault(db:Db):VaultRecord|null{
 }
 const okB64=(s:unknown)=>typeof s==='string'&&s.length>0&&s.length<4096;
 function check(r:Partial<VaultRecord>){
- if(!okB64(r.kdf_salt)||!okB64(r.wrapped_key)||!okB64(r.recovery_wrapped_key))throw new Error('Неполные данные ключа');
+ if(!okB64(r.kdf_salt)||!okB64(r.recovery_wrapped_key)||(r.wrapped_key!==''&&!okB64(r.wrapped_key)))throw new Error('Неполные данные ключа');
  if(!Number.isInteger(r.kdf_iterations)||(r.kdf_iterations as number)<100000)throw new Error('Слишком мало итераций вывода ключа');
 }
 /** Первое создание: только пока ключа нет. */
 export function createVaultRecord(db:Db,r:Omit<VaultRecord,'created_at'>):VaultRecord{
  if(getVault(db))throw new Error('Ключ отделения уже создан');
  check(r);
- const record:VaultRecord={kdf_salt:r.kdf_salt,kdf_iterations:r.kdf_iterations,wrapped_key:r.wrapped_key,recovery_wrapped_key:r.recovery_wrapped_key,key_version:1,created_at:new Date().toISOString()};
+ const record:VaultRecord={kdf_salt:r.kdf_salt,kdf_iterations:r.kdf_iterations,wrapped_key:r.wrapped_key??'',recovery_wrapped_key:r.recovery_wrapped_key,key_version:r.key_version||1,created_at:new Date().toISOString()};
  setSetting(db,'vault',JSON.stringify(record));return record;
 }
 /** Смена фразы или кода: ключ данных тот же, меняются обёртки. */

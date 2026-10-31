@@ -32,6 +32,6 @@ export function requireUser(req:Request,roles?:Role[]):User|Response{
 }
 export function sessionCookie(token:string|null):string{
  const secure=process.env.COOKIE_SECURE==='1'?'; Secure':'';
- return token?`${cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200${secure}`:`${cookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+ return token?`${cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${365*24*3600}${secure}`:`${cookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
 }
 export async function readJson<T>(req:Request):Promise<T|null>{try{return await req.json() as T;}catch{return null;}}

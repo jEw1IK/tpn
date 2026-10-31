@@ -84,3 +84,38 @@ export async function rewrapWithPassphrase(record:VaultRecord,rawKey:Uint8Array,
 export async function rewrapRecovery(rawKey:Uint8Array,saltB64:string,code:string):Promise<string>{
  return wrapDataKey(rawKey,await recoveryWrapKey(code,saltB64));
 }
+
+/* ===== Ключ без фразы отделения =====
+ * У каждого пользователя своя копия ключа данных, обёрнутая ключом из его пароля. Приглашение несёт копию,
+ * обёрнутую ключом из кода приглашения; сам код на сервер не уходит, сервер видит только его SHA-256.
+ * Фраза отделения больше не нужна; код восстановления в сейфе остаётся у администратора. */
+export type KeyWrap={wrap:string;salt:string;iter:number};
+export const PASSWORD_ITERATIONS=310000;
+/** Пароль врача → копия ключа данных. Соль своя на каждую обёртку. */
+export async function wrapForPassword(raw:Uint8Array,password:string,iter=PASSWORD_ITERATIONS):Promise<KeyWrap>{
+ const salt=generateSalt();return {wrap:await wrapDataKey(raw,await deriveWrapKey(password,salt,iter)),salt,iter};
+}
+export async function unwrapWithPassword(k:KeyWrap,password:string):Promise<Uint8Array>{
+ return unwrapDataKey(k.wrap,await deriveWrapKey(password,k.salt,k.iter));
+}
+/** Код приглашения: 12 знаков Crockford-base32 (60 бит), группами по 4. */
+export function generateInviteCode():string{
+ const bytes=globalThis.crypto.getRandomValues(new Uint8Array(12));let out='';
+ for(const b of bytes)out+=ALPHABET[b%32];
+ return out.match(/.{1,4}/g)!.join('-');
+}
+export const normalizeInviteCode=(code:string)=>normalizeRecoveryCode(code);
+/** Идентификатор кода для сервера: SHA-256 нормализованного кода, hex. По нему ищется приглашение. */
+export async function inviteCodeId(code:string):Promise<string>{
+ const d=await subtle().digest('SHA-256',buf(enc.encode('postneo-invite:'+normalizeInviteCode(code))));
+ return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+export const INVITE_ITERATIONS=200000;
+export const wrapForInvite=(raw:Uint8Array,code:string)=>wrapForPassword(raw,normalizeInviteCode(code),INVITE_ITERATIONS);
+export const unwrapWithInvite=(k:KeyWrap,code:string)=>unwrapWithPassword(k,normalizeInviteCode(code));
+/** Новый ключ отделения без фразы: копия под паролем администратора и копия под кодом восстановления. */
+export async function createVaultForAdmin(password:string):Promise<{record:Omit<VaultRecord,'created_at'>;recoveryCode:string;rawKey:Uint8Array;adminWrap:KeyWrap}>{
+ const rawKey=generateDataKey();const salt=generateSalt();const recoveryCode=generateRecoveryCode();
+ const [recovery_wrapped_key,adminWrap]=await Promise.all([wrapDataKey(rawKey,await recoveryWrapKey(recoveryCode,salt)),wrapForPassword(rawKey,password)]);
+ return {record:{kdf_salt:salt,kdf_iterations:KDF_ITERATIONS,wrapped_key:'',recovery_wrapped_key,key_version:2},recoveryCode,rawKey,adminWrap};
+}

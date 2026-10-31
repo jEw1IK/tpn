@@ -2,24 +2,15 @@
 
 import {useState} from 'react';
 import {api} from '@/lib/base';
-import {generateRecoveryCode,rewrapRecovery,rewrapWithPassphrase} from '@/lib/crypto';
+import {generateRecoveryCode,rewrapRecovery} from '@/lib/crypto';
 import {readPatient,readSheets,readWeights,sealPatient,sealSheet,sealWeight} from '@/lib/kart-client';
 import type {PatientRowWire,SheetWire,WeightWire} from '@/lib/kart-view';
 import {printRecovery,useVault} from './vault';
 
-/** Страница «Ключ»: состояние на этом компьютере, смена фразы, новый лист восстановления, перешифровка старых записей. */
+/** Страница «Ключ»: новый лист восстановления и перешифровка старых записей. */
 export function VaultAdmin(){
- const v=useVault();const [p1,setP1]=useState('');const [p2,setP2]=useState('');const [busy,setBusy]=useState('');const [msg,setMsg]=useState('');const [error,setError]=useState('');const [code,setCode]=useState('');
+ const v=useVault();const [busy,setBusy]=useState('');const [msg,setMsg]=useState('');const [error,setError]=useState('');const [code,setCode]=useState('');
  const run=async(what:string,fn:()=>Promise<string>)=>{setBusy(what);setError('');setMsg('');try{setMsg(await fn());await v.refresh();}catch(e){setError((e as Error).message);}finally{setBusy('');}};
- const changePass=(e:React.FormEvent)=>{e.preventDefault();if(p1!==p2){setError('Фразы не совпадают');return;}run('pass',async()=>{
-  if(!v.record||!v.rawKey)throw new Error('Сначала откройте ключ');
-  const next=await rewrapWithPassphrase(v.record,v.rawKey,p1);
-  const newCode=generateRecoveryCode();
-  const recovery_wrapped_key=await rewrapRecovery(v.rawKey,next.kdf_salt,newCode);
-  await api('/api/vault',{method:'PUT',json:{...next,recovery_wrapped_key}});
-  setP1('');setP2('');setCode(newCode);
-  return 'Фраза изменена. На других компьютерах её спросят заново. Код восстановления тоже новый: распечатайте и замените лист в сейфе.';
- });};
  const newCode=()=>run('code',async()=>{
   if(!v.record||!v.rawKey)throw new Error('Сначала откройте ключ');
   const c=generateRecoveryCode();await api('/api/vault',{method:'PUT',json:{recovery_wrapped_key:await rewrapRecovery(v.rawKey,v.record.kdf_salt,c)}});setCode(c);
@@ -41,22 +32,17 @@ export function VaultAdmin(){
  });
  const plain=v.plain;const plainTotal=plain?plain.patients+plain.weights+plain.sheets:0;
  return <div className="kwrap">
-  <div className="khead"><h1>Ключ отделения</h1><span className="hint">{v.status==='ready'?'открыт на этом компьютере':v.status==='locked'?'закрыт':v.status==='none'?'не создан':''}</span></div>
+  <div className="khead"><h1>Ключ отделения</h1><span className="hint">{v.status==='ready'?'открыт на этом компьютере':''}</span></div>
   {error&&<p className="err" role="alert">{error}</p>}{msg&&<p className="lead">{msg}</p>}
   {code&&<div className="card"><h2>Новый код восстановления</h2><p style={{fontFamily:'ui-monospace,monospace',fontSize:22,letterSpacing:'.06em',userSelect:'all'}}>{code}</p><p><button type="button" className="btn" onClick={()=>printRecovery(code)}>Распечатать</button> <button type="button" className="tb" onClick={()=>setCode('')}>Скрыть</button></p></div>}
   <div className="two-col">
-   <div className="card"><h2>На этом компьютере</h2>
-    <p className="hint">Ключ хранится в браузере этого компьютера, пока его не забыть. На общем или чужом компьютере лучше забыть ключ после работы.</p>
-    {v.status==='ready'?<button type="button" className="btn" onClick={v.forget}>Забыть ключ на этом компьютере</button>:<p className="lead">Ключ закрыт. Откройте его на странице пациентов.</p>}
-    {plain&&plainTotal>0&&<><h2 style={{marginTop:20}}>Старые открытые записи</h2><p className="lead">Пациентов {plain.patients}, взвешиваний {plain.weights}, листов {plain.sheets}. Они заведены до включения шифрования и лежат на сервере открытым текстом.</p><button type="button" className="btn primary" onClick={encryptAll} disabled={!!busy||v.status!=='ready'}>{busy==='enc'?'Шифрую…':'Зашифровать всё'}</button></>}
+   <div className="card"><h2>Как устроено</h2>
+    <p className="hint">Данные пациентов на сервере зашифрованы. Ключ открывается паролем каждого пользователя: при регистрации его передаёт код приглашения, при смене пароля он перешифровывается сам. Отдельной фразы нет.</p>
+    <p className="hint">Код восстановления из сейфа нужен, только если пароли забыли все. Выпустите новый, если старый лист потерян или его видел посторонний.</p>
+    <p><button type="button" className="btn" onClick={newCode} disabled={!!busy||v.status!=='ready'}>{busy==='code'?'Выпускаю…':'Новый код восстановления'}</button></p>
    </div>
-   <div className="card"><h2>Сменить фразу отделения</h2>
-    <p className="hint">Ключ данных остаётся прежним, записи не перешифровываются. На других компьютерах новую фразу спросят при следующем входе.</p>
-    <form onSubmit={changePass}>
-     <label className="f"><span className="l">Новая фраза (от 12 знаков)</span><span className="w"><input type="password" value={p1} onChange={e=>setP1(e.target.value)} autoComplete="new-password"/></span></label>
-     <label className="f"><span className="l">Ещё раз</span><span className="w"><input type="password" value={p2} onChange={e=>setP2(e.target.value)} autoComplete="new-password"/></span></label>
-     <p><button className="btn primary" type="submit" disabled={!!busy||v.status!=='ready'||p1.length<12}>{busy==='pass'?'Меняю…':'Сменить фразу'}</button> <button type="button" className="tb" onClick={newCode} disabled={!!busy||v.status!=='ready'}>Только новый код восстановления</button></p>
-    </form>
+   <div className="card"><h2>Старые открытые записи</h2>
+    {plain&&plainTotal>0?<><p className="lead">Пациентов {plain.patients}, взвешиваний {plain.weights}, листов {plain.sheets}. Они заведены до включения шифрования и лежат на сервере открытым текстом.</p><button type="button" className="btn primary" onClick={encryptAll} disabled={!!busy||v.status!=='ready'}>{busy==='enc'?'Шифрую…':'Зашифровать всё'}</button></>:<p className="hint">Открытых записей нет, всё зашифровано.</p>}
    </div>
   </div>
  </div>;
