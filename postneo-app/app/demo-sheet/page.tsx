@@ -18,6 +18,9 @@ export default function DemoSheetPage(){
  add('dopamine',{dose:'5',pump:'0.5',volume:'24',stock:'40'});
  add('dobutamine',{dose:'5',pump:'0.5',volume:'24',stock:'10'});
  const r=calculate(p);
- return <div className="app"><div className="print-document" style={{display:'block'}}><NurseSheet p={p} r={r} header={patientHeader(p)}/></div>
+ // Второй случай: типичный «тяжёлый» лист — один кардиотоник и пять антибиотиков с кофеином (7 препаратов).
+ const keep=new Set(['example-amp','example-net','demo-antibiotic-gentamicin','demo-antibiotic-meropenem','demo-antibiotic-vankomicin','demo-ph-caffeine-citrate','demo-dopamine']);
+ const q={...p,medicines:p.medicines.filter(m=>keep.has(m.id))};const rq=calculate(q);
+ return <div className="app"><div className="print-document" style={{display:'block'}}><NurseSheet p={p} r={r} header={patientHeader(p)}/><hr/><NurseSheet p={q} r={rq} header={patientHeader(q)}/></div>
   <pre style={{fontSize:12,padding:16}}>{JSON.stringify({valid:r.valid,errors:r.errors,meds:r.medicines.map(m=>[m.id,m.valid,m.errors??''])},null,1)}</pre></div>;
 }

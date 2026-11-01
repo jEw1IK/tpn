@@ -551,6 +551,12 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offse
 /* Что набрать: название слева, объём крупно справа, по строке на компонент */
 .nurse-page td.n p.brief{font-size:7.8pt;line-height:1.26;white-space:pre-line}
 .nurse-page td.n p.brief b{display:inline;font-size:8.8pt;font-weight:800;margin:0;white-space:nowrap}
+.nurse-page tr.dense td.n{font-size:7.6pt;line-height:1.25;padding:.6mm 1.2mm}
+.nurse-page tr.dense td.n b{display:inline;font-size:8.4pt;margin:0}
+.nurse-page tr.dense td.n b+b{font-size:8.8pt}
+.nurse-page tr.dense td.n i{font-style:normal;color:var(--mute)}
+.nurse-page tr.dense td{height:auto}
+.nurse-page table.dense td.h.plan{font-size:8pt;padding-top:.3mm}
 .nurse-page td.n b.one{display:flex;justify-content:space-between;align-items:baseline;gap:2mm}
 .nurse-page td.n b.one span:last-child{font-size:9.2pt;white-space:nowrap;font-variant-numeric:tabular-nums}
 .nurse-page .rx{display:grid;gap:0;margin:0 0 .6mm;padding:0}

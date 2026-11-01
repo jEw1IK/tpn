@@ -16,20 +16,24 @@ const inlineRecipe=(row:WorkingRow)=>!!row.recipe&&row.recipe.length===1&&row.re
 const rowText=(row:WorkingRow,compact?:boolean)=>{const t=row.brief?row.brief:row.recipe?(row.detail??''):row.instruction;return compact&&!row.recipe?t.replace(/\n/g,' · '):t;};
 /** Объёмы в строке препарата выделяются жирным: медсестра ищет глазами «мл». */
 const emphMl=(text:string)=>text.split(/((?:до )?[\d,<> ]+\s?мл)/).map((part,i)=>i%2?<b key={i}>{part}</b>:part);
-function rowMm(row:WorkingRow,compact:boolean){
+const DENSE={name:'108mm',charsPerLine:72,line:3.3,pad:1.9,minRow:6.8};
+/** Плотная строка препарата: название, доза и разведение одной строкой текста. */
+const denseText=(row:WorkingRow)=>[row.label,row.dose,row.brief?.replace(/\n/g,' · ')].filter(Boolean).join(' · ')+(row.preparation?' · '+row.preparation:'');
+function rowMm(row:WorkingRow,compact:boolean,dense=false){
+ if(dense&&row.brief){const n=Math.ceil(denseText(row).length/DENSE.charsPerLine);return Math.max(DENSE.minRow,n*DENSE.line+DENSE.pad);}
  const text=rowText(row,compact);
  const n=(text?lines(text):0)+(row.preparation?lines(row.preparation):0);
  const head=Math.max(1,Math.ceil(row.label.length/MM.labelChars))*MM.heading;
  return Math.max(compact?MM.minMed:MM.minRow,head+(inlineRecipe(row)||row.brief?0:(row.recipe?.length??0))*MM.rx+n*MM.line+MM.pad);
 }
 /** Страницы лицевой стороны: первая несёт инфузии, препараты переходят дальше целыми строками. */
-function paginate(infusion:WorkingRow[],medication:WorkingRow[]){
+function paginate(infusion:WorkingRow[],medication:WorkingRow[],dense=false){
  const pages:{infusion:WorkingRow[];medication:WorkingRow[];blanks:number}[]=[];
  const capacity=(first:boolean)=>MM.content-MM.header-MM.footer-(first?MM.summary+MM.section*2:MM.section);
  let page={infusion,medication:[] as WorkingRow[],blanks:0};
- let used=infusion.reduce((s,r)=>s+rowMm(r,false),0)+(infusion.length?MM.blank:0);
+ let used=infusion.reduce((s,r)=>s+rowMm(r,false,dense),0);
  for(const row of medication){
-  const mm=rowMm(row,true);
+  const mm=rowMm(row,true,dense);
   if(used+mm>capacity(pages.length===0)&&(page.infusion.length||page.medication.length)){pages.push(page);page={infusion:[],medication:[],blanks:0};used=0;}
   page.medication.push(row);used+=mm;
  }
@@ -66,8 +70,9 @@ function planMarks(row:WorkingRow,hours:NurseHour[]):string[]{
  for(const t of row.timing){const plus=/\+1/.test(t);const hh=Number(t.slice(0,2));const i=hours.findIndex(x=>Number(x.time.slice(0,2))===hh&&x.nextDay===plus);if(i>=0)marks[i]='↓';}
  return marks;
 }
-function OrderRow({row,hours,compact,continuous}:{row:WorkingRow;hours:NurseHour[];compact?:boolean;continuous?:boolean}){
+function OrderRow({row,hours,compact,continuous,dense}:{row:WorkingRow;hours:NurseHour[];compact?:boolean;continuous?:boolean;dense?:boolean}){
  const text=rowText(row,compact);const marks=row.marks||planMarks(row,hours);
+ if(dense&&row.brief&&row.dose)return <tr className={'row med dense'+(continuous?' cont':'')} data-row-id={row.id}><td className="d">{row.courseDay??''}</td><td className="n"><b>{row.label}</b> <b>{row.dose}</b> · {emphMl(row.brief.replace(/\n/g,' · '))}{row.preparation&&<> · <i>{row.preparation}</i></>}</td><td className="v">{row.volume}</td><td className="r">{row.rate}</td>{hours.map(x=><td key={x.index} className={hourClass(x,marks[x.index]?(row.marks?'feed':'plan'):'')}>{marks[x.index]||''}</td>)}</tr>;
  return <tr className={'row'+(compact?' med':'')+(continuous?' cont':'')+(!compact&&!row.recipe&&lines(text)>=3?' tall':'')} data-row-id={row.id}><td className="d">{row.courseDay??''}</td><td className={'n'+(compact?' c':'')}>{row.brief&&row.dose?<b className="one"><span>{row.label}</span><span>{row.dose}</span></b>:inlineRecipe(row)?<b className="one"><span>{row.label}</span><span>{row.recipe![0][1]}</span></b>:<b>{row.label}</b>}{row.recipe&&!inlineRecipe(row)&&!row.brief&&<dl className="rx">{row.recipe.map(([k,v],i)=><div key={i}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}{text&&<p className={row.brief?'brief':undefined}>{row.brief?emphMl(text):text}</p>}{row.preparation&&<p className="prep">{row.preparation}</p>}</td><td className="v">{row.volume}</td><td className="r">{row.rate}</td>{hours.map(x=><td key={x.index} className={hourClass(x,marks[x.index]?(row.marks?'feed':'plan'):'')}>{marks[x.index]||''}</td>)}</tr>;
 }
 function BlankRow({hours,label}:{hours:NurseHour[];label?:string}){return <tr className="blank"><td className="d"/><td className="n">{label}</td><td className="v"/><td className="r"/>{hours.map(x=><td key={x.index} className={hourClass(x)}/>)}</tr>;}
@@ -75,7 +80,10 @@ function BlankRow({hours,label}:{hours:NurseHour[];label?:string}){return <tr cl
 export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}){
  const ready=r.valid&&header.valid;const hours=buildNurseHours(p.start);const w=buildWorkingRows(p,r);
  const infusion=[...w.infusion,...w.support.filter(row=>row.kind!=='enteral')];
- const fronts=paginate(infusion,w.medication);const total=fronts.length+1;
+ // Пока препараты входят на первый лист, строки крупные. Если нет — плотный режим: препарат одной строкой, и второй лист только когда не помог и он.
+ let dense=false;let fronts=paginate(infusion,w.medication);
+ if(fronts.length>1){const packed=paginate(infusion,w.medication,true);if(packed.length<fronts.length){dense=true;fronts=packed;}}
+ const total=fronts.length+1;const nameW=dense?DENSE.name:'71mm';
  const kg=r.kg;const en=r.enteralNutrition;const trophic=r.valid&&(r.enteralTrophicMl??0)>0;
  const show=(x:number|null|undefined,d=1)=>f(r.valid?x:null,d);
  const summary:[string,React.ReactNode][]=[
@@ -102,9 +110,9 @@ export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}
    <Header p={p} header={header} r={r} title="Лист интенсивной терапии" sub={'парентеральное питание · назначения · отметки выполнения'+(fronts.length>1?' · часть '+(index+1)+' из '+fronts.length:'')+(ready?'':' · ЧЕРНОВИК, расчёт не завершён')}/>
    {index===0&&<dl className="sum">{summary.map(([k,v])=><div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
    {page.infusion.length>0&&<><h2>Инфузии и питание<small>⁺¹ — {nextDate(p.sheetDate)} · клетки часов для отметки выполнения · «мл сутки» — объём в балансе</small></h2>
-    <table><Cols hours={hours} name="71mm"/><thead><tr><th>сут.</th><th className="n">Назначение · состав · режим</th><th>мл<br/>сутки</th><th>мл/ч</th><HourHead hours={hours}/></tr></thead><tbody>{page.infusion.map(row=><OrderRow key={row.id} row={row} hours={hours} continuous={continuous(row)}/>)}<BlankRow hours={hours} label="Дополнительный раствор"/></tbody></table></>}
+    <table className={dense?'dense':undefined}><Cols hours={hours} name={nameW}/><thead><tr><th>сут.</th><th className="n">Назначение · состав · режим</th><th>мл<br/>сутки</th><th>мл/ч</th><HourHead hours={hours}/></tr></thead><tbody>{page.infusion.map(row=><OrderRow key={row.id} row={row} hours={hours} continuous={continuous(row)} dense={dense}/>)}</tbody></table></>}
    <h2>Лекарственные назначения<small>сут. — сутки курса препарата · ↓ — время введения по плану, исполнение отмечается в клетке</small></h2>
-   <table><Cols hours={hours} name="71mm"/><thead><tr><th>сут.</th><th className="n">Препарат · доза · разведение</th><th>мл<br/>сутки</th><th>мл/ч</th><HourHead hours={hours}/></tr></thead><tbody>{page.medication.map(row=><OrderRow key={row.id} row={row} hours={hours} compact continuous={continuous(row)}/>)}{Array.from({length:page.blanks},(_,i)=><BlankRow key={i} hours={hours} label={i===0?'Дополнительно в течение суток':undefined}/>)}</tbody></table>
+   <table className={dense?'dense':undefined}><Cols hours={hours} name={nameW}/><thead><tr><th>сут.</th><th className="n">Препарат · доза · разведение</th><th>мл<br/>сутки</th><th>мл/ч</th><HourHead hours={hours}/></tr></thead><tbody>{page.medication.map(row=><OrderRow key={row.id} row={row} hours={hours} compact continuous={continuous(row)} dense={dense}/>)}{Array.from({length:page.blanks},(_,i)=><BlankRow key={i} hours={hours} label={i===0?'Дополнительно в течение суток':undefined}/>)}</tbody></table>
    <Foot p={p} page={index+1} pages={total} slim/>
   </section>)}
   <section className="nurse-page back" aria-label="Оборот">
