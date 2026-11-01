@@ -16,7 +16,7 @@ const inlineRecipe=(row:WorkingRow)=>!!row.recipe&&row.recipe.length===1&&row.re
 const rowText=(row:WorkingRow,compact?:boolean)=>{const t=row.brief?row.brief:row.recipe?(row.detail??''):row.instruction;return compact&&!row.recipe?t.replace(/\n/g,' · '):t;};
 /** Объёмы в строке препарата выделяются жирным: медсестра ищет глазами «мл». */
 const emphMl=(text:string)=>text.split(/((?:до )?[\d,<> ]+\s?мл)/).map((part,i)=>i%2?<b key={i}>{part}</b>:part);
-const DENSE={name:'108mm',charsPerLine:72,line:3.3,pad:1.9,minRow:6.8};
+const DENSE={name:'108mm',charsPerLine:72,line:3.4,pad:2.0,minRow:6.8};
 /** Плотная строка препарата: название, доза и разведение одной строкой текста. */
 const denseText=(row:WorkingRow)=>[row.label,row.dose,row.brief?.replace(/\n/g,' · ')].filter(Boolean).join(' · ')+(row.preparation?' · '+row.preparation:'');
 function rowMm(row:WorkingRow,compact:boolean,dense=false){
