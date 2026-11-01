@@ -60,17 +60,18 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
  ] as [string,number|null,string,string][]).filter(([,,dose])=>numeric(dose)!==0);
  const electrolytes=electrolyteList.map(([label,volume,dose,unit])=>`${label} ${ml(volume)} мл (${entered(dose)} ${unit})`);
  const electrolyteRecipe=electrolyteList.map(([label,volume]):[string,string]=>[label,`${ml(volume)} мл`]);
+ const baseRecipe:[string,string][]=[
+  [lowSolutionLabel(p),`${ml(r.lowMl)} мл`],[`Глюкоза ${entered(p.highGlucose)}%`,`${ml(r.highMl)} мл`],
+  ...electrolyteRecipe,...(r.carrierMl?[[`Проводник${r.carrierName?` ${r.carrierName}`:''}`,`${ml(r.carrierMl)} мл`] as [string,string]]:[]),
+  ['Гепарин',`${r.valid&&r.heparinUnits!==null?r.heparinUnits:'—'} Ед`],
+ ];
  const baseDetail=`За ${entered(p.baseHours)} ч · глюкоза ${show(r.glucoseGrams,2)} г, ${show(r.glucosePercent,2)}% в растворе глюкозы, ${show(r.mainLinePercent,2)}% в линии · GIR ${show(r.actualGir,1)} · гепарин ${r.valid&&r.heparinUnits!==null?r.heparinUnits:'—'} Ед`;
  const infusion=[
   make(full('base'),[
    `${lowSolutionLabel(p)} ${ml(r.lowMl)} + глюкоза ${entered(p.highGlucose)}% ${ml(r.highMl)}${r.electrolytes.sumMl?` + электролиты ${ml(r.electrolytes.sumMl)}`:''}${r.carrierMl?` + проводник ${ml(r.carrierMl)}`:''} мл`,
    ...(electrolytes.length?[electrolytes.join('; ')]:[]),
    baseDetail,
-  ].join('\n'),{recipe:[
-   [lowSolutionLabel(p),`${ml(r.lowMl)} мл`],[`Глюкоза ${entered(p.highGlucose)}%`,`${ml(r.highMl)} мл`],
-   ...electrolyteRecipe,...(r.carrierMl?[[`Проводник${r.carrierName?` ${r.carrierName}`:''}`,`${ml(r.carrierMl)} мл`] as [string,string]]:[]),
-   ['Гепарин',`${r.valid&&r.heparinUnits!==null?r.heparinUnits:'—'} Ед`],
-  ].filter((e:[string,string])=>e[1]!=='0 мл') as [string,string][],detail:`За ${entered(p.baseHours)} ч · ${show(r.glucosePercent,2)}% в р-ре глюкозы, ${show(r.mainLinePercent,2)}% в линии · GIR ${show(r.actualGir,1)}`}),
+  ].join('\n'),{recipe:baseRecipe.filter(e=>e[1]!=='0 мл'),detail:`За ${entered(p.baseHours)} ч · ${show(r.glucosePercent,2)}% в р-ре глюкозы, ${show(r.mainLinePercent,2)}% в линии · GIR ${show(r.actualGir,1)}`}),
   ...(!r.valid||r.aaMl!==0?[(()=>{const aaText=`${show(r.proteinPlan.requiredIvPerKg)} г/кг/сут → ${show(r.aaGrams)} г · за ${r.aaPauses?`${show(r.aaInfusionHours,1)} ч (паузы на антибиотики ${show(r.aaPauses,1)} ч)`:`${entered(p.aaHours)} ч`}`;
    return make(full('amino'),aaText,{recipe:[[`Аминокислоты ${entered(p.aaPercent)}%`,`${ml(r.aaMl)} мл`]],detail:aaText});})()]:[]),
   ...(r.valid&&r.fatLineMl===0?[]:[make(full('fat'),`${entered(p.fat)} г/кг/сут → ${show(r.fatGrams)} г${r.enteralSubtracted.fatG?' в/в после смеси':''} · эмульсия ${ml(r.fatMl)} мл${r.vitalipidMl?` + Виталипид ${ml(r.vitalipidMl)} мл`:''} · за ${entered(p.fatHours)} ч`,
