@@ -7,12 +7,15 @@ import {BrandMark} from '@/components/brand-mark';
 
 /* Печатный лист А4 альбомный: лицевая сторона с инфузиями и препаратами, оборот с кормлениями, КОС и диурезом.
    Размеры в миллиметрах совпадают с CSS (.nurse-page), поэтому разбиение на страницы считается заранее. */
-const MM={content:195,header:21,summary:8.6,section:11,blank:6.4,minRow:8.6,minMed:8,line:3.1,heading:3.6,pad:1.8,charsPerLine:84,footer:12,maxBlank:16,minBlank:5};
+const MM={content:195,header:21,summary:8.6,section:11,blank:6.4,minRow:8.6,minMed:8,line:3.6,rx:4.4,heading:4.2,labelChars:34,pad:2.2,charsPerLine:56,footer:12,maxBlank:16,minBlank:3};
 const lines=(text:string)=>text.split('\n').reduce((n,l)=>n+Math.max(1,Math.ceil(l.length/MM.charsPerLine)),0);
+/** Текст под рецептом: когда есть recipe, идёт detail; иначе вся инструкция (в строках препаратов — одной строкой). */
+const rowText=(row:WorkingRow,compact?:boolean)=>{const t=row.recipe?(row.detail??''):row.instruction;return compact&&!row.recipe?t.replace(/\n/g,' · '):t;};
 function rowMm(row:WorkingRow,compact:boolean){
- const text=compact?row.instruction.replace(/\n/g,' · '):row.instruction;
- const n=lines(text)+(row.preparation?lines(row.preparation):0);
- return Math.max(compact?MM.minMed:MM.minRow,MM.heading+n*MM.line+MM.pad);
+ const text=rowText(row,compact);
+ const n=(text?lines(text):0)+(row.preparation?lines(row.preparation):0);
+ const head=Math.max(1,Math.ceil(row.label.length/MM.labelChars))*MM.heading;
+ return Math.max(compact?MM.minMed:MM.minRow,head+(row.recipe?.length??0)*MM.rx+n*MM.line+MM.pad);
 }
 /** Страницы лицевой стороны: первая несёт инфузии, препараты переходят дальше целыми строками. */
 function paginate(infusion:WorkingRow[],medication:WorkingRow[]){
@@ -56,8 +59,8 @@ function planMarks(row:WorkingRow,hours:NurseHour[]):string[]{
  return marks;
 }
 function OrderRow({row,hours,compact,continuous}:{row:WorkingRow;hours:NurseHour[];compact?:boolean;continuous?:boolean}){
- const text=compact?row.instruction.replace(/\n/g,' · '):row.instruction;const marks=row.marks||planMarks(row,hours);
- return <tr className={'row'+(compact?' med':'')+(continuous?' cont':'')+(!compact&&lines(text)>=3?' tall':'')} data-row-id={row.id}><td className={'n'+(compact?' c':'')}><b>{row.label}</b><p>{text}</p>{row.preparation&&<p className="prep">{row.preparation}</p>}</td><td className="v">{row.volume}</td><td className="r">{row.rate}</td>{hours.map(x=><td key={x.index} className={hourClass(x,marks[x.index]?(row.marks?'feed':'plan'):'')}>{marks[x.index]||''}</td>)}</tr>;
+ const text=rowText(row,compact);const marks=row.marks||planMarks(row,hours);
+ return <tr className={'row'+(compact?' med':'')+(continuous?' cont':'')+(!compact&&!row.recipe&&lines(text)>=3?' tall':'')} data-row-id={row.id}><td className={'n'+(compact?' c':'')}><b>{row.label}</b>{row.recipe&&<dl className="rx">{row.recipe.map(([k,v],i)=><div key={i}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}{text&&<p>{text}</p>}{row.preparation&&<p className="prep">{row.preparation}</p>}</td><td className="v">{row.volume}</td><td className="r">{row.rate}</td>{hours.map(x=><td key={x.index} className={hourClass(x,marks[x.index]?(row.marks?'feed':'plan'):'')}>{marks[x.index]||''}</td>)}</tr>;
 }
 function BlankRow({hours,label}:{hours:NurseHour[];label?:string}){return <tr className="blank"><td className="n">{label}</td><td className="v"/><td className="r"/>{hours.map(x=><td key={x.index} className={hourClass(x)}/>)}</tr>;}
 

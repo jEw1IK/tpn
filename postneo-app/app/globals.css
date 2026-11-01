@@ -540,12 +540,19 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offse
 .nurse-page tr.row.tall td{height:11mm}
 .nurse-page tr.row.cont td{height:8mm}
 .nurse-page tr.row.med td{height:8mm}
-.nurse-page td.n b{display:block;font-size:9.2pt;font-weight:800;line-height:1.15;margin-bottom:.4mm}
-.nurse-page td.n p{margin:0;font-size:7.2pt;line-height:1.24;white-space:pre-line}
-.nurse-page td.n p.prep{color:var(--mute);font-size:7pt}
-.nurse-page td.n.c b{font-size:8.6pt;margin-bottom:.2mm}
-.nurse-page td.n.c p{font-size:7pt;line-height:1.22}
-.nurse-page td.n.c p.prep{font-size:6.6pt}
+.nurse-page td.n b{display:block;font-size:9.4pt;font-weight:800;line-height:1.15;margin-bottom:.4mm}
+.nurse-page td.n p{margin:0;font-size:7.8pt;line-height:1.26;white-space:pre-line}
+.nurse-page td.n p.prep{color:var(--mute);font-size:7.4pt}
+.nurse-page td.n.c b{font-size:9.2pt;margin-bottom:.3mm}
+.nurse-page td.n.c p{font-size:7.6pt;line-height:1.24}
+.nurse-page td.n.c p.prep{font-size:7pt}
+/* Что набрать: название слева, объём крупно справа, по строке на компонент */
+.nurse-page .rx{display:grid;gap:0;margin:0 0 .6mm;padding:0}
+.nurse-page .rx>div{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:2mm;padding:.1mm 0;border-bottom:.15mm dotted var(--thin);min-width:0}
+.nurse-page .rx>div:last-child{border-bottom:0}
+.nurse-page .rx dt{font-size:8.2pt;line-height:1.18;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nurse-page .rx dd{margin:0;font-size:9.2pt;font-weight:800;line-height:1.18;white-space:nowrap;font-variant-numeric:tabular-nums}
+.nurse-page td.n p{margin-top:.2mm}
 .nurse-page tr.blank td{height:6.4mm}
 .nurse-page tr.blank td.n{font-size:7pt;color:var(--mute);vertical-align:middle}
 .nurse-page tr.cont td.h{background:repeating-linear-gradient(90deg,transparent 0 1.8mm,#cfcfcf 1.8mm 2.4mm);background-size:100% .35mm;background-repeat:no-repeat;background-position:center}

@@ -9,6 +9,10 @@ export type WorkingRow={
  label:string;
  /** Short administration instructions. Newlines separate at most three semantic lines. */
  instruction:string;
+ /** Что набрать, построчно: название и объём. На печати идёт крупно, вместо первой строки instruction. */
+ recipe?:[string,string][];
+ /** Остальное из instruction, когда есть recipe: путь, время, скорость, расчётные величины. */
+ detail?:string;
  /** Volume entering the balance of these calculation days, not the prepared dose or syringe. */
  volume:string;
  rate:string;
@@ -47,18 +51,26 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
  // Working sheet: what the nurse draws up and when. Volumes to 0.1 ml as on the syringe; full precision is in the appendix.
  const ml=(value:number|null|undefined)=>show(value,1);
  const e=r.electrolytes;
- const electrolytes=([
+ const electrolyteList=([
   ['Ca глюконат 10%',e.caMl,p.calciumMlPerKg,'мл/кг'],['KCl 4%',e.kclMl,p.kcl,'ммоль/кг'],['NaCl 10%',e.nacl10Ml,p.nacl10,'ммоль/кг'],['NaCl 0,9%',e.nacl09Ml,p.nacl09,'ммоль/кг'],
   ['MgSO₄ 25%',e.mgMl,p.magnesium,'мл/кг'],['Солувит',e.soluvitMl,p.soluvit,'мл/кг'],['Дипептивен',e.dipeptivenMl,p.dipeptiven,'мл/кг'],['Аддамель',e.addamelMl,p.addamel,'мл'],
- ] as [string,number|null,string,string][]).filter(([,,dose])=>numeric(dose)!==0).map(([label,volume,dose,unit])=>`${label} ${ml(volume)} мл (${entered(dose)} ${unit})`);
+ ] as [string,number|null,string,string][]).filter(([,,dose])=>numeric(dose)!==0);
+ const electrolytes=electrolyteList.map(([label,volume,dose,unit])=>`${label} ${ml(volume)} мл (${entered(dose)} ${unit})`);
+ const electrolyteRecipe=electrolyteList.map(([label,volume]):[string,string]=>[label,`${ml(volume)} мл`]);
+ const baseDetail=`За ${entered(p.baseHours)} ч · глюкоза ${show(r.glucoseGrams,2)} г, ${show(r.glucosePercent,2)}% в растворе глюкозы, ${show(r.mainLinePercent,2)}% в линии · GIR ${show(r.actualGir,1)} · гепарин ${r.valid&&r.heparinUnits!==null?r.heparinUnits:'—'} Ед`;
  const infusion=[
   make(full('base'),[
    `${lowSolutionLabel(p)} ${ml(r.lowMl)} + глюкоза ${entered(p.highGlucose)}% ${ml(r.highMl)}${r.electrolytes.sumMl?` + электролиты ${ml(r.electrolytes.sumMl)}`:''}${r.carrierMl?` + проводник ${ml(r.carrierMl)}`:''} мл`,
    ...(electrolytes.length?[electrolytes.join('; ')]:[]),
-   `За ${entered(p.baseHours)} ч · глюкоза ${show(r.glucoseGrams,2)} г, ${show(r.glucosePercent,2)}% в растворе глюкозы, ${show(r.mainLinePercent,2)}% в линии · GIR ${show(r.actualGir,1)} · гепарин ${r.valid&&r.heparinUnits!==null?r.heparinUnits:'—'} Ед`,
-  ].join('\n')),
+   baseDetail,
+  ].join('\n'),{recipe:[
+   [lowSolutionLabel(p),`${ml(r.lowMl)} мл`],[`Глюкоза ${entered(p.highGlucose)}%`,`${ml(r.highMl)} мл`],
+   ...electrolyteRecipe,...(r.carrierMl?[[`Проводник${r.carrierName?` ${r.carrierName}`:''}`,`${ml(r.carrierMl)} мл`] as [string,string]]:[]),
+   ['Гепарин',`${r.valid&&r.heparinUnits!==null?r.heparinUnits:'—'} Ед`],
+  ],detail:`За ${entered(p.baseHours)} ч · ${show(r.glucosePercent,2)}% в р-ре глюкозы, ${show(r.mainLinePercent,2)}% в линии · GIR ${show(r.actualGir,1)}`}),
   ...(!r.valid||r.aaMl!==0?[make(full('amino'),`${show(r.proteinPlan.requiredIvPerKg)} г/кг/сут → ${show(r.aaGrams)} г · за ${r.aaPauses?`${show(r.aaInfusionHours,1)} ч (паузы на антибиотики ${show(r.aaPauses,1)} ч)`:`${entered(p.aaHours)} ч`}`)]:[]),
-  ...(r.valid&&r.fatLineMl===0?[]:[make(full('fat'),`${entered(p.fat)} г/кг/сут → ${show(r.fatGrams)} г${r.enteralSubtracted.fatG?' в/в после смеси':''} · эмульсия ${ml(r.fatMl)} мл${r.vitalipidMl?` + Виталипид ${ml(r.vitalipidMl)} мл`:''} · за ${entered(p.fatHours)} ч`)]),
+  ...(r.valid&&r.fatLineMl===0?[]:[make(full('fat'),`${entered(p.fat)} г/кг/сут → ${show(r.fatGrams)} г${r.enteralSubtracted.fatG?' в/в после смеси':''} · эмульсия ${ml(r.fatMl)} мл${r.vitalipidMl?` + Виталипид ${ml(r.vitalipidMl)} мл`:''} · за ${entered(p.fatHours)} ч`,
+   r.vitalipidMl?{recipe:[['Эмульсия',`${ml(r.fatMl)} мл`],['Виталипид',`${ml(r.vitalipidMl)} мл`]],detail:`${entered(p.fat)} г/кг/сут → ${show(r.fatGrams)} г · за ${entered(p.fatHours)} ч`}:{})]),
   ...(r.valid&&r.insulinMl?[make(full('insulin'),`${entered(p.insulin)} Ед/кг/ч → ${show(r.insulinUnits)} Ед/сут в 12 мл воды для инъекций · 0,5 мл/ч`)]:[]),
  ];
  const medication:WorkingRow[]=[];
@@ -87,7 +99,17 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
    `${m.stock.trim()?`${medShow(med?.amountMg,2)} мг (${medShow(med?.stockMl,2)} мл) + ${diluent} ${medShow(med?.solventMl,2)} мл = ${entered(m.volume)} мл`:`${medShow(med?.amountMg,2)} мг в ${diluent} до ${entered(m.volume)} мл`} · ${formatConcentration(med?.concentration)}`,
    `${routeLabel(m.route)} · ${medShow(med?.rate,1)} мл/ч · инфузия ${entered(m.hours)} ч · шприц на ${medShow(med?.syringeHours,1)} ч`,
   ].join('\n');
-  const built=make(row,instruction,{timing,partial,warning,preparedVolume:entered(m.volume)});
+  const stockRow=(mlValue:number|null|undefined):[string,string]=>[`Препарат ${entered(m.stock)} мг/мл`,`${medShow(mlValue,2)} мл`];
+  const routeLine=blood?undefined:periodic?`${routeLabel(m.route)}${over} · каждые ${entered(m.interval)} ч · ${when}`:`${routeLabel(m.route)} · ${medShow(med?.rate,1)} мл/ч · инфузия ${entered(m.hours)} ч · шприц на ${medShow(med?.syringeHours,1)} ч`;
+  const recipe:[string,string][]|undefined=blood?undefined:periodic?[
+   ['Доза',`${medShow(med?.doseAmount)} ${med?.doseLabel||'мг'}`],
+   ...(oral?[]:m.stock.trim()?[stockRow(med?.stockMl),[diluent,`${medShow(med?.solventMl,2)} мл`] as [string,string],['В шприце',`${entered(m.volume)} мл`] as [string,string]]:[[diluent,`до ${entered(m.volume)} мл`] as [string,string]]),
+  ]:[
+   ...(m.stock.trim()?[['Доза за сутки',`${medShow(med?.amountMg,2)} мг`] as [string,string],stockRow(med?.stockMl),[diluent,`${medShow(med?.solventMl,2)} мл`] as [string,string]]:[['Доза за сутки',`${medShow(med?.amountMg,2)} мг`] as [string,string],[diluent,`до ${entered(m.volume)} мл`] as [string,string]]),
+   ['В шприце',`${entered(m.volume)} мл · ${formatConcentration(med?.concentration)}`],
+  ];
+  const detail=recipe?[...(oral&&periodic?[`Без разведения${med&&!med.intravenous?', вне баланса жидкости':''}`]:[]),routeLine!,...(warning?[warning]:[])].join('\n'):undefined;
+  const built=make(row,instruction,{timing,partial,warning,preparedVolume:entered(m.volume),...(recipe?{recipe,detail}:{})});
   // Кардиотоники и другие постоянные инфузии — в таблицу инфузий, рядом с основной линией.
   if(!periodic&&!blood)infusion.push(built);else medication.push(built);
   if(m.loading){
@@ -100,7 +122,9 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
     `${oral?'Без разведения':`${diluent} до ${entered(m.loadingVolume)} мл`} · ${loadTiming.length?loadTiming.join(', '):'время —'}`,
     ...(loadWarning?[loadWarning]:[]),
    ].join('\n'),{timing:loadTiming,partial:loadPartial,warning:loadWarning,preparedVolume:entered(m.loadingVolume),
-    preparation:m.stock.trim()?`Исходный препарат ${entered(m.stock)} мг/мл.`:undefined}));
+    preparation:m.stock.trim()?`Исходный препарат ${entered(m.stock)} мг/мл.`:undefined,
+    recipe:[['Нагрузочная доза',`${medShow(med?.loadingMg,2)} мг`],...(oral?[]:[[diluent,`до ${entered(m.loadingVolume)} мл`] as [string,string]])],
+    detail:[`${routeLabel(m.route)}${loadMinutes?` за ${hoursLabel(loadMinutes)}`:''} · ${loadTiming.length?loadTiming.join(', '):'время —'}`,...(oral?['Без разведения']:[]),...(loadWarning?[loadWarning]:[])].join('\n')}));
   }
  }
  const support:WorkingRow[]=[];
