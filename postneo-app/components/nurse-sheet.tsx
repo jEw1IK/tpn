@@ -8,7 +8,7 @@ import {BrandMark} from '@/components/brand-mark';
 /* Печатный лист А4 альбомный: лицевая сторона с инфузиями и препаратами, оборот с кормлениями, КОС и диурезом.
    Размеры в миллиметрах совпадают с CSS (.nurse-page), поэтому разбиение на страницы считается заранее. */
 /* Константы сняты с реальной вёрстки: шапка с таблицей пациента 30,5 мм, сводка 8,7, заголовок раздела с шапкой таблицы 6,5, подвал 5,3. */
-const MM={content:195,header:30.5,summary:8.7,section:6.5,blank:6.4,minRow:8.6,minMed:8.6,line:3.45,rx:4.35,heading:3.7,labelChars:34,pad:2.4,charsPerLine:48,footer:5.3,maxBlank:18};
+const MM={content:195,header:30.5,summary:8.7,section:6.5,blank:6.4,minRow:8.6,minMed:8.6,line:3.45,rx:4.35,heading:3.7,labelChars:31,pad:2.4,charsPerLine:44,footer:5.3,maxBlank:18};
 const lines=(text:string)=>text.split('\n').reduce((n,l)=>n+Math.max(1,Math.ceil(l.length/MM.charsPerLine)),0);
 /** Текст под рецептом: когда есть recipe, идёт detail; иначе вся инструкция (в строках препаратов — одной строкой). */
 /** Один компонент с тем же именем, что и строка: объём пишется в заголовке строки, без отдельного списка. */
@@ -43,7 +43,7 @@ function paginate(infusion:WorkingRow[],medication:WorkingRow[]){
 
 const hourClass=(x:NurseHour,extra='')=>'h'+(x.index%6===0&&x.index?' b1':'')+(x.time.startsWith('00:')?' d0':'')+(extra?' '+extra:'');
 function HourHead({hours}:{hours:NurseHour[]}){return <>{hours.map(x=><th key={x.index} className={x.nextDay?'d1':undefined}>{x.time.slice(0,2)}{x.nextDay&&<sup>+1</sup>}</th>)}</>;}
-function Cols({hours,name}:{hours:NurseHour[];name:string}){return <colgroup><col className="n" style={{width:name}}/><col className="v"/><col className="r"/>{hours.map(x=><col key={x.index}/>)}</colgroup>;}
+function Cols({hours,name}:{hours:NurseHour[];name:string}){return <colgroup><col className="d"/><col className="n" style={{width:name}}/><col className="v"/><col className="r"/>{hours.map(x=><col key={x.index}/>)}</colgroup>;}
 
 function Header({p,header,r,title,sub,compact}:{p:Inputs;header:PatientHeader;r:Result;title:string;sub:string;compact?:boolean}){
  const dyn=r.dynamics;const dynText=dyn.dayGrams===null?'—':(dyn.dayGrams>0?'+':'')+f(dyn.dayGrams,0)+' г'+(dyn.birthPercent===null?'':' · '+f(dyn.birthPercent,0)+' %');
@@ -68,9 +68,9 @@ function planMarks(row:WorkingRow,hours:NurseHour[]):string[]{
 }
 function OrderRow({row,hours,compact,continuous}:{row:WorkingRow;hours:NurseHour[];compact?:boolean;continuous?:boolean}){
  const text=rowText(row,compact);const marks=row.marks||planMarks(row,hours);
- return <tr className={'row'+(compact?' med':'')+(continuous?' cont':'')+(!compact&&!row.recipe&&lines(text)>=3?' tall':'')} data-row-id={row.id}><td className={'n'+(compact?' c':'')}>{row.brief&&row.dose?<b className="one"><span>{row.label}</span><span>{row.dose}</span></b>:inlineRecipe(row)?<b className="one"><span>{row.label}</span><span>{row.recipe![0][1]}</span></b>:<b>{row.label}</b>}{row.recipe&&!inlineRecipe(row)&&!row.brief&&<dl className="rx">{row.recipe.map(([k,v],i)=><div key={i}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}{text&&<p className={row.brief?'brief':undefined}>{row.brief?emphMl(text):text}</p>}{row.preparation&&<p className="prep">{row.preparation}</p>}</td><td className="v">{row.volume}</td><td className="r">{row.rate}</td>{hours.map(x=><td key={x.index} className={hourClass(x,marks[x.index]?(row.marks?'feed':'plan'):'')}>{marks[x.index]||''}</td>)}</tr>;
+ return <tr className={'row'+(compact?' med':'')+(continuous?' cont':'')+(!compact&&!row.recipe&&lines(text)>=3?' tall':'')} data-row-id={row.id}><td className="d">{row.courseDay??''}</td><td className={'n'+(compact?' c':'')}>{row.brief&&row.dose?<b className="one"><span>{row.label}</span><span>{row.dose}</span></b>:inlineRecipe(row)?<b className="one"><span>{row.label}</span><span>{row.recipe![0][1]}</span></b>:<b>{row.label}</b>}{row.recipe&&!inlineRecipe(row)&&!row.brief&&<dl className="rx">{row.recipe.map(([k,v],i)=><div key={i}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}{text&&<p className={row.brief?'brief':undefined}>{row.brief?emphMl(text):text}</p>}{row.preparation&&<p className="prep">{row.preparation}</p>}</td><td className="v">{row.volume}</td><td className="r">{row.rate}</td>{hours.map(x=><td key={x.index} className={hourClass(x,marks[x.index]?(row.marks?'feed':'plan'):'')}>{marks[x.index]||''}</td>)}</tr>;
 }
-function BlankRow({hours,label}:{hours:NurseHour[];label?:string}){return <tr className="blank"><td className="n">{label}</td><td className="v"/><td className="r"/>{hours.map(x=><td key={x.index} className={hourClass(x)}/>)}</tr>;}
+function BlankRow({hours,label}:{hours:NurseHour[];label?:string}){return <tr className="blank"><td className="d"/><td className="n">{label}</td><td className="v"/><td className="r"/>{hours.map(x=><td key={x.index} className={hourClass(x)}/>)}</tr>;}
 
 export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}){
  const ready=r.valid&&header.valid;const hours=buildNurseHours(p.start);const w=buildWorkingRows(p,r);
@@ -102,9 +102,9 @@ export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}
    <Header p={p} header={header} r={r} title="Лист интенсивной терапии" sub={'парентеральное питание · назначения · отметки выполнения'+(fronts.length>1?' · часть '+(index+1)+' из '+fronts.length:'')+(ready?'':' · ЧЕРНОВИК, расчёт не завершён')}/>
    {index===0&&<dl className="sum">{summary.map(([k,v])=><div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
    {page.infusion.length>0&&<><h2>Инфузии и питание<small>⁺¹ — {nextDate(p.sheetDate)} · клетки часов для отметки выполнения · «мл сутки» — объём в балансе</small></h2>
-    <table><Cols hours={hours} name="78mm"/><thead><tr><th className="n">Назначение · состав · режим</th><th>мл<br/>сутки</th><th>мл/ч</th><HourHead hours={hours}/></tr></thead><tbody>{page.infusion.map(row=><OrderRow key={row.id} row={row} hours={hours} continuous={continuous(row)}/>)}<BlankRow hours={hours} label="Дополнительный раствор"/></tbody></table></>}
-   <h2>Лекарственные назначения<small>↓ — время введения по плану, исполнение отмечается в клетке; доза и разведение проверены врачом</small></h2>
-   <table><Cols hours={hours} name="78mm"/><thead><tr><th className="n">Препарат · доза · разведение · время</th><th>мл<br/>сутки</th><th>мл/ч</th><HourHead hours={hours}/></tr></thead><tbody>{page.medication.map(row=><OrderRow key={row.id} row={row} hours={hours} compact continuous={continuous(row)}/>)}{Array.from({length:page.blanks},(_,i)=><BlankRow key={i} hours={hours} label={i===0?'Дополнительно в течение суток':undefined}/>)}</tbody></table>
+    <table><Cols hours={hours} name="71mm"/><thead><tr><th>сут.</th><th className="n">Назначение · состав · режим</th><th>мл<br/>сутки</th><th>мл/ч</th><HourHead hours={hours}/></tr></thead><tbody>{page.infusion.map(row=><OrderRow key={row.id} row={row} hours={hours} continuous={continuous(row)}/>)}<BlankRow hours={hours} label="Дополнительный раствор"/></tbody></table></>}
+   <h2>Лекарственные назначения<small>сут. — сутки курса препарата · ↓ — время введения по плану, исполнение отмечается в клетке</small></h2>
+   <table><Cols hours={hours} name="71mm"/><thead><tr><th>сут.</th><th className="n">Препарат · доза · разведение</th><th>мл<br/>сутки</th><th>мл/ч</th><HourHead hours={hours}/></tr></thead><tbody>{page.medication.map(row=><OrderRow key={row.id} row={row} hours={hours} compact continuous={continuous(row)}/>)}{Array.from({length:page.blanks},(_,i)=><BlankRow key={i} hours={hours} label={i===0?'Дополнительно в течение суток':undefined}/>)}</tbody></table>
    <Foot p={p} page={index+1} pages={total} slim/>
   </section>)}
   <section className="nurse-page back" aria-label="Оборот">

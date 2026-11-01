@@ -528,6 +528,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offse
 .nurse-page thead th.n{text-align:left;padding-left:1.4mm}
 .nurse-page thead th sup{font-size:.7em;vertical-align:top;line-height:0}
 .nurse-page thead th.d1{background:#dedede}
+.nurse-page col.d{width:7mm}
+.nurse-page td.d{text-align:center;vertical-align:middle;font-weight:800;font-size:9.6pt;padding:.4mm;font-variant-numeric:tabular-nums}
 .nurse-page col.v{width:11.5mm}.nurse-page col.r{width:11mm}.nurse-page col.k{width:10mm}
 .nurse-page td.v,.nurse-page td.r,.nurse-page td.k{text-align:center;vertical-align:middle;font-weight:800;font-size:9.6pt;padding:.4mm}
 .nurse-page td.r{background:var(--shade2)}

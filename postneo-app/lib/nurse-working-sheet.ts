@@ -16,6 +16,8 @@ export type WorkingRow={
  /** Препараты на печати в одну строку: доза справа от названия и строка «что набрать · путь · кратность». Время — стрелками в клетках часов. */
  dose?:string;
  brief?:string;
+ /** Сутки курса препарата: отдельная клетка слева от названия. */
+ courseDay?:number|null;
  /** Volume entering the balance of these calculation days, not the prepared dose or syringe. */
  volume:string;
  rate:string;
@@ -117,11 +119,10 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
   const mix=oral?`без разведения${med&&!med.intravenous?', вне баланса':''}`:m.stock.trim()?`${medShow(med?.stockMl,2)} мл + ${diluent} до ${entered(m.volume)} мл`:`${diluent} до ${entered(m.volume)} мл`;
   const dose=blood?undefined:periodic?`${medShow(med?.doseAmount)} ${med?.doseLabel||'мг'}`:`${medShow(med?.amountMg,2)} мг/сут`;
   const ruDay=(iso:string)=>iso.slice(8,10)+'.'+iso.slice(5,7);
-  const courseNote=med?.courseDay?`сутки ${med.courseDay}`:'';
   const skipNote=med?.skipToday&&med.nextDoseDate?`сегодня пропуск · следующее введение ${ruDay(med.nextDoseDate)}`:med?.nextDoseDate?`следующее ${ruDay(med.nextDoseDate)}`:'';
-  const brief=blood?undefined:periodic?[[courseNote,skipNote,`${mix} · ${routeLabel(m.route)}${over} · каждые ${entered(m.interval)} ч`].filter(Boolean).join(' · '),...(warning?[warning]:[])].join('\n')
-   :[courseNote,`${mix} · ${formatConcentration(med?.concentration)} · ${routeLabel(m.route)} ${medShow(med?.rate,1)} мл/ч · шприц на ${medShow(med?.syringeHours,1)} ч`].filter(Boolean).join(' · ');
-  const built=make(row,instruction,{timing,partial,warning,preparedVolume:entered(m.volume),...(recipe?{recipe,detail,dose,brief}:{})});
+  const brief=blood?undefined:periodic?[[skipNote,`${mix} · ${routeLabel(m.route)}${over} · каждые ${entered(m.interval)} ч`].filter(Boolean).join(' · '),...(warning?[warning]:[])].join('\n')
+   :`${mix} · ${formatConcentration(med?.concentration)} · ${routeLabel(m.route)} ${medShow(med?.rate,1)} мл/ч · шприц на ${medShow(med?.syringeHours,1)} ч`;
+  const built=make(row,instruction,{timing,partial,warning,preparedVolume:entered(m.volume),courseDay:ready?med?.courseDay??null:null,...(recipe?{recipe,detail,dose,brief}:{})});
   // Кардиотоники и другие постоянные инфузии — в таблицу инфузий, рядом с основной линией.
   if(!periodic&&!blood)infusion.push(built);else medication.push(built);
   if(m.loading){
@@ -136,7 +137,7 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
    ].join('\n'),{timing:loadTiming,partial:loadPartial,warning:loadWarning,preparedVolume:entered(m.loadingVolume),
     preparation:m.stock.trim()?`Исходный препарат ${entered(m.stock)} мг/мл.`:undefined,
     recipe:[['Нагрузочная доза',`${medShow(med?.loadingMg,2)} мг`],...(oral?[]:[[diluent,`до ${entered(m.loadingVolume)} мл`] as [string,string]])],
-    dose:`${medShow(med?.loadingMg,2)} мг`,
+    dose:`${medShow(med?.loadingMg,2)} мг`,courseDay:ready?med?.courseDay??null:null,
     brief:[`${oral?'без разведения':`${diluent} до ${entered(m.loadingVolume)} мл`} · ${routeLabel(m.route)}${loadMinutes?` за ${hoursLabel(loadMinutes)}`:''} · однократно`,...(loadWarning?[loadWarning]:[])].join('\n'),
     detail:[`${routeLabel(m.route)}${loadMinutes?` за ${hoursLabel(loadMinutes)}`:''} · ${loadTiming.length?loadTiming.join(', '):'время —'}`,...(oral?['Без разведения']:[]),...(loadWarning?[loadWarning]:[])].join('\n')}));
   }
