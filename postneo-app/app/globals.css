@@ -547,6 +547,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offse
 .nurse-page td.n.c p{font-size:7.6pt;line-height:1.24}
 .nurse-page td.n.c p.prep{font-size:7pt}
 /* Что набрать: название слева, объём крупно справа, по строке на компонент */
+.nurse-page td.n b.one{display:flex;justify-content:space-between;align-items:baseline;gap:2mm}
+.nurse-page td.n b.one span:last-child{font-size:9.2pt;white-space:nowrap;font-variant-numeric:tabular-nums}
 .nurse-page .rx{display:grid;gap:0;margin:0 0 .6mm;padding:0}
 .nurse-page .rx>div{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:2mm;padding:.1mm 0;border-bottom:.15mm dotted var(--thin);min-width:0}
 .nurse-page .rx>div:last-child{border-bottom:0}

@@ -68,9 +68,10 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
    ...electrolyteRecipe,...(r.carrierMl?[[`Проводник${r.carrierName?` ${r.carrierName}`:''}`,`${ml(r.carrierMl)} мл`] as [string,string]]:[]),
    ['Гепарин',`${r.valid&&r.heparinUnits!==null?r.heparinUnits:'—'} Ед`],
   ],detail:`За ${entered(p.baseHours)} ч · ${show(r.glucosePercent,2)}% в р-ре глюкозы, ${show(r.mainLinePercent,2)}% в линии · GIR ${show(r.actualGir,1)}`}),
-  ...(!r.valid||r.aaMl!==0?[make(full('amino'),`${show(r.proteinPlan.requiredIvPerKg)} г/кг/сут → ${show(r.aaGrams)} г · за ${r.aaPauses?`${show(r.aaInfusionHours,1)} ч (паузы на антибиотики ${show(r.aaPauses,1)} ч)`:`${entered(p.aaHours)} ч`}`)]:[]),
+  ...(!r.valid||r.aaMl!==0?[(()=>{const aaText=`${show(r.proteinPlan.requiredIvPerKg)} г/кг/сут → ${show(r.aaGrams)} г · за ${r.aaPauses?`${show(r.aaInfusionHours,1)} ч (паузы на антибиотики ${show(r.aaPauses,1)} ч)`:`${entered(p.aaHours)} ч`}`;
+   return make(full('amino'),aaText,{recipe:[[`Аминокислоты ${entered(p.aaPercent)}%`,`${ml(r.aaMl)} мл`]],detail:aaText});})()]:[]),
   ...(r.valid&&r.fatLineMl===0?[]:[make(full('fat'),`${entered(p.fat)} г/кг/сут → ${show(r.fatGrams)} г${r.enteralSubtracted.fatG?' в/в после смеси':''} · эмульсия ${ml(r.fatMl)} мл${r.vitalipidMl?` + Виталипид ${ml(r.vitalipidMl)} мл`:''} · за ${entered(p.fatHours)} ч`,
-   r.vitalipidMl?{recipe:[['Эмульсия',`${ml(r.fatMl)} мл`],['Виталипид',`${ml(r.vitalipidMl)} мл`]],detail:`${entered(p.fat)} г/кг/сут → ${show(r.fatGrams)} г · за ${entered(p.fatHours)} ч`}:{})]),
+   {recipe:[[`Жировая эмульсия ${entered(p.fatPercent)}%`,`${ml(r.fatMl)} мл`],...(r.vitalipidMl?[['Виталипид',`${ml(r.vitalipidMl)} мл`] as [string,string]]:[])],detail:`${entered(p.fat)} г/кг/сут → ${show(r.fatGrams)} г${r.enteralSubtracted.fatG?' в/в после смеси':''} · за ${entered(p.fatHours)} ч`})]),
   ...(r.valid&&r.insulinMl?[make(full('insulin'),`${entered(p.insulin)} Ед/кг/ч → ${show(r.insulinUnits)} Ед/сут в 12 мл воды для инъекций · 0,5 мл/ч`)]:[]),
  ];
  const medication:WorkingRow[]=[];
