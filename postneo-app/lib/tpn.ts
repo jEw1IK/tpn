@@ -7,6 +7,8 @@ export type Medicine = {
  infusionHours:string; loadingHours:string;
  hours:string; pump:string; amount:string; stock:string; method:'rate'|'amount';
  loading:boolean; loadingDose:string; loadingVolume:string; loadingFirst:string; loadingMinutes:string; loadingSource:string;
+ /** Дата начала курса (ISO). Пусто — курс начат в дату листа. По ней считаются сутки курса и дни пропуска при интервале больше суток. */
+ startDate?:string;
 };
 /** Additional enteral mixture: eight feedings at three-hour intervals, as on the mytpn sheet. */
 export type EnteralRow={id:string;formulaId:string;feeds:string[];route:string};
@@ -36,7 +38,7 @@ export function newMedicine(drug:string,id:string):Medicine {
  const continuous=d.kind==='continuous';
  const stock=d.percent!==undefined?String(d.percent*10):d.stock!==undefined?String(d.stock):'';
  return {id,drug,group:d.group,mode:continuous?'continuous':'intermittent',dose:'',unit:d.unit,
- interval:d.kind==='blood'?'24':'',first:'00:00',minutes:'',infusionHours:'',loadingHours:'',volume:continuous?'12':'',diluent:d.diluent??'NaCl 0,9%',route:d.route??'в/в',hours:'24',pump:continuous?'0.5':'',amount:'',stock,method:'rate',
+ interval:d.kind==='blood'?'24':'',first:'00:00',minutes:'',infusionHours:'',loadingHours:'',volume:continuous?'12':'',diluent:d.diluent??'NaCl 0,9%',route:d.route??'в/в',hours:'24',pump:continuous?'0.5':'',amount:'',stock,method:'rate',startDate:'',
  loading:false,loadingDose:'',loadingVolume:'',loadingFirst:'00:00',loadingMinutes:'',loadingSource:''};
 }
 export const emptyFeeds=()=>Array<string>(8).fill('');
@@ -283,14 +285,32 @@ export function scheduleDay(offset:number,start:string):number|null {
 export function firstOffset(first:string,start:string):number|null {
  const begin=time(start),at=time(first);return begin===null||at===null?null:(at-begin+1440)%1440;
 }
-export type MedResult={id:string;name:string;group:Group;kind:DrugKind;valid:boolean;errors:string[];issues:Issue[];volume:number|null;fluidVolume:number|null;intravenous:boolean;rate:number|null;doseMg:number|null;doseAmount:number|null;doseLabel:string;amountMg:number|null;stockMl:number|null;solventMl:number|null;concentration:number|null;times:number[];loadingMg:number|null;loadingDeliveredMg:number|null;loadingVolume:number|null;loadingDeliveredVolume:number|null;loadingRate:number|null;minutes:number|null;duration:number|null;unit:string;syringeHours:number|null;syringeCount:number|null};
+export type MedResult={id:string;name:string;group:Group;kind:DrugKind;valid:boolean;errors:string[];issues:Issue[];volume:number|null;fluidVolume:number|null;intravenous:boolean;rate:number|null;doseMg:number|null;doseAmount:number|null;doseLabel:string;amountMg:number|null;stockMl:number|null;solventMl:number|null;concentration:number|null;times:number[];loadingMg:number|null;loadingDeliveredMg:number|null;loadingVolume:number|null;loadingDeliveredVolume:number|null;loadingRate:number|null;minutes:number|null;duration:number|null;unit:string;syringeHours:number|null;syringeCount:number|null;
+ /** Сутки курса от даты начала (1 в день начала); null, если даты листа нет. */
+ courseDay:number|null;
+ /** Интервал больше суток и сегодня не день введения: объёмы за сутки равны нулю. */
+ skipToday:boolean;
+ /** Ближайший день введения после сегодняшнего при интервале больше суток. */
+ nextDoseDate:string|null};
+const isoDay=(v:string)=>{const t=/^\d{4}-\d{2}-\d{2}$/.test(v)?Date.parse(v+'T00:00:00Z'):NaN;return Number.isFinite(t)?Math.round(t/864e5):null;};
+const isoShift=(date:string,days:number)=>new Date((isoDay(date)!+days)*864e5).toISOString().slice(0,10);
+/** Сутки курса и день введения: при интервале 48, 72 ч… вводят в день начала и далее через k дней. */
+export function courseStatus(startDate:string|undefined,sheetDate:string,intervalHours:number|null):{courseDay:number|null;skipToday:boolean;nextDoseDate:string|null}{
+ const sheet=isoDay(sheetDate);if(sheet===null)return {courseDay:null,skipToday:false,nextDoseDate:null};
+ const start=isoDay((startDate??'').trim())??sheet;const index=sheet-start;
+ if(index<0)return {courseDay:null,skipToday:false,nextDoseDate:null};
+ const k=intervalHours!==null&&intervalHours>24&&intervalHours%24===0?intervalHours/24:1;
+ const skipToday=k>1&&index%k!==0;
+ const nextIndex=k>1?(skipToday?Math.ceil(index/k)*k:index+k):null;
+ return {courseDay:index+1,skipToday,nextDoseDate:nextIndex===null?null:isoShift(sheetDate,nextIndex-index)};
+}
 /** Accept arithmetic roundoff only at the scale of the two compared volumes. */
 function exceedsVolume(source:number,final:number):boolean {
  return !Number.isFinite(source)||source-final>Number.EPSILON*16*Math.max(Math.abs(source),Math.abs(final));
 }
 const massUnits:Record<string,number>={'мг':1,'мкг':0.001,'гр':1000};
 /** Doses use the weight given as `kg`: in calculate() that is the weight today, as on the mytpn sheet. */
-export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
+export function calculateMedicine(m:Medicine,kg:number,start:string,sheetDate=''):MedResult {
  const d=drugs.find(x=>x.id===m.drug);const name=d?.name??m.drug;const kind:DrugKind=d?.kind??(m.mode==='continuous'?'continuous':'intermittent');const errors:string[]=[];
  const issues:Issue[]=[];
  const error=(field:string,message:string)=>{errors.push(message);issues.push({field,message,medicineId:m.id});};
@@ -316,6 +336,7 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
   return null;
  };
  let volume:number|null=null,fluidVolume:number|null=null,rate:number|null=null,doseMg:number|null=null,doseAmount:number|null=null,doseLabel='',amountMg:number|null=null,stockMl:number|null=null,solventMl:number|null=null,concentration:number|null=null,minutes:number|null=null,hoursSpan:number|null=null;
+ let course={courseDay:null as number|null,skipToday:false,nextDoseDate:null as string|null};
  let times:number[]=[];let loadingMg:number|null=null,loadingDeliveredMg:number|null=null,loadingVolume:number|null=null,loadingDeliveredVolume:number|null=null,loadingRate:number|null=null,syringeHours:number|null=null,syringeCount:number|null=null;
  const dose=read('dose','Укажите дозу',true);
  if(kind==='blood'){
@@ -341,6 +362,8 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
   if(minutes!==null&&interval!==null&&minutes>interval*60)error(routeTime!==null?'route':durationField('infusionHours','minutes'),'Время введения больше интервала');
   if(time(m.first)===null)error('first','Укажите время первого введения');
   if(interval!==null&&interval>=1&&time(m.first)!==null&&time(start)!==null){times=schedule(m.first,interval,start);if(times.length===0)error('first','Не задано расписание');}
+  course=courseStatus(m.startDate,sheetDate,interval);
+  if(course.skipToday)times=[];
   if(dose!==null&&(mass!==null||!perKg)){
    doseAmount=positiveResult('dose',dose*(perKg?mass!:1));
    const factor=massUnits[baseUnit];
@@ -354,6 +377,7 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
    if(minutes!==null&&minutes>0)rate=positiveResult('minutes',final*60/minutes);
    if(doseMg!==null)concentration=positiveResult('dose',doseMg/final);
   }
+  if(course.skipToday){volume=0;amountMg=0;}
   fluidVolume=intravenous?volume:0;
   if(m.stock.trim()!==''&&takesDilution(m.route)){const stock=read('stock','Проверьте исходную концентрацию',true);if(stock!==null&&doseMg!==null&&final!==null){stockMl=positiveResult('stock',doseMg/stock);if(stockMl!==null){solventMl=final-stockMl;if(exceedsVolume(stockMl,final))error('volume','Объём препарата больше конечного объёма');else solventMl=Math.max(0,solventMl);}}}
  }else{
@@ -392,7 +416,7 @@ export function calculateMedicine(m:Medicine,kg:number,start:string):MedResult {
   if(loadingVolume!==null&&lm!==null&&loadOffset!==null){const fraction=lm>0?Math.min(1,(1440-loadOffset)/lm):1;loadingDeliveredVolume=loadingVolume===0?0:positiveResult(durationField('loadingHours','loadingMinutes'),loadingVolume*fraction);if(volume!==null&&loadingDeliveredVolume!==null){volume+=loadingDeliveredVolume;if(intravenous&&fluidVolume!==null)fluidVolume+=loadingDeliveredVolume;}loadingDeliveredMg=loadingMg!==null?positiveResult('loadingDose',loadingMg*fraction):null;}
  }
  if([volume,fluidVolume,rate,doseMg,doseAmount,amountMg,stockMl,solventMl,concentration,loadingMg,loadingDeliveredMg,loadingVolume,loadingDeliveredVolume,loadingRate,syringeHours,syringeCount].some(v=>v!==null&&!Number.isFinite(v)))error('dose','Расчёт превышает числовой диапазон');
- return {id:m.id,name,group:d?.group??m.group,kind,valid:errors.length===0,errors,issues,volume,fluidVolume,intravenous,rate,doseMg,doseAmount,doseLabel,amountMg,stockMl,solventMl,concentration,times,loadingMg,loadingDeliveredMg,loadingVolume,loadingDeliveredVolume,loadingRate,minutes,duration:hoursSpan,unit:m.unit,syringeHours,syringeCount};
+ return {...course,id:m.id,name,group:d?.group??m.group,kind,valid:errors.length===0,errors,issues,volume,fluidVolume,intravenous,rate,doseMg,doseAmount,doseLabel,amountMg,stockMl,solventMl,concentration,times,loadingMg,loadingDeliveredMg,loadingVolume,loadingDeliveredVolume,loadingRate,minutes,duration:hoursSpan,unit:m.unit,syringeHours,syringeCount};
 }
 
 /** Changing the calculation direction keeps the current prepared solution unchanged. */
@@ -477,7 +501,7 @@ export function calculate(p:Inputs){
  const electrolyteParts=[electrolytes.caMl,electrolytes.kclMl,electrolytes.nacl10Ml,electrolytes.nacl09Ml,electrolytes.mgMl,electrolytes.soluvitMl,electrolytes.dipeptivenMl,electrolytes.addamelMl];
  electrolytes.sumMl=electrolyteParts.every(v=>v!==null)?electrolyteParts.reduce<number>((sum,v)=>sum+v!,0):null;
  const vitalipidMl=perKgMl(vitalipid);
- const medicines=p.medicines.map(m=>calculateMedicine(m,kgToday??NaN,p.start));
+ const medicines=p.medicines.map(m=>calculateMedicine(m,kgToday??NaN,p.start,p.sheetDate));
  for(const m of medicines)for(const issue of m.issues){if(['weight','start'].includes(issue.field)&&issues.some(existing=>!existing.medicineId&&existing.field===issue.field))continue;errors.push(m.name+': '+issue.message);issues.push(issue);}
  // Insulin (mytpn): units per day from Ед/кг/час by the weight today; a 12 ml syringe at 0.5 ml/h enters the fluid balance.
  const insulinUnits=insulin!==null&&kgToday!==null?insulin*kgToday*24:null;

@@ -130,7 +130,7 @@ export function buildNurseRows(p:Inputs,r:Result):NurseRow[]{
   const med=r.medicines.find(result=>result.id===m.id);
   const medicationReady=ready&&med?.valid===true;
   // Read maintenance directly: subtracting a large load from the rounded total can erase a small positive volume.
-  const maintenance=medicationReady?calculateMedicine({...m,loading:false},r.kg??NaN,p.start):undefined;
+  const maintenance=medicationReady?calculateMedicine({...m,loading:false},r.kg??NaN,p.start,p.sheetDate):undefined;
   const maintenanceVolume=maintenance?.valid?maintenance.volume:null;
   rows.push(make({id:m.id,kind:'medicine',label:med?.name||m.drug,medicineId:m.id,group:m.group,
    details:medicineDetails(m,med,medicationReady,p.start,p.sheetDate),volume:formatNumber(medicationReady?(med?.kind==='blood'?med.volume:maintenance?.valid?maintenance.fluidVolume:null):null,2),rate:formatNumber(medicationReady?med?.rate:null,1)}));

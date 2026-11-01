@@ -31,7 +31,8 @@ export function weightOn(weights:readonly WeightPoint[],date:string,exact=false)
 
 /** Лист на дату: всё переносится с предыдущего листа, шапка и веса берутся из карточки, сутки и ПКВ считаются от даты рождения. */
 export function nextSheetInputs({patient,date,previous,weights}:{patient:PatientCore;date:string;previous:Inputs|null;weights:readonly WeightPoint[]}):Inputs{
- const base:Inputs=previous?{...previous,medicines:previous.medicines.map(m=>({...m}))}:freshSheet();
+ // Препараты переходят с датой начала курса: если её ещё нет, курс считается начатым в день предыдущего листа.
+ const base:Inputs=previous?{...previous,medicines:previous.medicines.map(m=>({...m,startDate:m.startDate||previous.sheetDate||''}))}:freshSheet();
  const life=daysBetween(patient.birthDate,date);const hospital=daysBetween(patient.admittedOn,date);
  const today=weightOn(weights,date,true);const yesterday=weightOn(weights,shiftDate(date,-1));
  const toStr=(n:number|null)=>n===null?'':String(n);

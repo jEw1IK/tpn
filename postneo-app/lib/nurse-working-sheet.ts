@@ -114,10 +114,13 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
    ['В шприце',`${entered(m.volume)} мл · ${formatConcentration(med?.concentration)}`],
   ];
   const detail=recipe?[...(oral&&periodic?[`Без разведения${med&&!med.intravenous?', вне баланса жидкости':''}`]:[]),routeLine!,...(warning?[warning]:[])].join('\n'):undefined;
-  const mix=oral?`без разведения${med&&!med.intravenous?', вне баланса':''}`:m.stock.trim()?`${medShow(med?.stockMl,2)} мл + ${diluent} ${medShow(med?.solventMl,2)} мл = ${entered(m.volume)} мл`:`${diluent} до ${entered(m.volume)} мл`;
+  const mix=oral?`без разведения${med&&!med.intravenous?', вне баланса':''}`:m.stock.trim()?`${medShow(med?.stockMl,2)} мл + ${diluent} ${medShow(med?.solventMl,2)} мл${periodic?'':` = ${entered(m.volume)} мл`}`:`${diluent} до ${entered(m.volume)} мл`;
   const dose=blood?undefined:periodic?`${medShow(med?.doseAmount)} ${med?.doseLabel||'мг'}`:`${medShow(med?.amountMg,2)} мг/сут`;
-  const brief=blood?undefined:periodic?[`${mix} · ${routeLabel(m.route)}${over} · каждые ${entered(m.interval)} ч`,...(warning?[warning]:[])].join('\n')
-   :`${mix} · ${formatConcentration(med?.concentration)} · ${routeLabel(m.route)} ${medShow(med?.rate,1)} мл/ч · шприц на ${medShow(med?.syringeHours,1)} ч`;
+  const ruDay=(iso:string)=>iso.slice(8,10)+'.'+iso.slice(5,7);
+  const courseNote=med?.courseDay?`сутки ${med.courseDay}`:'';
+  const skipNote=med?.skipToday&&med.nextDoseDate?`сегодня пропуск · следующее введение ${ruDay(med.nextDoseDate)}`:med?.nextDoseDate?`следующее ${ruDay(med.nextDoseDate)}`:'';
+  const brief=blood?undefined:periodic?[[courseNote,skipNote,`${mix} · ${routeLabel(m.route)}${over} · каждые ${entered(m.interval)} ч`].filter(Boolean).join(' · '),...(warning?[warning]:[])].join('\n')
+   :[courseNote,`${mix} · ${formatConcentration(med?.concentration)} · ${routeLabel(m.route)} ${medShow(med?.rate,1)} мл/ч · шприц на ${medShow(med?.syringeHours,1)} ч`].filter(Boolean).join(' · ');
   const built=make(row,instruction,{timing,partial,warning,preparedVolume:entered(m.volume),...(recipe?{recipe,detail,dose,brief}:{})});
   // Кардиотоники и другие постоянные инфузии — в таблицу инфузий, рядом с основной линией.
   if(!periodic&&!blood)infusion.push(built);else medication.push(built);

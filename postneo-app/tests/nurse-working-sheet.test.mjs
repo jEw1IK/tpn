@@ -133,7 +133,7 @@ test('Печать: рецепт основной линии, доза и стр
  assert.equal(base.recipe[0][1],'47,8 мл');assert.equal(base.recipe[3][1],'69 Ед');assert.ok(!base.detail.includes('гепарин'));
  assert.deepEqual(sheet.infusion[1].recipe,[['Аминокислоты 10%','46 мл']]);assert.deepEqual(sheet.infusion[2].recipe,[['Жировая эмульсия 20%','10 мл']]);
  const amp=sheet.medication[0];
- assert.equal(amp.dose,'48,75 мг');assert.equal(amp.brief,'0,49 мл + NaCl 0,9% 1,51 мл = 2 мл · в/в (за 30 мин) · каждые 12 ч');
+ assert.equal(amp.dose,'48,75 мг');assert.equal(amp.brief,'сутки 1 · 0,49 мл + NaCl 0,9% 1,51 мл · в/в (за 30 мин) · каждые 12 ч');
  assert.ok(!amp.brief.includes('08:00'));// время введения показывают стрелки в клетках часов
  const net=sheet.medication[1];assert.deepEqual(net.recipe,[['Доза','3,9 мг'],['Препарат 25 мг/мл','0,16 мл'],['NaCl 0,9%','1,84 мл'],['В шприце','2 мл']]);
  // раствор 10 % отсутствует: нулевой компонент в рецепт не попадает
@@ -144,4 +144,21 @@ test('Печать: непрерывная инфузия и нагрузка в
  const p=example();p.medicines.push({...newMedicine('dopamine','dopamine'),dose:'5',pump:'0.5',volume:'24',stock:'40'});
  const r=calculate(p);assert.equal(r.valid,true);const row=buildWorkingRows(p,r).infusion.find(x=>x.medicineId==='dopamine');
  assert.ok(/ мг\/сут$/.test(row.dose),row.dose);assert.ok(row.brief.includes('= 24 мл'));assert.ok(row.brief.includes('шприц на'));
+});
+
+test('Курс: сутки от даты начала, при интервале 48 ч день пропуска без объёма и с датой следующего введения',()=>{
+ const p=example();p.medicines[0].startDate='2026-10-05';// лист 06.10: вторые сутки
+ const flu={...newMedicine('antifungal-flukonazol','flu'),dose:'6',interval:'48',first:'12:00',volume:'4',infusionHours:'1',route:'в/в (за 1 час)',startDate:'2026-10-05'};
+ const gen={...newMedicine('antibiotic-gentamicin','gen'),dose:'4',interval:'48',first:'10:00',volume:'2',infusionHours:'0.5',route:'в/в (за 30 мин)',startDate:'2026-10-06'};
+ p.medicines.push(flu,gen);
+ const r=calculate(p);assert.equal(r.valid,true,r.errors.join('; '));
+ const rows=buildWorkingRows(p,r).medication;
+ assert.ok(rows[0].brief.startsWith('сутки 2 · '));
+ const f=rows.find(x=>x.medicineId==='flu'),g=rows.find(x=>x.medicineId==='gen');
+ assert.ok(f.brief.startsWith('сутки 2 · сегодня пропуск · следующее введение 07.10 · '),f.brief);
+ assert.equal(f.volume,'0');assert.deepEqual(f.timing,[]);
+ assert.ok(g.brief.startsWith('сутки 1 · следующее 08.10 · '),g.brief);assert.deepEqual(g.timing,['10:00']);
+ const fm=r.medicines.find(x=>x.id==='flu');assert.equal(fm.skipToday,true);assert.equal(fm.fluidVolume,0);assert.equal(fm.courseDay,2);
+ // жидкость пропущенного препарата не входит в баланс
+ const without=calculate({...p,medicines:p.medicines.filter(x=>x.id!=='flu')});assert.equal(r.drugMl,without.drugMl);
 });

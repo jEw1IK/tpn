@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {calculate,calculateMedicine,changeMedicineMethod,decimalInput,example,blank,newMedicine,numeric,schedule,clock,scheduleDay,firstOffset,hoursLabel,pumpRate} from '../lib/tpn.ts';
+import {calculate,calculateMedicine,changeMedicineMethod,courseStatus,decimalInput,example,blank,newMedicine,numeric,schedule,clock,scheduleDay,firstOffset,hoursLabel,pumpRate} from '../lib/tpn.ts';
 import {formatNumber} from '../lib/format.ts';
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} != ${b}`);
 test('Согласованный пример: точные количества и единый баланс',()=>{const r=calculate(example());assert.equal(r.valid,true);near(r.total,156);near(r.aaGrams,4.6);near(r.aaMl,46);near(r.fatGrams,2);near(r.fatMl,10);near(r.drugMl,8);near(r.base,92);near(r.glucoseGrams,13.1);near(r.caMl,2.6);near(r.calciumMmol,0.585);near(r.calciumMmolPerKg,0.45);near(r.base+r.aaMl+r.fatMl+r.drugMl,156);near(r.fatRate,10/24);near(r.glucosePercent,13.1*100/(92-2.6));near(r.mainLinePercent,13.1*100/92)});
@@ -294,4 +294,12 @@ test('Углеводная нагрузка: общая задана врачо�
  const more=calculate({...p,feeds:Array(8).fill('20')});assert.ok(more.girIv<r.girIv);near(more.girTotal,7);
  const trophic=calculate({...p,feeds:Array(8).fill('5')});assert.equal(trophic.girEnteral,0);near(trophic.girIv,7);// до 25 мл/кг смесь не учитывается
  const over=calculate({...p,gir:'1',feeds:Array(8).fill('30')});assert.equal(over.girIv,0);assert.ok(over.warnings.some(w=>/больше заданной общей нагрузки/.test(w)));
+});
+
+test('courseStatus: без даты начала курс начат сегодня; 72 ч — введение через два дня',()=>{
+ assert.deepEqual(courseStatus('','2026-10-06',12),{courseDay:1,skipToday:false,nextDoseDate:null});
+ assert.deepEqual(courseStatus('2026-10-04','2026-10-06',72),{courseDay:3,skipToday:true,nextDoseDate:'2026-10-07'});
+ assert.deepEqual(courseStatus('2026-10-04','2026-10-07',72),{courseDay:4,skipToday:false,nextDoseDate:'2026-10-10'});
+ assert.deepEqual(courseStatus('2026-10-09','2026-10-06',48),{courseDay:null,skipToday:false,nextDoseDate:null});
+ assert.equal(courseStatus('2026-10-04','',48).courseDay,null);
 });
