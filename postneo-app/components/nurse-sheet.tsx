@@ -8,7 +8,7 @@ import {BrandMark} from '@/components/brand-mark';
 /* Печатный лист А4 альбомный: лицевая сторона с инфузиями и препаратами, оборот с кормлениями, КОС и диурезом.
    Размеры в миллиметрах совпадают с CSS (.nurse-page), поэтому разбиение на страницы считается заранее. */
 /* Константы сняты с реальной вёрстки: шапка с таблицей пациента 30,5 мм, сводка 8,7, заголовок раздела с шапкой таблицы 6,5, подвал 5,3. */
-const MM={content:195,header:30.5,summary:8.7,section:6.5,blank:6.4,minRow:8.6,minMed:8.6,line:3.45,rx:4.35,heading:3.7,labelChars:34,pad:2.4,charsPerLine:48,footer:5.3,maxBlank:18,minBlank:3};
+const MM={content:195,header:30.5,summary:8.7,section:6.5,blank:6.4,minRow:8.6,minMed:8.6,line:3.45,rx:4.35,heading:3.7,labelChars:34,pad:2.4,charsPerLine:48,footer:5.3,maxBlank:18};
 const lines=(text:string)=>text.split('\n').reduce((n,l)=>n+Math.max(1,Math.ceil(l.length/MM.charsPerLine)),0);
 /** Текст под рецептом: когда есть recipe, идёт detail; иначе вся инструкция (в строках препаратов — одной строкой). */
 /** Один компонент с тем же именем, что и строка: объём пишется в заголовке строки, без отдельного списка. */
@@ -37,8 +37,7 @@ function paginate(infusion:WorkingRow[],medication:WorkingRow[]){
  const fit=(room:number)=>Math.max(0,Math.min(MM.maxBlank,Math.floor((room-2)/MM.blank)));
  page.blanks=fit(capacity(pages.length===0)-used);
  pages.push(page);
- // Пустых строк для рукописных назначений должно хватать: если на последней странице их меньше minBlank, добавляем страницу продолжения.
- if(page.blanks<MM.minBlank)pages.push({infusion:[],medication:[],blanks:fit(capacity(false))});
+ // Второй лицевой лист появляется только когда препараты не помещаются на первом; ради пустых строк лист не добавляется.
  return pages;
 }
 
