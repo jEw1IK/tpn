@@ -114,7 +114,7 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
    ['В шприце',`${entered(m.volume)} мл · ${formatConcentration(med?.concentration)}`],
   ];
   const detail=recipe?[...(oral&&periodic?[`Без разведения${med&&!med.intravenous?', вне баланса жидкости':''}`]:[]),routeLine!,...(warning?[warning]:[])].join('\n'):undefined;
-  const mix=oral?`без разведения${med&&!med.intravenous?', вне баланса':''}`:m.stock.trim()?`${medShow(med?.stockMl,2)} мл + ${diluent} ${medShow(med?.solventMl,2)} мл${periodic?'':` = ${entered(m.volume)} мл`}`:`${diluent} до ${entered(m.volume)} мл`;
+  const mix=oral?`без разведения${med&&!med.intravenous?', вне баланса':''}`:m.stock.trim()?`${medShow(med?.stockMl,2)} мл + ${diluent} до ${entered(m.volume)} мл`:`${diluent} до ${entered(m.volume)} мл`;
   const dose=blood?undefined:periodic?`${medShow(med?.doseAmount)} ${med?.doseLabel||'мг'}`:`${medShow(med?.amountMg,2)} мг/сут`;
   const ruDay=(iso:string)=>iso.slice(8,10)+'.'+iso.slice(5,7);
   const courseNote=med?.courseDay?`сутки ${med.courseDay}`:'';

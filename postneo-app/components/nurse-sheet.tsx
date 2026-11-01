@@ -7,7 +7,8 @@ import {BrandMark} from '@/components/brand-mark';
 
 /* Печатный лист А4 альбомный: лицевая сторона с инфузиями и препаратами, оборот с кормлениями, КОС и диурезом.
    Размеры в миллиметрах совпадают с CSS (.nurse-page), поэтому разбиение на страницы считается заранее. */
-const MM={content:195,header:21,summary:8.6,section:11,blank:6.4,minRow:8.6,minMed:8,line:3.6,rx:4.4,heading:4.2,labelChars:34,pad:2.2,charsPerLine:56,footer:12,maxBlank:16,minBlank:3};
+/* Константы сняты с реальной вёрстки: шапка с таблицей пациента 30,5 мм, сводка 8,7, заголовок раздела с шапкой таблицы 6,5, подвал 5,3. */
+const MM={content:195,header:30.5,summary:8.7,section:6.5,blank:6.4,minRow:8.6,minMed:8.6,line:3.45,rx:4.35,heading:3.7,labelChars:34,pad:2.4,charsPerLine:48,footer:5.3,maxBlank:18,minBlank:3};
 const lines=(text:string)=>text.split('\n').reduce((n,l)=>n+Math.max(1,Math.ceil(l.length/MM.charsPerLine)),0);
 /** Текст под рецептом: когда есть recipe, идёт detail; иначе вся инструкция (в строках препаратов — одной строкой). */
 /** Один компонент с тем же именем, что и строка: объём пишется в заголовке строки, без отдельного списка. */
@@ -32,7 +33,8 @@ function paginate(infusion:WorkingRow[],medication:WorkingRow[]){
   if(used+mm>capacity(pages.length===0)&&(page.infusion.length||page.medication.length)){pages.push(page);page={infusion:[],medication:[],blanks:0};used=0;}
   page.medication.push(row);used+=mm;
  }
- const fit=(room:number)=>Math.max(0,Math.min(MM.maxBlank,Math.floor(room/MM.blank)));
+ // Запас 2 мм: реальные строки чуть выше оценки, лишняя пустая строка вытолкнула бы подвал за край листа.
+ const fit=(room:number)=>Math.max(0,Math.min(MM.maxBlank,Math.floor((room-2)/MM.blank)));
  page.blanks=fit(capacity(pages.length===0)-used);
  pages.push(page);
  // Пустых строк для рукописных назначений должно хватать: если на последней странице их меньше minBlank, добавляем страницу продолжения.
@@ -53,8 +55,11 @@ function Header({p,header,r,title,sub,compact}:{p:Inputs;header:PatientHeader;r:
    :<dl className="pat">{fields.map(([k,v,c])=><div key={k} className={c}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
  </>;
 }
-function Foot({p,page,pages,note,venous}:{p:Inputs;page:number;pages:number;note:React.ReactNode;venous?:boolean}){
- return <div className="foot"><div className="note">{note}</div><div className="pno">{p.surname.trim()||'—'} · № {p.historyNumber.trim()||'—'} · {formatDate(p.sheetDate)} · лист {page} из {pages}</div><div className="sig">{venous&&<span>Венозный доступ</span>}<span>Врач</span><span>Медицинская сестра</span></div></div>;
+function Foot({p,page,pages,note,venous,slim}:{p:Inputs;page:number;pages:number;note?:React.ReactNode;venous?:boolean;slim?:boolean}){
+ const pno=<div className="pno">{p.surname.trim()||'—'} · № {p.historyNumber.trim()||'—'} · {formatDate(p.sheetDate)} · лист {page} из {pages}</div>;
+ // Лицевая сторона: только номер листа, место внизу отдано строкам для назначений. Подписи — на обороте.
+ if(slim)return <div className="foot slim">{pno}</div>;
+ return <div className="foot"><div className="note">{note}</div>{pno}<div className="sig">{venous&&<span>Венозный доступ</span>}<span>Врач</span><span>Медицинская сестра</span></div></div>;
 }
 
 function planMarks(row:WorkingRow,hours:NurseHour[]):string[]{
@@ -101,7 +106,7 @@ export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}
     <table><Cols hours={hours} name="78mm"/><thead><tr><th className="n">Назначение · состав · режим</th><th>мл<br/>сутки</th><th>мл/ч</th><HourHead hours={hours}/></tr></thead><tbody>{page.infusion.map(row=><OrderRow key={row.id} row={row} hours={hours} continuous={continuous(row)}/>)}<BlankRow hours={hours} label="Дополнительный раствор"/></tbody></table></>}
    <h2>Лекарственные назначения<small>↓ — время введения по плану, исполнение отмечается в клетке; доза и разведение проверены врачом</small></h2>
    <table><Cols hours={hours} name="78mm"/><thead><tr><th className="n">Препарат · доза · разведение · время</th><th>мл<br/>сутки</th><th>мл/ч</th><HourHead hours={hours}/></tr></thead><tbody>{page.medication.map(row=><OrderRow key={row.id} row={row} hours={hours} compact continuous={continuous(row)}/>)}{Array.from({length:page.blanks},(_,i)=><BlankRow key={i} hours={hours} label={i===0?'Дополнительно в течение суток':undefined}/>)}</tbody></table>
-   <Foot p={p} page={index+1} pages={total} venous note={<>Расчёт POSTNEO по КР РАСПМ 2015. Объёмы в балансе округлены до 0,1 мл; полные объёмы введений указаны в назначении. Энтеральное питание и мониторинг — на обороте.</>}/>
+   <Foot p={p} page={index+1} pages={total} slim/>
   </section>)}
   <section className="nurse-page back" aria-label="Оборот">
    <Header p={p} header={header} r={r} title="Оборот листа" sub="энтеральное питание · КОС · респираторная поддержка · диурез и положение" compact/>

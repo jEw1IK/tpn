@@ -561,6 +561,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offse
 .nurse-page tr.blank td.n{font-size:7pt;color:var(--mute);vertical-align:middle}
 .nurse-page tr.cont td.h{background:repeating-linear-gradient(90deg,transparent 0 1.8mm,#cfcfcf 1.8mm 2.4mm);background-size:100% .35mm;background-repeat:no-repeat;background-position:center}
 .nurse-page .foot{margin-top:auto;display:grid;grid-template-columns:1fr auto;grid-template-areas:'note pno' 'sig sig';align-items:end;gap:1.4mm 8mm;padding-top:1.6mm;font-size:7.4pt}
+.nurse-page .foot.slim{grid-template-columns:1fr;grid-template-areas:'pno';justify-items:end;padding-top:1.2mm;gap:0}
 .nurse-page .foot .sig{grid-area:sig;display:flex;gap:10mm;justify-content:space-between}
 .nurse-page .foot .sig span{white-space:nowrap}
 .nurse-page .foot .sig span::after{content:'';display:inline-block;width:44mm;border-bottom:.25mm solid var(--ink);margin-left:2mm;vertical-align:baseline}
