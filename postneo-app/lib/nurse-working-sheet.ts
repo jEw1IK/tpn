@@ -13,6 +13,9 @@ export type WorkingRow={
  recipe?:[string,string][];
  /** Остальное из instruction, когда есть recipe: путь, время, скорость, расчётные величины. */
  detail?:string;
+ /** Препараты на печати в одну строку: доза справа от названия и строка «что набрать · путь · кратность». Время — стрелками в клетках часов. */
+ dose?:string;
+ brief?:string;
  /** Volume entering the balance of these calculation days, not the prepared dose or syringe. */
  volume:string;
  rate:string;
@@ -67,7 +70,7 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
    [lowSolutionLabel(p),`${ml(r.lowMl)} мл`],[`Глюкоза ${entered(p.highGlucose)}%`,`${ml(r.highMl)} мл`],
    ...electrolyteRecipe,...(r.carrierMl?[[`Проводник${r.carrierName?` ${r.carrierName}`:''}`,`${ml(r.carrierMl)} мл`] as [string,string]]:[]),
    ['Гепарин',`${r.valid&&r.heparinUnits!==null?r.heparinUnits:'—'} Ед`],
-  ],detail:`За ${entered(p.baseHours)} ч · ${show(r.glucosePercent,2)}% в р-ре глюкозы, ${show(r.mainLinePercent,2)}% в линии · GIR ${show(r.actualGir,1)}`}),
+  ].filter((e:[string,string])=>e[1]!=='0 мл') as [string,string][],detail:`За ${entered(p.baseHours)} ч · ${show(r.glucosePercent,2)}% в р-ре глюкозы, ${show(r.mainLinePercent,2)}% в линии · GIR ${show(r.actualGir,1)}`}),
   ...(!r.valid||r.aaMl!==0?[(()=>{const aaText=`${show(r.proteinPlan.requiredIvPerKg)} г/кг/сут → ${show(r.aaGrams)} г · за ${r.aaPauses?`${show(r.aaInfusionHours,1)} ч (паузы на антибиотики ${show(r.aaPauses,1)} ч)`:`${entered(p.aaHours)} ч`}`;
    return make(full('amino'),aaText,{recipe:[[`Аминокислоты ${entered(p.aaPercent)}%`,`${ml(r.aaMl)} мл`]],detail:aaText});})()]:[]),
   ...(r.valid&&r.fatLineMl===0?[]:[make(full('fat'),`${entered(p.fat)} г/кг/сут → ${show(r.fatGrams)} г${r.enteralSubtracted.fatG?' в/в после смеси':''} · эмульсия ${ml(r.fatMl)} мл${r.vitalipidMl?` + Виталипид ${ml(r.vitalipidMl)} мл`:''} · за ${entered(p.fatHours)} ч`,
@@ -110,7 +113,11 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
    ['В шприце',`${entered(m.volume)} мл · ${formatConcentration(med?.concentration)}`],
   ];
   const detail=recipe?[...(oral&&periodic?[`Без разведения${med&&!med.intravenous?', вне баланса жидкости':''}`]:[]),routeLine!,...(warning?[warning]:[])].join('\n'):undefined;
-  const built=make(row,instruction,{timing,partial,warning,preparedVolume:entered(m.volume),...(recipe?{recipe,detail}:{})});
+  const mix=oral?`без разведения${med&&!med.intravenous?', вне баланса':''}`:m.stock.trim()?`${medShow(med?.stockMl,2)} мл + ${diluent} ${medShow(med?.solventMl,2)} мл = ${entered(m.volume)} мл`:`${diluent} до ${entered(m.volume)} мл`;
+  const dose=blood?undefined:periodic?`${medShow(med?.doseAmount)} ${med?.doseLabel||'мг'}`:`${medShow(med?.amountMg,2)} мг/сут`;
+  const brief=blood?undefined:periodic?[`${mix} · ${routeLabel(m.route)}${over} · каждые ${entered(m.interval)} ч`,...(warning?[warning]:[])].join('\n')
+   :`${mix} · ${formatConcentration(med?.concentration)} · ${routeLabel(m.route)} ${medShow(med?.rate,1)} мл/ч · шприц на ${medShow(med?.syringeHours,1)} ч`;
+  const built=make(row,instruction,{timing,partial,warning,preparedVolume:entered(m.volume),...(recipe?{recipe,detail,dose,brief}:{})});
   // Кардиотоники и другие постоянные инфузии — в таблицу инфузий, рядом с основной линией.
   if(!periodic&&!blood)infusion.push(built);else medication.push(built);
   if(m.loading){
@@ -125,6 +132,8 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
    ].join('\n'),{timing:loadTiming,partial:loadPartial,warning:loadWarning,preparedVolume:entered(m.loadingVolume),
     preparation:m.stock.trim()?`Исходный препарат ${entered(m.stock)} мг/мл.`:undefined,
     recipe:[['Нагрузочная доза',`${medShow(med?.loadingMg,2)} мг`],...(oral?[]:[[diluent,`до ${entered(m.loadingVolume)} мл`] as [string,string]])],
+    dose:`${medShow(med?.loadingMg,2)} мг`,
+    brief:[`${oral?'без разведения':`${diluent} до ${entered(m.loadingVolume)} мл`} · ${routeLabel(m.route)}${loadMinutes?` за ${hoursLabel(loadMinutes)}`:''} · однократно`,...(loadWarning?[loadWarning]:[])].join('\n'),
     detail:[`${routeLabel(m.route)}${loadMinutes?` за ${hoursLabel(loadMinutes)}`:''} · ${loadTiming.length?loadTiming.join(', '):'время —'}`,...(oral?['Без разведения']:[]),...(loadWarning?[loadWarning]:[])].join('\n')}));
   }
  }

@@ -125,3 +125,23 @@ test('Неизвестный состав смеси скрывает остат
  assert.equal(row.volume,'—');assert.equal(row.rate,'—');assert.ok(row.instruction.startsWith('— г/кг/сут → — г'));
  assert.ok(!row.instruction.includes('4 г/кг/сут'));
 });
+
+test('Печать: рецепт основной линии, доза и строка «что набрать» у препаратов',()=>{
+ const p=example();p.medicines[0].stock='100';
+ const r=calculate(p);const sheet=buildWorkingRows(p,r);const base=sheet.infusion[0];
+ assert.deepEqual(base.recipe.map(([k])=>k),['Глюкоза 10%','Глюкоза 20%','Ca глюконат 10%','Гепарин']);
+ assert.equal(base.recipe[0][1],'47,8 мл');assert.equal(base.recipe[3][1],'69 Ед');assert.ok(!base.detail.includes('гепарин'));
+ assert.deepEqual(sheet.infusion[1].recipe,[['Аминокислоты 10%','46 мл']]);assert.deepEqual(sheet.infusion[2].recipe,[['Жировая эмульсия 20%','10 мл']]);
+ const amp=sheet.medication[0];
+ assert.equal(amp.dose,'48,75 мг');assert.equal(amp.brief,'0,49 мл + NaCl 0,9% 1,51 мл = 2 мл · в/в (за 30 мин) · каждые 12 ч');
+ assert.ok(!amp.brief.includes('08:00'));// время введения показывают стрелки в клетках часов
+ const net=sheet.medication[1];assert.deepEqual(net.recipe,[['Доза','3,9 мг'],['Препарат 25 мг/мл','0,16 мл'],['NaCl 0,9%','1,84 мл'],['В шприце','2 мл']]);
+ // раствор 10 % отсутствует: нулевой компонент в рецепт не попадает
+ const q={...example(),lowGlucose:'10',highGlucose:'20'};const rows=buildWorkingRows(q,calculate(q));
+ assert.ok(rows.infusion[0].recipe.every(([,v])=>v!=='0 мл'));
+});
+test('Печать: непрерывная инфузия и нагрузка в одну строку',()=>{
+ const p=example();p.medicines.push({...newMedicine('dopamine','dopamine'),dose:'5',pump:'0.5',volume:'24',stock:'40'});
+ const r=calculate(p);assert.equal(r.valid,true);const row=buildWorkingRows(p,r).infusion.find(x=>x.medicineId==='dopamine');
+ assert.ok(/ мг\/сут$/.test(row.dose),row.dose);assert.ok(row.brief.includes('= 24 мл'));assert.ok(row.brief.includes('шприц на'));
+});

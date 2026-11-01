@@ -532,7 +532,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offse
 .nurse-page td.v,.nurse-page td.r,.nurse-page td.k{text-align:center;vertical-align:middle;font-weight:800;font-size:9.6pt;padding:.4mm}
 .nurse-page td.r{background:var(--shade2)}
 .nurse-page td.h{padding:0;text-align:center;vertical-align:middle;font-size:8.5pt;color:#333}
-.nurse-page td.h.plan{font-size:9pt;color:#222}
+.nurse-page td.h.plan{font-size:8.5pt;color:#222;vertical-align:top;line-height:1;padding-top:.5mm}
 .nurse-page td.h.feed{font-weight:800;font-size:8.5pt}
 .nurse-page td.b1{border-left:.5mm solid var(--rule)}
 .nurse-page td.d0{border-left:.6mm solid var(--ink)}
@@ -547,6 +547,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offse
 .nurse-page td.n.c p{font-size:7.6pt;line-height:1.24}
 .nurse-page td.n.c p.prep{font-size:7pt}
 /* Что набрать: название слева, объём крупно справа, по строке на компонент */
+.nurse-page td.n p.brief{font-size:7.8pt;line-height:1.26;white-space:pre-line}
+.nurse-page td.n p.brief b{display:inline;font-size:8.8pt;font-weight:800;margin:0;white-space:nowrap}
 .nurse-page td.n b.one{display:flex;justify-content:space-between;align-items:baseline;gap:2mm}
 .nurse-page td.n b.one span:last-child{font-size:9.2pt;white-space:nowrap;font-variant-numeric:tabular-nums}
 .nurse-page .rx{display:grid;gap:0;margin:0 0 .6mm;padding:0}
