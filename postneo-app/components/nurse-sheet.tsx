@@ -80,10 +80,9 @@ function BlankRow({hours,label}:{hours:NurseHour[];label?:string}){return <tr cl
 export function NurseSheet({p,r,header}:{p:Inputs;r:Result;header:PatientHeader}){
  const ready=r.valid&&header.valid;const hours=buildNurseHours(p.start);const w=buildWorkingRows(p,r);
  const infusion=[...w.infusion,...w.support.filter(row=>row.kind!=='enteral')];
- // Пока препараты входят на первый лист, строки крупные. Если нет — плотный режим: препарат одной строкой, и второй лист только когда не помог и он.
- let dense=false;let fronts=paginate(infusion,w.medication);
- if(fronts.length>1){const packed=paginate(infusion,w.medication,true);if(packed.length<fronts.length){dense=true;fronts=packed;}}
- const total=fronts.length+1;const nameW=dense?DENSE.name:'71mm';
+ // Препараты всегда одной строкой с широкой колонкой названия: один вид листа для всех пациентов, второй лист только когда не входят и так.
+ const dense=true;const fronts=paginate(infusion,w.medication,true);
+ const total=fronts.length+1;const nameW=DENSE.name;
  const kg=r.kg;const en=r.enteralNutrition;const trophic=r.valid&&(r.enteralTrophicMl??0)>0;
  const show=(x:number|null|undefined,d=1)=>f(r.valid?x:null,d);
  const summary:[string,React.ReactNode][]=[
