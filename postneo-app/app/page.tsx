@@ -60,18 +60,17 @@ export default function HomePage(){
 
    <section className="hm-sec hm-wrap reveal" aria-labelledby="what-title">
     <div className="hm-head"><h2 id="what-title">Что внутри</h2></div>
-    <div className="cols">
-     <div><h3>{drugs.length} препаратов</h3></div>
-     <div><h3>{enteralFormulas.length} смесей и грудное молоко</h3></div>
-     <div><h3>Отделение</h3></div>
-    </div>
+    {/* крупный список: каждая строка — переход на свою страницу, при наведении загорается красным */}
+    <ul className="index">
+     <li><a href={href('/calculator')}><span>{drugs.length} препаратов</span><i aria-hidden="true">→</i></a></li>
+     <li><a href={href('/calculator')}><span>{enteralFormulas.length} смесей и грудное молоко</span><i aria-hidden="true">→</i></a></li>
+     <li><a href={examplePdf}><span>Лист назначений</span><i aria-hidden="true">→</i></a></li>
+     <li><KartLink path="/login"><span>Отделение</span><i aria-hidden="true">→</i></KartLink></li>
+    </ul>
    </section>
 
-   <section className="hm-sec hm-wrap reveal" aria-labelledby="close-title">
-    <div className="hm-close">
-     <h2 id="close-title">Пример уже внутри</h2>
-     <p className="hm-hero__act"><a className="hm-cta" href={href('/calculator')}>Открыть калькулятор<span aria-hidden="true">→</span></a></p>
-    </div>
+   <section className="hm-sec hm-wrap reveal hm-close" aria-label="Калькулятор">
+    <a className="hm-big" href={href('/calculator')}>Открыть калькулятор<span aria-hidden="true">→</span></a>
    </section>
   </main>
 

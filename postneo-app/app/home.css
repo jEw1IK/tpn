@@ -73,7 +73,7 @@ html:has(.home) body { overflow-x: clip; }
 .hm-nav__act { display: flex; align-items: center; gap: 8px 22px; }
 
 /* первый экран: предмет в центре, слова вокруг него */
-.hm-hero { min-height: calc(100dvh - 76px); display: grid; align-content: center; justify-items: center; text-align: center; padding: 24px 0 72px; position: relative; }
+.hm-hero { min-height: calc(100dvh - 76px); display: grid; align-content: center; justify-items: center; text-align: center; padding-block: 24px 72px; position: relative; }
 .hm-hero__fig { position: relative; margin: 0; width: min(54vh, 500px, 86vw); aspect-ratio: 1; }
 .hm-hero__fig img { width: 100%; height: 100%; object-fit: contain; display: block; mix-blend-mode: screen; filter: grayscale(1) contrast(1.05); }
 .hm-hero__fig::after { content: ""; position: absolute; inset: 18%; border-radius: 50%; background: radial-gradient(closest-side, var(--home-halo), transparent); z-index: -1; filter: blur(30px); }
@@ -89,14 +89,17 @@ html:has(.home) body { overflow-x: clip; }
 .hm-cta:active { transform: scale(0.97); color: var(--home-ink-2); }
 /* ссылки на другие страницы при наведении загораются красным: цвет, свечение вокруг букв, линия и стрелка тоже красные.
    Только там, где есть мышь, чтобы на телефоне после нажатия надпись не оставалась красной */
-.hm-link, .hm-cta, .hm-foot__row nav a { transition: color var(--home-mid) var(--home-ease), text-shadow var(--home-mid) var(--home-ease), border-color var(--home-mid) var(--home-ease), transform var(--home-fast) var(--home-ease); }
+.hm-link, .hm-cta, .hm-foot__row nav a, .index a, .hm-big { transition: color var(--home-mid) var(--home-ease), text-shadow var(--home-mid) var(--home-ease), border-color var(--home-mid) var(--home-ease), transform var(--home-fast) var(--home-ease); }
 .hm-cta::after { transition: transform var(--home-mid) var(--home-ease), opacity var(--home-mid) var(--home-ease), background-color var(--home-mid) var(--home-ease), box-shadow var(--home-mid) var(--home-ease); }
 @media (hover: hover) {
  .home .hm-link:hover, .home .hm-cta:hover, .home .hm-foot__row nav a:hover { color: var(--home-red); text-shadow: 0 0 14px var(--home-red-glow), 0 0 2px var(--home-red-glow); border-bottom-color: transparent; }
  .home .hm-cta:hover::after { background: var(--home-red); box-shadow: 0 0 10px var(--home-red-glow); }
+ .home .index a:hover, .home .hm-big:hover { color: var(--home-red); text-shadow: 0 0 22px var(--home-red-glow), 0 0 2px var(--home-red-glow); }
+ .home .index a:hover i { color: var(--home-red); transform: translateX(10px); }
+ .home .hm-big:hover span { transform: translateX(12px); }
 }
-.home .hm-link:focus-visible, .home .hm-cta:focus-visible, .home .hm-foot__row nav a:focus-visible { color: var(--home-red); text-shadow: 0 0 14px var(--home-red-glow); }
-.home .hm-link:active, .home .hm-cta:active { color: var(--home-red); transform: scale(0.97); }
+.home .hm-link:focus-visible, .home .hm-cta:focus-visible, .home .hm-foot__row nav a:focus-visible, .home .index a:focus-visible, .home .hm-big:focus-visible { color: var(--home-red); text-shadow: 0 0 14px var(--home-red-glow); }
+.home .hm-link:active, .home .hm-cta:active, .home .index a:active, .home .hm-big:active { color: var(--home-red); transform: scale(0.97); }
 
 /* появление на открытии: только прозрачность и сдвиг */
 @keyframes hm-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
@@ -144,7 +147,7 @@ html:has(.home) body { overflow-x: clip; }
 .hm-hero__act { animation: hm-up var(--home-slow) var(--home-ease) 370ms both; }
 
 /* разделы */
-.hm-sec { padding: 96px 0 0; }
+.hm-sec { padding-top: 96px; }
 .hm-sec:last-of-type { padding-bottom: 96px; }
 .hm-head { max-width: 60ch; margin-bottom: 40px; }
 .hm-head h2 { font-size: clamp(2rem, 3.4vw, 3.4rem); }
@@ -173,15 +176,17 @@ html:has(.home) body { overflow-x: clip; }
 }
 
 /* три короткие колонки на одном стекле */
-.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 0; }
-.cols > div { padding: 18px 0 0; min-width: 0; border-top: 1px solid var(--home-line); }
-.cols h3 { font-size: clamp(1.4rem, 1.8vw, 2rem); font-weight: 200; }
-
-/* закрытие */
-.hm-close { text-align: center; padding: 48px 0 0; }
-.hm-close h2 { font-size: clamp(2rem, 3.8vw, 3.6rem); max-width: 20ch; margin-inline: auto; }
-.hm-close p { margin: 16px auto 0; max-width: 46ch; color: var(--home-ink-2); }
-.hm-close .hm-hero__act { animation: none; }
+/* «Что внутри»: крупный список-оглавление, строки во всю ширину с тонкой линией, стрелка уезжает вправо при наведении */
+.index { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--home-line); }
+.index li { border-top: 1px solid var(--home-line); }
+.index a { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 44px; padding: clamp(18px, 2.4vw, 30px) 0;
+ font-size: clamp(1.8rem, 4.6vw, 4.4rem); font-weight: 200; line-height: 1.05; letter-spacing: -0.01em; min-width: 0; overflow-wrap: break-word; }
+.index a span { min-width: 0; }
+.index a i { font-style: normal; font-size: 0.6em; color: var(--home-mute); transition: transform var(--home-mid) var(--home-ease), color var(--home-mid) var(--home-ease); }
+/* финал: одна большая надпись-ссылка */
+.hm-close { text-align: center; padding-top: clamp(96px, 12vw, 180px); padding-bottom: clamp(72px, 9vw, 140px); }
+.hm-big { display: inline-flex; align-items: center; gap: 0.35em; min-height: 44px; font-size: clamp(1.75rem, 6.4vw, 6.2rem); font-weight: 200; line-height: 1.05; letter-spacing: -0.015em; overflow-wrap: break-word; }
+.hm-big span { font-size: 0.6em; transition: transform var(--home-mid) var(--home-ease); }
 
 /* подвал */
 .hm-foot { border-top: 1px solid var(--home-line); padding: 36px 0 44px; }
@@ -196,7 +201,6 @@ html:has(.home) body { overflow-x: clip; }
 
 @media (max-width: 60rem) {
  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
- .cols { grid-template-columns: minmax(0, 1fr); }
  .stage { aspect-ratio: auto; padding: 24px 12px; }
  .stage__sheet { display: none; }
  .stage__zoom { width: 100%; }
