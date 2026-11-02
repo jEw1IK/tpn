@@ -20,7 +20,7 @@ const own:Record<string,Partial<Drug>>={
  // Формы из аптеки отделения: исходная концентрация подставляется в карточку препарата.
  'antibiotic-gentamicin':{name:'Гентамицин 40 мг/мл',stock:40},
  'antibiotic-metronidazol':{name:'Метронидазол 5 мг/мл',stock:5},
- 'antibiotic-linezolid':{name:'Линезолид 2 мг/мл',stock:2},
+ 'antibiotic-linezolid':{name:'Линезолид 2 мг/мл',stock:2,hint:'Готовый раствор 2 мг/мл, разведение не нужно: конечный объём считается сам. Инструкция: 10 мг/кг каждые 8 ч, в/в за 30–120 мин.'},
  'antibiotic-ciprofloksacin':{name:'Ципрофлоксацин 2 мг/мл',stock:2},
  'antibiotic-amikacin':{name:'Амикацин 1000 мг фл'},
  'antibiotic-vankomicin':{name:'Ванкомицин 1 г фл'},

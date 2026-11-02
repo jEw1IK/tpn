@@ -95,6 +95,7 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
   // Без разведения: внесосудистые пути, а также в/м без указанного объёма
   const oral=!takesDilution(m.route)||(!(med?.intravenous??false)&&!m.volume.trim());
   const diluent=m.diluent.trim()||'растворитель не задан';
+  const neat=!oral&&m.stock.trim()!==''&&!m.volume.trim();// концентрация известна, конечный объём не задан: вводится без разведения
   const instruction=blood?[
    `${medShow(med?.volume,3)} мл · ${routeLabel(m.route)} · ${medShow(med?.rate,1)} мл/ч`,
    `Вне баланса жидкости · ${when}`,
@@ -110,13 +111,13 @@ export function buildWorkingRows(p:Inputs,r:Result):WorkingRows{
   const routeLine=blood?undefined:periodic?`${routeLabel(m.route)}${over} · каждые ${entered(m.interval)} ч · ${when}`:`${routeLabel(m.route)} · ${medShow(med?.rate,1)} мл/ч · инфузия ${entered(m.hours)} ч · шприц на ${medShow(med?.syringeHours,1)} ч`;
   const recipe:[string,string][]|undefined=blood?undefined:periodic?[
    ['Доза',`${medShow(med?.doseAmount)} ${med?.doseLabel||'мг'}`],
-   ...(oral?[]:m.stock.trim()?[stockRow(med?.stockMl),[diluent,`${medShow(med?.solventMl,2)} мл`] as [string,string],['В шприце',`${entered(m.volume)} мл`] as [string,string]]:[[diluent,`до ${entered(m.volume)} мл`] as [string,string]]),
+   ...(oral?[]:neat?[stockRow(med?.stockMl),['Без разведения',''] as [string,string]]:m.stock.trim()?[stockRow(med?.stockMl),[diluent,`${medShow(med?.solventMl,2)} мл`] as [string,string],['В шприце',`${entered(m.volume)} мл`] as [string,string]]:[[diluent,`до ${entered(m.volume)} мл`] as [string,string]]),
   ]:[
    ...(m.stock.trim()?[['Доза за сутки',`${medShow(med?.amountMg,2)} мг`] as [string,string],stockRow(med?.stockMl),[diluent,`${medShow(med?.solventMl,2)} мл`] as [string,string]]:[['Доза за сутки',`${medShow(med?.amountMg,2)} мг`] as [string,string],[diluent,`до ${entered(m.volume)} мл`] as [string,string]]),
    ['В шприце',`${entered(m.volume)} мл · ${formatConcentration(med?.concentration)}`],
   ];
   const detail=recipe?[...(oral&&periodic?[`Без разведения${med&&!med.intravenous?', вне баланса жидкости':''}`]:[]),routeLine!,...(warning?[warning]:[])].join('\n'):undefined;
-  const mix=oral?`без разведения${med&&!med.intravenous?', вне баланса':''}`:m.stock.trim()?`${medShow(med?.stockMl,2)} мл + ${diluent} до ${entered(m.volume)} мл`:`${diluent} до ${entered(m.volume)} мл`;
+  const mix=oral?`без разведения${med&&!med.intravenous?', вне баланса':''}`:neat?`${medShow(med?.stockMl,2)} мл без разведения`:m.stock.trim()?`${medShow(med?.stockMl,2)} мл + ${diluent} до ${entered(m.volume)} мл`:`${diluent} до ${entered(m.volume)} мл`;
   const dose=blood?undefined:periodic?`${medShow(med?.doseAmount)} ${med?.doseLabel||'мг'}`:`${medShow(med?.amountMg,2)} мг/сут`;
   const ruDay=(iso:string)=>iso.slice(8,10)+'.'+iso.slice(5,7);
   const skipNote=med?.skipToday&&med.nextDoseDate?`сегодня пропуск · следующее введение ${ruDay(med.nextDoseDate)}`:med?.nextDoseDate?`следующее ${ruDay(med.nextDoseDate)}`:'';

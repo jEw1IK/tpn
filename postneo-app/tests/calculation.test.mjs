@@ -303,3 +303,23 @@ test('courseStatus: без даты начала курс начат сегод�
  assert.deepEqual(courseStatus('2026-10-09','2026-10-06',48),{courseDay:null,skipToday:false,nextDoseDate:null});
  assert.equal(courseStatus('2026-10-04','',48).courseDay,null);
 });
+
+test('Пустые жиры и пустой энтеральный объём считаются нулём, а не ошибкой',()=>{
+ const p=example();p.fat='';p.enteralMode='perKg';p.enteral='';
+ const r=calculate(p);assert.equal(r.valid,true,r.errors.join('; '));assert.equal(r.fatLineMl,0);assert.equal(r.enteralMl,0);
+ const bad=calculate({...p,fat:'abc'});assert.equal(bad.valid,false);assert.ok(bad.issues.some(x=>x.field==='fat'));
+ assert.equal(calculate({...p,enteralMode:'daily',enteralVolume:''}).valid,true);
+ assert.equal(calculate({...p,enteralMode:'feeds',feedingMl:'',feedingCount:'8'}).enteralMl,0);
+});
+test('Готовый раствор без конечного объёма: объём равен объёму препарата, без разведения',()=>{
+ const m={...newMedicine('antifungal-flukonazol','flu'),dose:'6',interval:'24',first:'12:00',route:'в/в (за 1 час)',volume:''};
+ const r=calculateMedicine(m,1.3,'08:00','2026-10-06');assert.equal(r.valid,true,r.errors.join('; '));
+ near(r.doseMg,7.8);near(r.stockMl,3.9);assert.equal(r.solventMl,0);near(r.volume,3.9);near(r.concentration,2);
+ const lin={...newMedicine('antibiotic-linezolid','lin'),dose:'10',interval:'8',first:'08:00',route:'в/в (за 1 час)',volume:''};
+ const l=calculateMedicine(lin,1.3,'08:00');assert.equal(l.valid,true,l.errors.join('; '));near(l.stockMl,6.5);near(l.volume,19.5);
+ // явный объём по-прежнему главнее: разводим до него
+ const diluted=calculateMedicine({...m,volume:'10'},1.3,'08:00');near(diluted.volume,10);near(diluted.solventMl,6.1);
+ // без концентрации конечный объём всё ещё нужен
+ const amp=calculateMedicine({...newMedicine('ampsul','a'),dose:'37.5',interval:'12',first:'08:00',route:'в/в (за 30 мин)',volume:''},1.3,'08:00');
+ assert.equal(amp.valid,false);assert.ok(amp.issues.some(x=>x.field==='volume'));
+});

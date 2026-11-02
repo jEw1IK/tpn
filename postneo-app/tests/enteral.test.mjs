@@ -34,8 +34,9 @@ test('Пустая масса не подставляет 1 кг: известе
  assert.equal(r.valid,false);near(r.daily.energyKcal,79);assert.equal(r.perKg,null);assert.equal(r.volumePerKg,null);
  assert.equal(calculateEnteral(blank()).daily,null);
 });
-test('Пустой/отрицательный объём и дробная кратность блокируют расчёт',()=>{
- for(const enteral of ['', '-5','abc']){const r=calculateEnteral({...p(),enteral});assert.equal(r.valid,false);assert.equal(r.daily,null);}
+test('Отрицательный или нечисловой объём и дробная кратность блокируют расчёт; пустой объём — ноль',()=>{
+ for(const enteral of ['-5','abc']){const r=calculateEnteral({...p(),enteral});assert.equal(r.valid,false);assert.equal(r.daily,null);}
+ {const r=calculateEnteral({...p(),enteral:''});assert.equal(r.valid,true);assert.equal(r.volumeMl,0);}
  for(const feedingCount of ['0','2.5','49','']){const r=calculateEnteral({...p(),enteralMode:'feeds',feedingMl:'10',feedingCount});assert.equal(r.valid,false);assert.equal(r.daily,null);}
 });
 test('Запятые и очень малая масса рассчитываются без преждевременного округления',()=>{

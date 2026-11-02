@@ -50,8 +50,8 @@ test('Энтеральный избыток не увеличивает ПП и 
  assert.equal(r.aaMl,0);near(r.enteralMl,180);near(r.proteinPlan.excessGrams,.7);near(r.proteinPlan.excessPerKg,.7);
  near(r.proteinPlan.achievedPerKg,4.7);near(n.total.proteinPerKg,4.7);assert.equal(p.enteral,'180');
 });
-test('Неизвестная смесь, объём, кратность или масса не превращаются в нулевой энтеральный белок',()=>{
- for(const patch of [{enteral:'50',formulaId:'none'},{enteral:''},{enteralMode:'daily',enteralVolume:''},{formulaId:'nutrilon-pre-0',enteralMode:'feeds',feedingMl:'5',feedingCount:'0'},{weight:''}]){
+test('Неизвестная смесь, неверный объём, кратность или масса не превращаются в нулевой энтеральный белок',()=>{
+ for(const patch of [{enteral:'50',formulaId:'none'},{enteral:'abc'},{enteralMode:'daily',enteralVolume:'-1'},{formulaId:'nutrilon-pre-0',enteralMode:'feeds',feedingMl:'5',feedingCount:'0'},{weight:''}]){
   const r=calculate(input(patch));assert.equal(r.valid,false);assert.equal(r.proteinPlan.valid,false);assert.equal(r.aaGrams,null);assert.equal(r.base,null);assert.equal(r.proteinPlan.achievedPerKg,null);
  }
 });

@@ -95,15 +95,17 @@ export function calculateEnteral(p:Inputs){
   return total;
  };
  let volumeMl:number|null=null,volumePerKg:number|null=null;
+ // Пустое поле объёма значит «энтерально не кормим»: 0 без ошибки; ошибка только у непустого, но неверного значения.
+ const blankZero=(raw:string|undefined)=>String(raw??'').trim()===''?0:numeric(raw!);
  if(mode==='perKg'){
-  volumePerKg=numeric(p.enteral);
+  volumePerKg=blankZero(p.enteral);
   if(volumePerKg===null)error('enteral','Укажите энтеральный объём в мл/кг/сут');
   if(volumePerKg!==null&&kg!==null)volumeMl=volumePerKg*kg;
  }else if(mode==='daily'){
-  volumeMl=numeric(p.enteralVolume);
+  volumeMl=blankZero(p.enteralVolume);
   if(volumeMl===null)error('enteralVolume','Укажите энтеральный объём в мл/сут');
  }else if(mode==='feeds'){
-  const portion=numeric(p.feedingMl),count=numeric(p.feedingCount);
+  const portion=blankZero(p.feedingMl),count=numeric(p.feedingCount);
   if(portion===null)error('feedingMl','Укажите объём готовой смеси на кормление');
   if(count===null||count<1||count>48||!Number.isInteger(count))error('feedingCount','Количество кормлений: целое число от 1 до 48');
   else if(portion!==null)volumeMl=portion*count;
@@ -370,7 +372,10 @@ export function calculateMedicine(m:Medicine,kg:number,start:string,sheetDate=''
    if(doseAmount!==null&&factor!==undefined)doseMg=positiveResult('dose',doseAmount*factor);
    if(doseMg!==null&&minutes!==null&&times.length>0)amountMg=positiveResult('dose',doseMg*times.reduce((sum,t)=>sum+Math.min(1,Math.max(0,1440-t)/Math.max(minutes!,1e-9)),0));
   }
-  const final=intravenous?read('volume','Укажите конечный объём',true):takesDilution(m.route)&&m.volume.trim()?read('volume','Проверьте конечный объём',true):null;
+  const stockKnown=m.stock.trim()!==''&&takesDilution(m.route)?read('stock','Проверьте исходную концентрацию',true):null;
+  // Конечный объём пустой, а концентрация формы известна: вводится без разведения, объём равен объёму самого препарата (готовые растворы: флуконазол, линезолид, парацетамол…).
+  const undiluted=!m.volume.trim()&&stockKnown!==null&&doseMg!==null?positiveResult('dose',doseMg/stockKnown):null;
+  const final=undiluted!==null?undiluted:intravenous?read('volume','Укажите конечный объём или концентрацию препарата',true):takesDilution(m.route)&&m.volume.trim()?read('volume','Проверьте конечный объём',true):null;
   if(final!==null){
    const fractions=minutes!==null&&times.length>0?times.reduce((sum,t)=>sum+(minutes!>0?Math.min(1,Math.max(0,1440-t)/minutes!):1),0):null;
    volume=fractions!==null?positiveResult('volume',final*fractions):null;
@@ -379,7 +384,7 @@ export function calculateMedicine(m:Medicine,kg:number,start:string,sheetDate=''
   }
   if(course.skipToday){volume=0;amountMg=0;}
   fluidVolume=intravenous?volume:0;
-  if(m.stock.trim()!==''&&takesDilution(m.route)){const stock=read('stock','Проверьте исходную концентрацию',true);if(stock!==null&&doseMg!==null&&final!==null){stockMl=positiveResult('stock',doseMg/stock);if(stockMl!==null){solventMl=final-stockMl;if(exceedsVolume(stockMl,final))error('volume','Объём препарата больше конечного объёма');else solventMl=Math.max(0,solventMl);}}}
+  if(stockKnown!==null){const stock=stockKnown;if(stock!==null&&doseMg!==null&&final!==null){stockMl=positiveResult('stock',doseMg/stock);if(stockMl!==null){solventMl=final-stockMl;if(exceedsVolume(stockMl,final))error('volume','Объём препарата больше конечного объёма');else solventMl=Math.max(0,solventMl);}}}
  }else{
   const factors:Record<string,number>={'мкг/кг/мин':0.06,'мкг/кг/ч':0.001,'мг/кг/ч':1};
   const factor=factors[m.unit];if(!factor)error('dose','Проверьте единицы скорости дозы');
@@ -460,7 +465,8 @@ export function calculate(p:Inputs){
  const aaGrams=proteinPlan.requiredIvGrams;
  const ap=aaGrams!==null&&aaGrams>0?get('aaPercent','Проверьте концентрацию аминокислот',true,100):null;
  const ah=aaGrams!==null&&aaGrams>0?get('aaHours','Время аминокислот: больше 0 и не более 24 ч',true,24):null;
- const fat=get('fat','Укажите дозу жиров'),fp=get('fatPercent','Проверьте концентрацию жиров',true,100),fh=get('fatHours','Время жиров: больше 0 и не более 24 ч',true,24);
+ // Пустое поле жиров значит «жиры не назначены»: считаем как 0, ошибка только у непустого, но неверного значения.
+ const fat=String(p.fat??'').trim()===''?0:get('fat','Укажите дозу жиров'),fp=get('fatPercent','Проверьте концентрацию жиров',true,100),fh=get('fatHours','Время жиров: больше 0 и не более 24 ч',true,24);
  const gir=get('gir','Укажите дозу глюкозы'),bh=get('baseHours','Время базы: больше 0 и не более 24 ч',true,24);
  const caPerKg=get('calciumMlPerKg','Глюконат кальция 10 %: мл/кг/сут, число от 0'),cc=get('calciumContent','Укажите содержание кальция в растворе',true);
  // КР 2015, таблица 3: старт 1–2 мл/кг (0,25–0,5 ммоль/кг), максимум 2–4 мл/кг (0,5–1 ммоль/кг).
