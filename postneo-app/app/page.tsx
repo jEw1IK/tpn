@@ -24,11 +24,17 @@ export default function HomePage(){
 
   <main>
    <section className="hm-hero hm-wrap" aria-labelledby="home-title">
+    {/* сцена: огромная надпись на заднем плане, стеклянное сердце стоит поверх и перекрывает часть букв; оба в одной ячейке сетки */}
+    <div className="hm-hero__stage">
+    <p className="hm-motto"><span>Здесь живёт</span> <span>сердце</span> <span>отделения</span></p>
     <figure className="hm-hero__fig">
+     {/* тёмный силуэт под стеклом: закрывает буквы за сердцем, но не наглухо, сквозь стекло они чуть угадываются */}
+     <span className="hm-hero__body" aria-hidden="true" style={{maskImage:`url(${asset('/images/heart-silhouette.webp')})`,WebkitMaskImage:`url(${asset('/images/heart-silhouette.webp')})`}}/>
      <img src={asset('/images/heart-glass-alpha.webp')} width="1024" height="1024" alt="Анатомическое сердце из прозрачного стекла" fetchPriority="high"/>
      {/* свет внутри стекла: маска из той же картинки, поэтому вспыхивает только сердце, а не фон */}
      <span className="hm-hero__light" aria-hidden="true" style={{maskImage:`url(${asset('/images/heart-glass-alpha.webp')})`,WebkitMaskImage:`url(${asset('/images/heart-glass-alpha.webp')})`}}/>
     </figure>
+    </div>
     <h1 id="home-title">Лист назначений для ваших пациентов</h1>
     <p className="hm-hero__act"><a className="hm-cta" href={href('/calculator')}>Открыть калькулятор<span aria-hidden="true">→</span></a></p>
    </section>

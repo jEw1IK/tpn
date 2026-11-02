@@ -19,6 +19,9 @@
   --home-flash: oklch(100% 0 0 / 0.95);
   --home-flash-2: oklch(100% 0 0 / 0.6);
   --home-halo: oklch(100% 0 0 / 0.26);
+  --home-motto: oklch(93% 0 0);
+  --home-body: oklch(9% 0.004 260 / 0.84);
+  --home-body-thin: oklch(9% 0.004 260 / 0.6);
   --home-back: oklch(100% 0 0 / 0.22);
   --home-back-2: oklch(100% 0 0 / 0.07);
   --home-shadow: 0 40px 80px -40px oklch(0% 0 0 / 0.9);
@@ -76,8 +79,19 @@ html:has(.home) body { overflow-x: clip; }
 .hm-hero { min-height: calc(100dvh - 76px); display: grid; align-content: center; justify-items: center; text-align: center; padding-block: 24px 72px; position: relative; }
 .hm-hero__fig { position: relative; margin: 0; width: min(54vh, 500px, 86vw); aspect-ratio: 1; }
 /* у картинки прозрачный фон (яркость стекла переведена в прозрачность), поэтому режим наложения не нужен: Safari на iPhone его у анимированной картинки не применяет и показывал чёрный квадрат */
-.hm-hero__fig img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.hm-hero__fig img { position: relative; width: 100%; height: 100%; object-fit: contain; display: block; }
+.hm-hero__body { position: absolute; inset: 0; pointer-events: none; background: var(--home-body);
+ mask-position: center; mask-size: contain; mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat;
+ animation: hm-fade 1200ms var(--home-ease) both, hm-float 9s ease-in-out 1.2s infinite, hm-beat var(--beat) linear 1.4s infinite; }
 .hm-hero__fig::after { content: ""; position: absolute; inset: 18%; border-radius: 50%; background: radial-gradient(closest-side, var(--home-halo), transparent); z-index: -1; filter: blur(30px); }
+/* надпись за сердцем: тонкий крупный шрифт; надпись и сердце в одной ячейке сетки. У надписи нет позиционирования,
+   а у сердца есть, поэтому сердце рисуется поверх букв, а свет за сердцем (z-index -1) остаётся за буквами */
+.hm-hero__stage { display: grid; place-items: center; width: 100%; }
+.hm-hero__stage > * { grid-area: 1 / 1; }
+.hm-motto { margin: 0; max-width: 100%; font-size: clamp(2.6rem, 8.2vw, 9.5rem); font-weight: 200; line-height: 0.92; letter-spacing: -0.035em; color: var(--home-motto); text-wrap: balance; overflow-wrap: break-word; min-width: 0; user-select: none; }
+.hm-motto span { display: inline-block; animation: hm-up var(--home-slow) var(--home-ease) both; }
+.hm-motto span:nth-child(2) { animation-delay: 120ms; }
+.hm-motto span:nth-child(3) { animation-delay: 240ms; }
 .hm-hero h1 { margin-top: -0.4em; font-size: clamp(1.9rem, 3.2vw, 3.1rem); max-width: 26ch; }
 .hm-hero .lead { margin-top: 22px; max-width: 44ch; color: var(--home-ink-2); font-size: clamp(1.05rem, 1.1vw + 0.6rem, 1.3rem); }
 .hm-hero__act { margin-top: 30px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
@@ -212,6 +226,10 @@ html:has(.home) body { overflow-x: clip; }
  .hm-hero { padding-top: 8px; }
 }
 @media (max-width: 40rem) {
+ .hm-motto { font-size: clamp(2.4rem, 14.5vw, 4.4rem); }
+ .hm-hero__fig { width: min(68vw, 300px); }
+ .hm-hero__body { background: var(--home-body-thin); }
+ .hm-motto span { display: block; }
  .shot { width: min(100%, 420px); margin-inline: auto; padding: 5px; }
  .time { grid-template-columns: minmax(0, 1fr); }
  .time__fig { font-size: clamp(3.4rem, 17vw, 5rem); }
