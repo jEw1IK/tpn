@@ -17,7 +17,6 @@ export default function HomePage(){
  // На сервере корень приложения ведёт сразу к пациентам (а они — ко входу); главная живёт только в статическом сайте.
  if(!staticSite)redirect(process.env.KART_DISABLED==='1'?'/calculator':'/patients');
  const r=calculate(patient);
- const groups=new Set(drugs.map(d=>d.group)).size;
  return <div className="home">
   <header className="hm-nav"><div className="hm-wrap hm-nav__in">
    <a className="hm-brand" href={href('/')} aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a>
@@ -36,40 +35,38 @@ export default function HomePage(){
    </section>
 
    <section className="hm-sec hm-wrap reveal" aria-labelledby="tiles-title">
-    <div className="hm-head"><h2 id="tiles-title">Один ребёнок: 1450{'\u00a0'}г, вторые сутки</h2><p>110 мл/кг, глюкоза 5 мг/кг/мин, белок 2 и жиры 1,5 г/кг, грудное молоко по 5 мл восемь раз. Так это считает движок.</p></div>
+    <div className="hm-head"><h2 id="tiles-title">Один ребёнок: 1450{'\u00a0'}г, вторые сутки</h2></div>
     <ul className="tiles">
-     <li className="g"><h3>Основной раствор</h3><p className="fig"><CountUp value={n(r.base)} digits={1}/><small>мл · {f(r.baseRate,1)} мл/ч</small></p><p>{Math.round(n(r.base)/n(r.allFluid)*100)} % суточной жидкости</p></li>
-     <li className="g"><h3>Глюкоза в растворе</h3><p className="fig"><CountUp value={n(r.glucosePercent)} digits={2}/><small>%</small></p><p>{f(r.glucoseGrams,2)} г внутривенно, {f(r.girIv,1)} из 5 мг/кг/мин</p></li>
-     <li className="g"><h3>Аминокислоты</h3><p className="fig"><CountUp value={n(r.aaMl)}/><small>мл · {f(r.aaRate,2)} мл/ч</small></p><p>{f(r.aaGrams,1)} г белка за сутки</p></li>
-     <li className="g"><h3>Энергия</h3><p className="fig"><CountUp value={n(r.kr.perKg)}/><small>ккал/кг</small></p><p>{f(r.kr.parenteralKcal,0)} парентерально, {f(r.kr.enteralKcal,0)} энтерально</p></li>
+     <li><h3>Основной раствор</h3><p className="fig"><CountUp value={n(r.base)} digits={1}/><small>мл</small></p></li>
+     <li><h3>Глюкоза в растворе</h3><p className="fig"><CountUp value={n(r.glucosePercent)} digits={2}/><small>%</small></p></li>
+     <li><h3>Аминокислоты</h3><p className="fig"><CountUp value={n(r.aaMl)}/><small>мл</small></p></li>
+     <li><h3>Энергия</h3><p className="fig"><CountUp value={n(r.kr.perKg)}/><small>ккал/кг</small></p></li>
     </ul>
    </section>
 
    <section className="hm-sec hm-wrap reveal" aria-labelledby="sheet-title">
-    <div className="hm-head"><h2 id="sheet-title">Лист, который читается с одного взгляда</h2><p>Медсестре нужны миллилитры: они крупно и жирным, время введения — стрелкой в клетке часа, сутки курса — слева.</p></div>
+    <div className="hm-head"><h2 id="sheet-title">Лист, который читается с одного взгляда</h2></div>
     <div className="stage g">
      <img className="stage__sheet" src={asset('/images/nurse-sheet-front-p.webp')} width="1684" height="1191" alt="Лицевая сторона листа интенсивной терапии" loading="lazy"/>
      <figure className="stage__zoom g">
       <img src={asset('/images/sheet-zoom.webp')} width="1535" height="160" alt="Строки препаратов на листе: доза, что набрать, путь, кратность и стрелки времени введения" loading="lazy"/>
-      <figcaption>Препарат одной строкой: доза, что набрать и до какого объёма развести, путь и кратность</figcaption>
      </figure>
     </div>
    </section>
 
    <section className="hm-sec hm-wrap reveal" aria-labelledby="what-title">
     <div className="hm-head"><h2 id="what-title">Что внутри</h2></div>
-    <div className="cols g">
-     <div><h3>{drugs.length} препаратов</h3><p>{groups} групп с концентрациями форм: доза, разведение и объём считаются сами и входят в баланс. Нагрузочные дозы, титрование кардиотоников, интервалы больше суток.</p></div>
-     <div><h3>{enteralFormulas.length} смесей и грудное молоко</h3><p>Две смеси по своим кормлениям. С определённого объёма белки, жиры и углеводы смеси вычитаются из внутривенной части.</p></div>
-     <div><h3>Отделение</h3><p>Пациенты, листы по дням и подписи, общие для врачей отделения. Карточки и листы хранятся на сервере в зашифрованном виде.</p></div>
+    <div className="cols">
+     <div><h3>{drugs.length} препаратов</h3></div>
+     <div><h3>{enteralFormulas.length} смесей и грудное молоко</h3></div>
+     <div><h3>Отделение</h3></div>
     </div>
    </section>
 
    <section className="hm-sec hm-wrap reveal" aria-labelledby="close-title">
-    <div className="hm-close g">
+    <div className="hm-close">
      <h2 id="close-title">Пример уже внутри</h2>
-     <p>Открывается без регистрации, с учебным ребёнком. Проверьте цифры или очистите форму и посчитайте своего пациента.</p>
-     <p className="hm-hero__act"><a className="btn btn--solid" href={href('/calculator')}>Открыть калькулятор</a><a className="btn" href={examplePdf}>Пример листа в PDF</a></p>
+     <p className="hm-hero__act"><a className="hm-cta" href={href('/calculator')}>Открыть калькулятор<span aria-hidden="true">→</span></a></p>
     </div>
    </section>
   </main>
