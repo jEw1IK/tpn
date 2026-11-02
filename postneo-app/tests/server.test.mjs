@@ -110,3 +110,20 @@ test('перебор: после 5 неверных попыток вход за
  assert.ok(login(db,'doc','newpass123'));assert.equal(login(db,'doc','secret123'),null);
  setPassword(db,u.id,'another123');assert.equal(userByToken(db,s1.token),null);
 });
+
+test('сброс пароля на сервере: новый пароль, вход открыт, сессии и копия ключа сняты', async () => {
+ const {execFileSync}=await import('node:child_process');const os=await import('node:os');const fs=await import('node:fs');const path=await import('node:path');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'pn-reset-'));const file=path.join(dir,'postneo.sqlite');
+ let db=openDb(file);const u=createUser(db,{login:'admin',name:'Админ',role:'admin',password:'old-pass-1'});
+ login(db,'admin','old-pass-1');setUserWrap(db,u.id,{wrap:'v1.AAAA.BBBB',salt:'saltsalt',iter:310000});setDisabled(db,u.id,true);
+ db.prepare('insert into login_attempts(key) values (?)').run('login:admin');db.close();
+ const run=(args,input)=>execFileSync(process.execPath,['scripts/reset-password.mjs',...args],{env:{...process.env,DATABASE_FILE:file},input,encoding:'utf8'});
+ assert.match(run([],''),/admin  ·  Админ  ·  admin/);
+ assert.throws(()=>run(['admin'],'new-pass-1\nother-pass\n'));
+ assert.match(run(['ADMIN'],'new-pass-1\nnew-pass-1\n'),/Готово/);
+ db=openDb(file);
+ assert.equal(login(db,'admin','old-pass-1'),null);assert.ok(login(db,'admin','new-pass-1'));
+ assert.equal(getUserWrap(db,u.id),null);assert.equal(db.prepare('select count(*) c from login_attempts').get().c,0);
+ assert.equal(db.prepare('select count(*) c from sessions where user_id=?').get(u.id).c,1);// только что вошли новым паролем
+ db.close();fs.rmSync(dir,{recursive:true,force:true});
+});
