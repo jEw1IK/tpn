@@ -24,16 +24,11 @@ export default function HomePage(){
 
   <main>
    <section className="hm-hero hm-wrap" aria-labelledby="home-title">
-    {/* сцена: огромная надпись на заднем плане, стеклянное сердце стоит поверх и перекрывает часть букв; оба в одной ячейке сетки */}
-    <div className="hm-hero__stage">
-    {/* три строки во всю ширину; каждая выезжает снизу из-под своей кромки */}
-    <p className="hm-motto"><span className="ml ml--a"><span>Здесь живёт</span></span> <span className="ml ml--b"><span>сердце</span></span> <span className="ml ml--c"><span>отделения</span></span></p>
     <figure className="hm-hero__fig">
      <img src={asset('/images/heart-glass-alpha.webp')} width="1024" height="1024" alt="Анатомическое сердце из прозрачного стекла" fetchPriority="high"/>
      {/* свет внутри стекла: маска из той же картинки, поэтому вспыхивает только сердце, а не фон */}
      <span className="hm-hero__light" aria-hidden="true" style={{maskImage:`url(${asset('/images/heart-glass-alpha.webp')})`,WebkitMaskImage:`url(${asset('/images/heart-glass-alpha.webp')})`}}/>
     </figure>
-    </div>
     <h1 id="home-title">Лист назначений для ваших пациентов</h1>
     <p className="hm-hero__act"><a className="hm-cta" href={href('/calculator')}>Открыть калькулятор<span aria-hidden="true">→</span></a></p>
    </section>
