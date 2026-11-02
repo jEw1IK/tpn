@@ -70,9 +70,16 @@ html:has(.home) body { overflow-x: clip; }
 .hm-hero__fig { position: relative; margin: 0; width: min(54vh, 500px, 86vw); aspect-ratio: 1; }
 .hm-hero__fig img { width: 100%; height: 100%; object-fit: contain; display: block; mix-blend-mode: screen; filter: grayscale(1) contrast(1.05); }
 .hm-hero__fig::after { content: ""; position: absolute; inset: 18%; border-radius: 50%; background: radial-gradient(closest-side, var(--home-glow), transparent); z-index: -1; filter: blur(30px); }
-.hm-hero h1 { margin-top: -0.55em; font-size: clamp(2.4rem, 5vw, 4.8rem); max-width: 24ch; }
+.hm-hero h1 { margin-top: -0.4em; font-size: clamp(1.9rem, 3.2vw, 3.1rem); max-width: 26ch; }
 .hm-hero .lead { margin-top: 22px; max-width: 44ch; color: var(--home-ink-2); font-size: clamp(1.05rem, 1.1vw + 0.6rem, 1.3rem); }
-.hm-hero__act { margin-top: 36px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.hm-hero__act { margin-top: 30px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+/* главное действие без плашки: надпись и стрелка, при наведении линия подчёркивания проявляется, при нажатии надпись вдавливается */
+.hm-cta { position: relative; display: inline-flex; align-items: center; gap: 12px; padding: 10px 2px; font-size: 1.2rem; font-weight: 300; color: var(--home-ink); transition: transform var(--home-fast) var(--home-ease), color var(--home-mid) var(--home-ease); }
+.hm-cta::after { content: ""; position: absolute; left: 0; right: 0; bottom: 4px; height: 1px; background: var(--home-ink); transform: scaleX(0.35); transform-origin: left; opacity: 0.5; transition: transform var(--home-mid) var(--home-ease), opacity var(--home-mid) var(--home-ease); }
+.hm-cta:hover::after { transform: none; opacity: 1; }
+.hm-cta span { transition: transform var(--home-mid) var(--home-ease); }
+.hm-cta:hover span { transform: translateX(6px); }
+.hm-cta:active { transform: scale(0.97); color: var(--home-ink-2); }
 
 /* появление на открытии: только прозрачность и сдвиг */
 @keyframes hm-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }

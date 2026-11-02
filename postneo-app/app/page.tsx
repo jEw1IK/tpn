@@ -31,9 +31,9 @@ export default function HomePage(){
   <main>
    <section className="hm-hero hm-wrap" aria-labelledby="home-title">
     <figure className="hm-hero__fig"><img src={asset('/images/heart-glass.webp')} width="1024" height="1024" alt="Анатомическое сердце из прозрачного стекла" fetchPriority="high"/></figure>
-    <h1 id="home-title">Питание новорождённого, посчитанное точно</h1>
-    <p className="lead">Жидкость, глюкоза, белок, жиры и препараты по клиническим рекомендациям. Готовый лист назначений на А4 за минуту.</p>
-    <p className="hm-hero__act"><a className="btn btn--solid" href={href('/calculator')}>Открыть калькулятор</a><KartLink className="btn" path="/login">Войти в отделение</KartLink></p>
+    <h1 id="home-title">Лист назначений для ваших пациентов</h1>
+    <p className="lead">Жидкость, глюкоза, белок, жиры и препараты по клиническим рекомендациям. Готовый лист на А4 за минуту.</p>
+    <p className="hm-hero__act"><a className="hm-cta" href={href('/calculator')}>Открыть калькулятор<span aria-hidden="true">→</span></a></p>
    </section>
 
    <section className="hm-sec hm-wrap reveal" aria-labelledby="tiles-title">
