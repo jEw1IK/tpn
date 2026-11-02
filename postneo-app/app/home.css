@@ -7,6 +7,8 @@
   --home-bg-2: oklch(14% 0.005 260);
   --home-ink: oklch(97% 0 0);
   --home-ink-2: oklch(80% 0 0);
+  --home-red: oklch(64% 0.24 27);
+  --home-red-glow: oklch(64% 0.24 27 / 0.55);
   --home-mute: oklch(62% 0 0);
   --home-line: oklch(100% 0 0 / 0.12);
   --home-line-2: oklch(100% 0 0 / 0.26);
@@ -85,6 +87,16 @@ html:has(.home) body { overflow-x: clip; }
 .hm-cta span { transition: transform var(--home-mid) var(--home-ease); }
 .hm-cta:hover span { transform: translateX(6px); }
 .hm-cta:active { transform: scale(0.97); color: var(--home-ink-2); }
+/* ссылки на другие страницы при наведении загораются красным: цвет, свечение вокруг букв, линия и стрелка тоже красные.
+   Только там, где есть мышь, чтобы на телефоне после нажатия надпись не оставалась красной */
+.hm-link, .hm-cta, .hm-foot__row nav a { transition: color var(--home-mid) var(--home-ease), text-shadow var(--home-mid) var(--home-ease), border-color var(--home-mid) var(--home-ease), transform var(--home-fast) var(--home-ease); }
+.hm-cta::after { transition: transform var(--home-mid) var(--home-ease), opacity var(--home-mid) var(--home-ease), background-color var(--home-mid) var(--home-ease), box-shadow var(--home-mid) var(--home-ease); }
+@media (hover: hover) {
+ .home .hm-link:hover, .home .hm-cta:hover, .home .hm-foot__row nav a:hover { color: var(--home-red); text-shadow: 0 0 14px var(--home-red-glow), 0 0 2px var(--home-red-glow); border-bottom-color: transparent; }
+ .home .hm-cta:hover::after { background: var(--home-red); box-shadow: 0 0 10px var(--home-red-glow); }
+}
+.home .hm-link:focus-visible, .home .hm-cta:focus-visible, .home .hm-foot__row nav a:focus-visible { color: var(--home-red); text-shadow: 0 0 14px var(--home-red-glow); }
+.home .hm-link:active, .home .hm-cta:active { color: var(--home-red); transform: scale(0.97); }
 
 /* появление на открытии: только прозрачность и сдвиг */
 @keyframes hm-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
@@ -175,7 +187,6 @@ html:has(.home) body { overflow-x: clip; }
 .hm-foot { border-top: 1px solid var(--home-line); padding: 36px 0 44px; }
 .hm-foot__row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; color: var(--home-mute); font-size: 14px; }
 .hm-foot__row nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
-.hm-foot__row nav a:hover { color: var(--home-ink); }
 .hm-foot__row small { margin-left: auto; font-size: 14px; }
 
 /* появление при прокрутке средствами CSS: где таймлайн прокрутки не поддерживается, блоки просто видны */
@@ -189,7 +200,7 @@ html:has(.home) body { overflow-x: clip; }
  .stage { aspect-ratio: auto; padding: 24px 12px; }
  .stage__sheet { display: none; }
  .stage__zoom { width: 100%; }
- .hm-nav__act .hm-link { display: none; }
+ .hm-nav__act .hm-link:not(.hm-link--keep) { display: none; }
  .hm-hero { padding-top: 8px; }
 }
 @media (max-width: 40rem) {
@@ -198,7 +209,6 @@ html:has(.home) body { overflow-x: clip; }
  .hm-hero__act .btn { width: 100%; }
  .hm-brand { font-size: 17px; gap: 10px; letter-spacing: 0.18em; }
  .hm-nav__in { gap: 12px; }
- .hm-nav__act .btn { min-height: 44px; padding: 0 16px; font-size: 0.92rem; white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
  .home *, .home *::before, .home *::after { animation: none !important; transition: none !important; }

@@ -23,7 +23,7 @@ export default function HomePage(){
    <nav className="hm-nav__act" aria-label="Разделы">
     <a className="hm-link" href={href('/calculator')}>Калькулятор</a>
     <a className="hm-link" href={examplePdf}>Пример листа</a>
-    <KartLink className="btn" path="/login">Войти в отделение</KartLink>
+    <KartLink className="hm-link hm-link--keep" path="/login">Войти в отделение</KartLink>
    </nav>
   </div></header>
 
