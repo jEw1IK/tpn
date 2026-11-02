@@ -17,6 +17,8 @@
   --home-flash: oklch(100% 0 0 / 0.95);
   --home-flash-2: oklch(100% 0 0 / 0.6);
   --home-halo: oklch(100% 0 0 / 0.26);
+  --home-back: oklch(100% 0 0 / 0.22);
+  --home-back-2: oklch(100% 0 0 / 0.07);
   --home-shadow: 0 40px 80px -40px oklch(0% 0 0 / 0.9);
   --home-focus: oklch(90% 0 0);
   --home-font: "Geologica", "Onest", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
@@ -109,6 +111,11 @@ html:has(.home) body { overflow-x: clip; }
 }
 @keyframes hm-halo { 0%, 100% { opacity: 0.25; scale: 0.95; } 7% { opacity: 1; scale: 1.18; } 15% { opacity: 0.45; scale: 1.04; } 22% { opacity: 0.85; scale: 1.12; } 50% { opacity: 0.25; scale: 0.95; } }
 .hm-hero__fig::after { animation: hm-halo var(--beat) linear 1.4s infinite; }
+/* свет за сердцем: широкое белое свечение сзади, как контровой свет; на ударе чуть разгорается */
+.hm-hero__fig::before { content: ""; position: absolute; inset: -14% -18%; border-radius: 50%; z-index: -1; pointer-events: none;
+ background: radial-gradient(closest-side at 50% 54%, var(--home-back), var(--home-back-2) 55%, transparent);
+ animation: hm-fade 1800ms var(--home-ease) both, hm-back var(--beat) linear 1.4s infinite; }
+@keyframes hm-back { 0%, 100% { opacity: 0.8; } 8% { opacity: 1; } 16% { opacity: 0.88; } 23% { opacity: 0.96; } 55% { opacity: 0.8; } }
 .hm-hero__light { display: none; }
 @supports ((mask-mode: luminance) and (scale: 1)) {
  .hm-hero__light {
@@ -189,7 +196,9 @@ html:has(.home) body { overflow-x: clip; }
  .tiles { grid-template-columns: minmax(0, 1fr); }
  .tiles li { min-height: 0; }
  .hm-hero__act .btn { width: 100%; }
- .hm-brand { font-size: 18px; }
+ .hm-brand { font-size: 17px; gap: 10px; letter-spacing: 0.18em; }
+ .hm-nav__in { gap: 12px; }
+ .hm-nav__act .btn { min-height: 44px; padding: 0 16px; font-size: 0.92rem; white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
  .home *, .home *::before, .home *::after { animation: none !important; transition: none !important; }
