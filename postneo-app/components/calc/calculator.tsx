@@ -9,7 +9,7 @@ import {carriers,feedingHours,feedingRoutes} from '@/lib/directory';
 import {formatNumber as f} from '@/lib/format';
 import {patientHeader,sexNames} from '@/lib/patient-header';
 import {BrandMark} from '@/components/brand-mark';
-import {href} from '@/lib/links';
+import {href,siteHome} from '@/lib/links';
 import {KartLink} from '@/components/kart-link';
 import {ThemeToggle} from '@/components/theme-toggle';
 import {ReferenceDrawer,type RefTab} from '@/components/reference-drawer';
@@ -64,7 +64,7 @@ export function Calculator({initial,initialUi,onChange,locked=false,lockedNote,f
  const softBad=(value:string)=>value.trim()!==''&&!((numeric(value)??0)>0);
  return <div className="app">
   <header className="top">
-   <a className="brand" href={href('/')} aria-label="POSTNEO — главная"><BrandMark/></a>
+   <a className="brand" href={siteHome} aria-label="POSTNEO — главная страница сайта"><BrandMark/></a>
    {toolbar}
    <span className="sp"/>
    {!fixedHeader&&<KartLink className="tb" path="/login" title="Пациенты отделения: вход по логину"><Users size={15} aria-hidden="true"/>Отделение</KartLink>}

@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {BrandMark} from '@/components/brand-mark';
+import {siteHome} from '@/lib/links';
 import {api,withBase} from '@/lib/base';
 import {adoptAfterLogin} from './vault';
 import type {KeyWrap,VaultRecord} from '@/lib/crypto';
@@ -17,7 +18,7 @@ export function LoginForm({setup=false}:{setup?:boolean}){
    router.push('/patients');router.refresh();}
   catch(err){setError((err as Error).message);}finally{setBusy(false);}};
  return <div className="app login"><form className="card" onSubmit={submit}>
-  <span className="brand"><BrandMark/></span>
+  <a className="brand" href={siteHome} aria-label="POSTNEO — главная страница сайта"><BrandMark/></a>
   <h1 style={{fontSize:18,fontWeight:700,margin:0}}>{setup?'Первый запуск: администратор':'Карточки пациентов'}</h1>
   <p className="lead">{setup?'Пользователей ещё нет. Этот логин станет администратором: он заводит врачей и медсестёр.':'Вход по логину и паролю. На этом компьютере вход сохраняется, пока вы не нажмёте «Выйти».'}</p>
   <label className="f"><span className="l">Логин</span><span className="w"><input value={login} onChange={e=>setLogin(e.target.value)} autoComplete="username" autoFocus required/></span></label>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {usePathname,useRouter} from 'next/navigation';
 import {LogOut} from 'lucide-react';
 import {BrandMark} from '@/components/brand-mark';
+import {siteHome} from '@/lib/links';
 import {ThemeToggle} from '@/components/theme-toggle';
 import {api} from '@/lib/base';
 import {roleNames,type User} from '@/lib/roles';
@@ -15,7 +16,7 @@ export function KartBar({user}:{user:User}){
  const link=(href:string,label:string)=><Link href={href} aria-current={path.startsWith(href)?'page':undefined}>{label}</Link>;
  const out=async()=>{vault.forget();await api('/api/logout',{method:'POST'});router.push('/login');router.refresh();};
  return <nav className="kbar" aria-label="Разделы">
-  <Link href="/patients" className="brand" aria-label="Пациенты"><BrandMark/></Link>
+  <a href={siteHome} className="brand" aria-label="POSTNEO — главная страница сайта"><BrandMark/></a>
   {link('/patients','Пациенты')}
   {link('/calculator','Калькулятор')}
   {user.role==='admin'&&link('/users','Пользователи')}

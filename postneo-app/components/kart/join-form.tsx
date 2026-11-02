@@ -4,6 +4,7 @@ import {useEffect,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {BrandMark} from '@/components/brand-mark';
+import {siteHome} from '@/lib/links';
 import {api} from '@/lib/base';
 import {inviteCodeId,unwrapWithInvite,wrapForPassword,type KeyWrap} from '@/lib/crypto';
 import {roleNames,type Role} from '@/lib/roles';
@@ -28,7 +29,7 @@ export function JoinForm({code:initial}:{code:string}){
    router.push('/patients');router.refresh();
   }catch(err){setError((err as Error).message);}finally{setBusy(false);}};
  return <div className="app login"><form className="card" onSubmit={submit}>
-  <span className="brand"><BrandMark/></span>
+  <a className="brand" href={siteHome} aria-label="POSTNEO — главная страница сайта"><BrandMark/></a>
   <h1 style={{fontSize:18,fontWeight:700,margin:0}}>Регистрация по приглашению</h1>
   <p className="lead">Код выдаёт администратор отделения. Логин и пароль придумываете сами, их никто кроме вас не знает.</p>
   <label className="f"><span className="l">Код приглашения</span><span className="w"><input value={code} onChange={e=>setCode(e.target.value.toUpperCase())} onBlur={()=>check(code)} autoComplete="off" autoFocus required style={{letterSpacing:'.12em',textTransform:'uppercase'}}/></span></label>
