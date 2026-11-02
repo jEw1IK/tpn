@@ -14,6 +14,9 @@
   --home-glass-2: oklch(100% 0 0 / 0.11);
   --home-shine: oklch(100% 0 0 / 0.22);
   --home-glow: oklch(100% 0 0 / 0.07);
+  --home-flash: oklch(100% 0 0 / 0.95);
+  --home-flash-2: oklch(100% 0 0 / 0.6);
+  --home-halo: oklch(100% 0 0 / 0.26);
   --home-shadow: 0 40px 80px -40px oklch(0% 0 0 / 0.9);
   --home-focus: oklch(90% 0 0);
   --home-font: "Geologica", "Onest", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
@@ -69,7 +72,7 @@ html:has(.home) body { overflow-x: clip; }
 .hm-hero { min-height: calc(100dvh - 76px); display: grid; align-content: center; justify-items: center; text-align: center; padding: 24px 0 72px; position: relative; }
 .hm-hero__fig { position: relative; margin: 0; width: min(54vh, 500px, 86vw); aspect-ratio: 1; }
 .hm-hero__fig img { width: 100%; height: 100%; object-fit: contain; display: block; mix-blend-mode: screen; filter: grayscale(1) contrast(1.05); }
-.hm-hero__fig::after { content: ""; position: absolute; inset: 18%; border-radius: 50%; background: radial-gradient(closest-side, var(--home-glow), transparent); z-index: -1; filter: blur(30px); }
+.hm-hero__fig::after { content: ""; position: absolute; inset: 18%; border-radius: 50%; background: radial-gradient(closest-side, var(--home-halo), transparent); z-index: -1; filter: blur(30px); }
 .hm-hero h1 { margin-top: -0.4em; font-size: clamp(1.9rem, 3.2vw, 3.1rem); max-width: 26ch; }
 .hm-hero .lead { margin-top: 22px; max-width: 44ch; color: var(--home-ink-2); font-size: clamp(1.05rem, 1.1vw + 0.6rem, 1.3rem); }
 .hm-hero__act { margin-top: 30px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
@@ -86,7 +89,37 @@ html:has(.home) body { overflow-x: clip; }
 @keyframes hm-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 @keyframes hm-fade { from { opacity: 0; } to { opacity: 1; } }
 /* у картинки режим наложения «screen»: чёрный фон кадра растворяется в поле, поэтому над ней нет слоёв с трансформациями */
-.hm-hero__fig img { animation: hm-fade 1200ms var(--home-ease) both, hm-float 9s ease-in-out 1.2s infinite; }
+.hm-hero__fig img { animation: hm-fade 1200ms var(--home-ease) both, hm-float 9s ease-in-out 1.2s infinite, hm-beat var(--beat) linear 1.4s infinite; }
+/* сердцебиение: двойной удар «тук-тук» и пауза. Удар двигает свойство scale, плавание двигает transform, поэтому они не мешают друг другу */
+.hm-hero__fig { --beat: 1.5s; }
+@keyframes hm-beat {
+ 0% { scale: 1; animation-timing-function: cubic-bezier(.3, 0, .2, 1); }
+ 7% { scale: 1.05; animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+ 15% { scale: 0.995; animation-timing-function: cubic-bezier(.3, 0, .2, 1); }
+ 22% { scale: 1.032; animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+ 34%, 100% { scale: 1; }
+}
+/* белый свет на ударе: вспышка изнутри, второй удар слабее, затем гаснет */
+@keyframes hm-flash {
+ 0% { opacity: 0; animation-timing-function: cubic-bezier(.2, 0, .1, 1); }
+ 6% { opacity: 1; animation-timing-function: ease-out; }
+ 16% { opacity: 0.3; animation-timing-function: cubic-bezier(.2, 0, .1, 1); }
+ 21% { opacity: 0.75; animation-timing-function: ease-out; }
+ 48%, 100% { opacity: 0; }
+}
+@keyframes hm-halo { 0%, 100% { opacity: 0.25; scale: 0.95; } 7% { opacity: 1; scale: 1.18; } 15% { opacity: 0.45; scale: 1.04; } 22% { opacity: 0.85; scale: 1.12; } 50% { opacity: 0.25; scale: 0.95; } }
+.hm-hero__fig::after { animation: hm-halo var(--beat) linear 1.4s infinite; }
+.hm-hero__light { display: none; }
+@supports ((mask-mode: luminance) and (scale: 1)) {
+ .hm-hero__light {
+  display: block; position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 50% 60%, var(--home-flash) 0%, var(--home-flash) 26%, var(--home-flash-2) 46%, transparent 74%);
+  /* сама картинка маски приходит из style в разметке: там путь считается от страницы, а не от папки стилей */
+  mask-position: center; mask-size: contain; mask-repeat: no-repeat; mask-mode: luminance;
+  mix-blend-mode: screen;
+  animation: hm-float 9s ease-in-out 1.2s infinite, hm-beat var(--beat) linear 1.4s infinite, hm-flash var(--beat) linear 1.4s infinite;
+ }
+}
 .hm-hero h1 { animation: hm-up var(--home-slow) var(--home-ease) 150ms both; }
 .hm-hero .lead { animation: hm-up var(--home-slow) var(--home-ease) 260ms both; }
 .hm-hero__act { animation: hm-up var(--home-slow) var(--home-ease) 370ms both; }

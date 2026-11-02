@@ -29,7 +29,11 @@ export default function HomePage(){
 
   <main>
    <section className="hm-hero hm-wrap" aria-labelledby="home-title">
-    <figure className="hm-hero__fig"><img src={asset('/images/heart-glass.webp')} width="1024" height="1024" alt="Анатомическое сердце из прозрачного стекла" fetchPriority="high"/></figure>
+    <figure className="hm-hero__fig">
+     <img src={asset('/images/heart-glass.webp')} width="1024" height="1024" alt="Анатомическое сердце из прозрачного стекла" fetchPriority="high"/>
+     {/* свет внутри стекла: маска из той же картинки, поэтому вспыхивает только сердце, а не фон */}
+     <span className="hm-hero__light" aria-hidden="true" style={{maskImage:`url(${asset('/images/heart-glass.webp')})`}}/>
+    </figure>
     <h1 id="home-title">Лист назначений для ваших пациентов</h1>
     <p className="hm-hero__act"><a className="hm-cta" href={href('/calculator')}>Открыть калькулятор<span aria-hidden="true">→</span></a></p>
    </section>
