@@ -36,7 +36,7 @@
 
 html:has(.home) { background: var(--home-bg); overflow-x: clip; scrollbar-color: var(--home-line-2) var(--home-bg); }
 html:has(.home) body { overflow-x: clip; }
-.home { position: relative; isolation: isolate; min-height: 100dvh; background: var(--home-bg); color: var(--home-ink); font-family: var(--home-font); font-weight: 300; font-size: 17px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.home { position: relative; isolation: isolate; min-height: 100dvh; background: var(--home-bg); color: var(--home-ink); font-family: var(--home-font); font-weight: 300; font-size: 20px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 .home *, .home *::before, .home *::after { box-sizing: border-box; }
 .home a { color: inherit; text-decoration: none; }
 .home p { margin: 0; text-wrap: pretty; }
@@ -69,7 +69,7 @@ html:has(.home) body { overflow-x: clip; }
 /* шапка */
 .hm-nav { position: sticky; top: 0; z-index: 5; background: linear-gradient(var(--home-bg) 55%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .hm-nav__in { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 76px; }
-.hm-brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 200; font-size: 22px; letter-spacing: 0.22em; padding-left: 0.22em; }
+.hm-brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 200; font-size: 26px; letter-spacing: 0.22em; padding-left: 0.22em; }
 .hm-brand .brand-mark { width: 26px; height: 26px; }
 .hm-nav__act { display: flex; align-items: center; gap: 8px 22px; }
 
@@ -91,11 +91,11 @@ html:has(.home) body { overflow-x: clip; }
 .ml--b > span { animation-delay: 140ms; }
 .ml--c > span { animation-delay: 280ms; }
 @keyframes hm-rise { from { transform: translateY(115%); } to { transform: none; } }
-.hm-hero h1 { margin-top: clamp(14px, 2vw, 28px); font-size: clamp(1.9rem, 3.2vw, 3.1rem); max-width: 26ch; }
+.hm-hero h1 { margin-top: clamp(14px, 2vw, 28px); font-size: clamp(2.2rem, 4.2vw, 4.2rem); max-width: 40ch; line-height: 1.1; }
 .hm-hero .lead { margin-top: 22px; max-width: 44ch; color: var(--home-ink-2); font-size: clamp(1.05rem, 1.1vw + 0.6rem, 1.3rem); }
 .hm-hero__act { margin-top: 30px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 /* главное действие без плашки: надпись и стрелка, при наведении линия подчёркивания проявляется, при нажатии надпись вдавливается */
-.hm-cta { position: relative; display: inline-flex; align-items: center; gap: 12px; padding: 10px 2px; font-size: 1.2rem; font-weight: 300; color: var(--home-ink); transition: transform var(--home-fast) var(--home-ease), color var(--home-mid) var(--home-ease); }
+.hm-cta { position: relative; display: inline-flex; align-items: center; gap: 12px; padding: 10px 2px; font-size: 1.5rem; font-weight: 300; color: var(--home-ink); transition: transform var(--home-fast) var(--home-ease), color var(--home-mid) var(--home-ease); }
 .hm-cta::after { content: ""; position: absolute; left: 0; right: 0; bottom: 4px; height: 1px; background: var(--home-ink); transform: scaleX(0.35); transform-origin: left; opacity: 0.5; transition: transform var(--home-mid) var(--home-ease), opacity var(--home-mid) var(--home-ease); }
 .hm-cta:hover::after { transform: none; opacity: 1; }
 .hm-cta span { transition: transform var(--home-mid) var(--home-ease); }
@@ -163,19 +163,19 @@ html:has(.home) body { overflow-x: clip; }
 .hm-sec { padding-top: 96px; }
 .hm-sec:last-of-type { padding-bottom: 96px; }
 .hm-head { max-width: 60ch; margin-bottom: 40px; }
-.hm-head h2 { font-size: clamp(2rem, 3.4vw, 3.4rem); }
+.hm-head h2 { font-size: clamp(2.4rem, 5vw, 5rem); line-height: 1.05; }
 .hm-head p { margin-top: 14px; color: var(--home-ink-2); font-size: 1.1rem; }
 
 /* показания: четыре стекла, одна цифра на каждом */
 /* время на один лист: было и стало, два больших числа; «вручную» приглушено, POSTNEO белым */
 .time { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 32px; margin: 0; padding: 0; list-style: none; }
 .time li { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding-top: 18px; border-top: 1px solid var(--home-line); }
-.time h3 { font-size: 16px; font-weight: 400; color: var(--home-mute); letter-spacing: 0; }
-.time__fig { display: flex; flex-wrap: nowrap; white-space: nowrap; align-items: baseline; column-gap: 0.08em; font-weight: 200; font-size: clamp(3.4rem, 9vw, 8.5rem); line-height: 0.95; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
-.time__fig small { margin-left: 0.4em; font-size: 16px; font-weight: 300; letter-spacing: 0; color: var(--home-ink-2); }
+.time h3 { font-size: 21px; font-weight: 400; color: var(--home-mute); letter-spacing: 0; }
+.time__fig { display: flex; flex-wrap: nowrap; white-space: nowrap; align-items: baseline; column-gap: 0.08em; font-weight: 200; font-size: clamp(4rem, 10vw, 9.6rem); line-height: 0.95; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.time__fig small { margin-left: 0.4em; font-size: 22px; font-weight: 300; letter-spacing: 0; color: var(--home-ink-2); }
 .time__was .time__fig { color: var(--home-mute); }
 .time__now .time__fig { color: var(--home-ink); }
-.time__where { margin-top: clamp(28px, 4vw, 56px); padding-top: 18px; border-top: 1px solid var(--home-line); font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 300; }
+.time__where { margin-top: clamp(28px, 4vw, 56px); padding-top: 18px; border-top: 1px solid var(--home-line); font-size: clamp(1.6rem, 3vw, 2.6rem); font-weight: 300; }
 
 
 /* калькулятор в тёмной теме: снимок в тонкой рамке со светом за ней; при прокрутке выпрямляется из лёгкого наклона.
@@ -199,21 +199,21 @@ html:has(.home) body { overflow-x: clip; }
 .index { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--home-line); }
 .index li { border-top: 1px solid var(--home-line); }
 .index a { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 44px; padding: clamp(18px, 2.4vw, 30px) 0;
- font-size: clamp(1.8rem, 4.6vw, 4.4rem); font-weight: 200; line-height: 1.05; letter-spacing: -0.01em; min-width: 0; overflow-wrap: break-word; }
+ font-size: clamp(2.2rem, 6vw, 6rem); font-weight: 200; line-height: 1.05; letter-spacing: -0.01em; min-width: 0; overflow-wrap: break-word; }
 .index a span { min-width: 0; }
 .index a i { font-style: normal; font-size: 0.6em; color: var(--home-mute); transition: transform var(--home-mid) var(--home-ease), color var(--home-mid) var(--home-ease); }
 /* финал: одна большая надпись-ссылка */
 .hm-close { text-align: center; padding-top: clamp(96px, 12vw, 180px); padding-bottom: clamp(72px, 9vw, 140px); }
-.hm-big { display: inline-flex; align-items: center; gap: 0.35em; min-height: 44px; font-size: clamp(1.75rem, 6.4vw, 6.2rem); font-weight: 200; line-height: 1.05; letter-spacing: -0.015em; overflow-wrap: break-word; }
+.hm-big { display: inline-flex; align-items: center; gap: 0.35em; min-height: 44px; font-size: clamp(1.9rem, 7vw, 6.6rem); font-weight: 200; white-space: nowrap; line-height: 1.05; letter-spacing: -0.015em; overflow-wrap: break-word; }
 .hm-big span { font-size: 0.6em; transition: transform var(--home-mid) var(--home-ease); }
 .hm-tg { margin-top: clamp(28px, 3vw, 44px); }
-.hm-tg .hm-cta { font-size: 1.1rem; color: var(--home-ink-2); }
+.hm-tg .hm-cta { font-size: 1.35rem; color: var(--home-ink-2); }
 
 /* подвал */
 .hm-foot { border-top: 1px solid var(--home-line); padding: 36px 0 44px; }
-.hm-foot__row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; color: var(--home-mute); font-size: 14px; }
+.hm-foot__row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; color: var(--home-mute); font-size: 17px; }
 .hm-foot__row nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
-.hm-foot__row small { margin-left: auto; font-size: 14px; }
+.hm-foot__row small { margin-left: auto; font-size: 17px; }
 
 /* появление при прокрутке средствами CSS: где таймлайн прокрутки не поддерживается, блоки просто видны */
 @supports (animation-timeline: view()) {
@@ -230,9 +230,11 @@ html:has(.home) body { overflow-x: clip; }
  .hm-hero__fig { width: min(68vw, 300px); }
   .shot { width: min(100%, 420px); margin-inline: auto; padding: 5px; }
  .time { grid-template-columns: minmax(0, 1fr); }
- .time__fig { font-size: clamp(3.4rem, 17vw, 5rem); }
+ .time__fig { font-size: clamp(3.8rem, 21vw, 6rem); }
  .hm-hero__act .btn { width: 100%; }
- .hm-brand { font-size: 17px; gap: 10px; letter-spacing: 0.18em; }
+ .hm-brand { font-size: 18px; gap: 10px; letter-spacing: 0.18em; }
+ .hm-nav__act .hm-link { font-size: 18px; }
+ .hm-cta { font-size: 1.3rem; }
  .hm-nav__in { gap: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
