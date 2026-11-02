@@ -32,7 +32,6 @@ export default function HomePage(){
    <section className="hm-hero hm-wrap" aria-labelledby="home-title">
     <figure className="hm-hero__fig"><img src={asset('/images/heart-glass.webp')} width="1024" height="1024" alt="Анатомическое сердце из прозрачного стекла" fetchPriority="high"/></figure>
     <h1 id="home-title">Лист назначений для ваших пациентов</h1>
-    <p className="lead">Жидкость, глюкоза, белок, жиры и препараты по клиническим рекомендациям. Готовый лист на А4 за минуту.</p>
     <p className="hm-hero__act"><a className="hm-cta" href={href('/calculator')}>Открыть калькулятор<span aria-hidden="true">→</span></a></p>
    </section>
 
@@ -47,10 +46,13 @@ export default function HomePage(){
    </section>
 
    <section className="hm-sec hm-wrap reveal" aria-labelledby="sheet-title">
-    <div className="hm-head"><h2 id="sheet-title">Лист А4 с двух сторон</h2><p>Лицевая сторона — для медсестры: что набрать, в мл и крупно, время введения стрелками. Оборот — кормления, КОС, респираторная поддержка, диурез.</p></div>
-    <div className="sheets">
-     <figure className="sheet g"><div><img src={asset('/images/nurse-sheet-front-p.webp')} width="1123" height="794" alt="Лицевая сторона листа интенсивной терапии" loading="lazy"/></div><figcaption>Инфузии, препараты, клетки 24 часов</figcaption></figure>
-     <figure className="sheet g"><div><img src={asset('/images/nurse-sheet-back-p.webp')} width="1123" height="794" alt="Оборот листа" loading="lazy"/></div><figcaption>Кормления, КОС, респираторная поддержка, диурез, заметки</figcaption></figure>
+    <div className="hm-head"><h2 id="sheet-title">Лист, который читается с одного взгляда</h2><p>Медсестре нужны миллилитры: они крупно и жирным, время введения — стрелкой в клетке часа, сутки курса — слева.</p></div>
+    <div className="stage g">
+     <img className="stage__sheet" src={asset('/images/nurse-sheet-front-p.webp')} width="1684" height="1191" alt="Лицевая сторона листа интенсивной терапии" loading="lazy"/>
+     <figure className="stage__zoom g">
+      <img src={asset('/images/sheet-zoom.webp')} width="1535" height="160" alt="Строки препаратов на листе: доза, что набрать, путь, кратность и стрелки времени введения" loading="lazy"/>
+      <figcaption>Препарат одной строкой: доза, что набрать и до какого объёма развести, путь и кратность</figcaption>
+     </figure>
     </div>
    </section>
 
