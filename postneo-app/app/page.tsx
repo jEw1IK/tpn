@@ -29,8 +29,6 @@ export default function HomePage(){
     {/* три строки во всю ширину; каждая выезжает снизу из-под своей кромки */}
     <p className="hm-motto"><span className="ml ml--a"><span>Здесь живёт</span></span> <span className="ml ml--b"><span>сердце</span></span> <span className="ml ml--c"><span>отделения</span></span></p>
     <figure className="hm-hero__fig">
-     {/* тёмный силуэт под стеклом: закрывает буквы за сердцем, но не наглухо, сквозь стекло они чуть угадываются */}
-     <span className="hm-hero__body" aria-hidden="true" style={{maskImage:`url(${asset('/images/heart-silhouette.webp')})`,WebkitMaskImage:`url(${asset('/images/heart-silhouette.webp')})`}}/>
      <img src={asset('/images/heart-glass-alpha.webp')} width="1024" height="1024" alt="Анатомическое сердце из прозрачного стекла" fetchPriority="high"/>
      {/* свет внутри стекла: маска из той же картинки, поэтому вспыхивает только сердце, а не фон */}
      <span className="hm-hero__light" aria-hidden="true" style={{maskImage:`url(${asset('/images/heart-glass-alpha.webp')})`,WebkitMaskImage:`url(${asset('/images/heart-glass-alpha.webp')})`}}/>
