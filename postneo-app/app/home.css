@@ -77,7 +77,7 @@ html:has(.home) body { overflow-x: clip; }
 
 /* первый экран: предмет в центре, слова вокруг него */
 .hm-hero { min-height: calc(100dvh - 76px); display: grid; align-content: center; justify-items: center; text-align: center; padding-block: 24px 72px; position: relative; }
-.hm-hero__fig { position: relative; margin: 0; width: min(54vh, 500px, 86vw); aspect-ratio: 1; }
+.hm-hero__fig { position: relative; margin: 0; width: min(66vh, 640px, 86vw); aspect-ratio: 1; }
 /* у картинки прозрачный фон (яркость стекла переведена в прозрачность), поэтому режим наложения не нужен: Safari на iPhone его у анимированной картинки не применяет и показывал чёрный квадрат */
 .hm-hero__fig img { position: relative; width: 100%; height: 100%; object-fit: contain; display: block; }
 .hm-hero__body { position: absolute; inset: 0; pointer-events: none; background: var(--home-body);
@@ -86,13 +86,17 @@ html:has(.home) body { overflow-x: clip; }
 .hm-hero__fig::after { content: ""; position: absolute; inset: 18%; border-radius: 50%; background: radial-gradient(closest-side, var(--home-halo), transparent); z-index: -1; filter: blur(30px); }
 /* надпись за сердцем: тонкий крупный шрифт; надпись и сердце в одной ячейке сетки. У надписи нет позиционирования,
    а у сердца есть, поэтому сердце рисуется поверх букв, а свет за сердцем (z-index -1) остаётся за буквами */
-.hm-hero__stage { display: grid; place-items: center; width: 100%; }
+.hm-hero__stage { display: grid; place-items: center; width: 100%; container-type: inline-size; }
 .hm-hero__stage > * { grid-area: 1 / 1; }
-.hm-motto { margin: 0; max-width: 100%; font-size: clamp(2.6rem, 8.2vw, 9.5rem); font-weight: 200; line-height: 0.92; letter-spacing: -0.035em; color: var(--home-motto); text-wrap: balance; overflow-wrap: break-word; min-width: 0; user-select: none; }
-.hm-motto span { display: inline-block; animation: hm-up var(--home-slow) var(--home-ease) both; }
-.hm-motto span:nth-child(2) { animation-delay: 120ms; }
-.hm-motto span:nth-child(3) { animation-delay: 240ms; }
-.hm-hero h1 { margin-top: -0.4em; font-size: clamp(1.9rem, 3.2vw, 3.1rem); max-width: 26ch; }
+/* размер подобран по замеру шрифта: при 100px жирная «Здесь живёт» шириной 608px, значит 15.8cqi кладёт её во всю ширину */
+.hm-motto { margin: 0; width: 100%; font-size: 15.8cqi; font-weight: 800; line-height: 0.84; letter-spacing: -0.045em; color: var(--home-motto); text-align: center; user-select: none; }
+/* строка — окно с кромкой снизу; поля сверху и снизу, чтобы кромка не срезала «З», «ё», «д», «ц» */
+.ml { display: block; overflow: clip; padding-block: 0.12em 0.2em; margin-block: -0.12em -0.2em; white-space: nowrap; }
+.ml > span { display: block; animation: hm-rise 1.25s cubic-bezier(0.16, 0.8, 0.1, 1) both; }
+.ml--b > span { animation-delay: 140ms; }
+.ml--c > span { animation-delay: 280ms; }
+@keyframes hm-rise { from { transform: translateY(115%); } to { transform: none; } }
+.hm-hero h1 { margin-top: clamp(14px, 2vw, 28px); font-size: clamp(1.9rem, 3.2vw, 3.1rem); max-width: 26ch; }
 .hm-hero .lead { margin-top: 22px; max-width: 44ch; color: var(--home-ink-2); font-size: clamp(1.05rem, 1.1vw + 0.6rem, 1.3rem); }
 .hm-hero__act { margin-top: 30px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 /* главное действие без плашки: надпись и стрелка, при наведении линия подчёркивания проявляется, при нажатии надпись вдавливается */
@@ -226,10 +230,10 @@ html:has(.home) body { overflow-x: clip; }
  .hm-hero { padding-top: 8px; }
 }
 @media (max-width: 40rem) {
- .hm-motto { font-size: clamp(2.4rem, 14.5vw, 4.4rem); }
+ /* на телефоне каждая строка растянута на ширину отдельно: «сердце» выходит самым крупным */
+ .ml--a { font-size: 16cqi; } .ml--b { font-size: 27cqi; } .ml--c { font-size: 18.7cqi; }
  .hm-hero__fig { width: min(68vw, 300px); }
  .hm-hero__body { background: var(--home-body-thin); }
- .hm-motto span { display: block; }
  .shot { width: min(100%, 420px); margin-inline: auto; padding: 5px; }
  .time { grid-template-columns: minmax(0, 1fr); }
  .time__fig { font-size: clamp(3.4rem, 17vw, 5rem); }
