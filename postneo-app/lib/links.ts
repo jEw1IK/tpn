@@ -16,6 +16,6 @@ export const siteHome=staticSite?'index.html':base?'/postneo/':kartPublicUrl.rep
 /** Ссылка в отделение: на сервере относительная (работает и по IP, и по домену), на ПК — публичный адрес. */
 export const kartHref=(path:string)=>staticSite?'../kart'+path:base?base+path:kartPublicUrl+path;
 
-/** Телеграм-канал проекта. Пока адрес не вписан, ссылка на главной не показывается.
+/** Телеграм-канал проекта. Пустой адрес прячет ссылку на главной.
  *  NEXT_PUBLIC_TELEGRAM_URL переопределяет адрес при сборке (для предпросмотра). */
-export const telegramUrl=(process.env.NEXT_PUBLIC_TELEGRAM_URL||'').trim();
+export const telegramUrl=(process.env.NEXT_PUBLIC_TELEGRAM_URL||'https://t.me/postneo01').trim();
