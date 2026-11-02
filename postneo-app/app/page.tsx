@@ -1,6 +1,5 @@
 import './home.css';
-import {calculate,blank,drugs,enteralFormulas,type Inputs} from '@/lib/tpn';
-import {formatNumber as f} from '@/lib/format';
+import {drugs,enteralFormulas} from '@/lib/tpn';
 import {BrandMark} from '@/components/brand-mark';
 import {KartLink} from '@/components/kart-link';
 import {CountUp} from '@/components/count-up';
@@ -8,15 +7,11 @@ import {href,asset,staticSite,telegramUrl} from '@/lib/links';
 import {redirect} from 'next/navigation';
 
 const examplePdf=asset('/examples/nurse-sheet-p.pdf');
-/* Учебный пациент, на котором страница показывает расчёт: 1450 г, 2-е сутки, 110 мл/кг, глюкоза 5 мг/кг/мин, белок 2 г/кг, жиры 1,5 г/кг, грудное молоко по 5 мл восемь раз. */
-const patient:Inputs={...blank(),weight:'1450',weightToday:'1450',day:'2',gestation:'32',start:'08:00',fluid:'110',aa:'2',aaPercent:'10',aaHours:'24',fat:'1.5',fatPercent:'20',fatHours:'24',gir:'5',baseHours:'24',calciumMlPerKg:'1',calciumContent:'0.225',lowGlucose:'5',highGlucose:'40',heparin:'0.5',enteralMode:'feeds8',formulaId:'grudnoe-moloko',feeds:Array(8).fill('5'),medicines:[],drugFluid:'extra',trophicRule:'kr'};
-const n=(v:number|null)=>v??0;
 
-/** Главная: чёрно-белое стекло. Все цифры на странице считает движок калькулятора. */
+/** Главная: чёрно-белое стекло. Время на лист назначений — оценка врачей отделения, где POSTNEO уже работает. */
 export default function HomePage(){
  // На сервере корень приложения ведёт сразу к пациентам (а они — ко входу); главная живёт только в статическом сайте.
  if(!staticSite)redirect(process.env.KART_DISABLED==='1'?'/calculator':'/patients');
- const r=calculate(patient);
  return <div className="home">
   <header className="hm-nav"><div className="hm-wrap hm-nav__in">
    <a className="hm-brand" href={href('/')} aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a>
@@ -38,14 +33,13 @@ export default function HomePage(){
     <p className="hm-hero__act"><a className="hm-cta" href={href('/calculator')}>Открыть калькулятор<span aria-hidden="true">→</span></a></p>
    </section>
 
-   <section className="hm-sec hm-wrap reveal" aria-labelledby="tiles-title">
-    <div className="hm-head"><h2 id="tiles-title">Один ребёнок: 1450{'\u00a0'}г, вторые сутки</h2></div>
-    <ul className="tiles">
-     <li><h3>Основной раствор</h3><p className="fig"><CountUp value={n(r.base)} digits={1}/><small>мл</small></p></li>
-     <li><h3>Глюкоза в растворе</h3><p className="fig"><CountUp value={n(r.glucosePercent)} digits={2}/><small>%</small></p></li>
-     <li><h3>Аминокислоты</h3><p className="fig"><CountUp value={n(r.aaMl)}/><small>мл</small></p></li>
-     <li><h3>Энергия</h3><p className="fig"><CountUp value={n(r.kr.perKg)}/><small>ккал/кг</small></p></li>
+   <section className="hm-sec hm-wrap reveal" aria-labelledby="time-title">
+    <div className="hm-head"><h2 id="time-title">Один лист назначений</h2></div>
+    <ul className="time">
+     <li className="time__was"><h3>Вручную</h3><p className="time__fig"><CountUp className="cnt" value={15}/><span>–</span><CountUp className="cnt" value={20}/><small>минут</small></p></li>
+     <li className="time__now"><h3>С POSTNEO</h3><p className="time__fig"><CountUp className="cnt" value={5}/><span>–</span><CountUp className="cnt" value={10}/><small>минут</small></p></li>
     </ul>
+    <p className="time__where">Уже работает в ОРИТН ГКБ № 67</p>
    </section>
 
    <section className="hm-sec hm-wrap reveal" aria-labelledby="sheet-title">
