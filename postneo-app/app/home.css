@@ -165,18 +165,20 @@ html:has(.home) body { overflow-x: clip; }
 .time__where { margin-top: clamp(28px, 4vw, 56px); padding-top: 18px; border-top: 1px solid var(--home-line); font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 300; }
 
 
-/* сцена: лист притушен внутри тёмной рамки, одна деталь вынесена и светится */
-.stage { position: relative; overflow: hidden; aspect-ratio: 16 / 9; padding: 0; display: grid; place-items: center; }
-.stage__sheet { position: absolute; left: 50%; top: 10%; width: 86%; height: auto; transform: translateX(-50%); border-radius: 6px;
-  filter: grayscale(1) brightness(0.42) contrast(0.95); opacity: 0.9; mask-image: linear-gradient(to bottom, black 55%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 100%); }
-.stage__zoom { position: relative; z-index: 1; margin: 0; width: min(78%, 980px); padding: 10px 10px 14px; border-radius: 16px; background: var(--home-ink); border-color: var(--home-line-2);
-  box-shadow: 0 0 0 1px var(--home-line-2), 0 0 90px var(--home-shine), 0 30px 80px -20px oklch(0% 0 0 / 0.9); }
-.stage__zoom::before { content: ""; position: absolute; inset: -40%; z-index: -1; pointer-events: none; background: radial-gradient(closest-side, var(--home-shine), transparent 70%); filter: blur(20px); }
-.stage__zoom img { width: 100%; height: auto; display: block; border-radius: 8px; }
-.stage__zoom figcaption { margin-top: 10px; font-size: 14px; color: oklch(35% 0 0); text-align: center; }
+/* калькулятор в тёмной теме: снимок в тонкой рамке со светом за ней; при прокрутке выпрямляется из лёгкого наклона.
+   Снимок — ссылка в калькулятор: при наведении рамка загорается красным, как остальные переходы */
+.shot { position: relative; display: block; max-width: 100%; border-radius: 18px; padding: 6px; background: var(--home-glass-2);
+ box-shadow: 0 0 0 1px var(--home-line-2), 0 40px 120px -40px var(--home-shine), 0 30px 80px -30px oklch(0% 0 0 / 0.9);
+ transition: box-shadow var(--home-mid) var(--home-ease), transform var(--home-fast) var(--home-ease); }
+.shot::before { content: ""; position: absolute; inset: -8% 6% auto; height: 70%; z-index: -1; pointer-events: none; border-radius: 50%;
+ background: radial-gradient(closest-side, var(--home-shine), transparent); filter: blur(40px); }
+.shot img { display: block; width: 100%; height: auto; border-radius: 13px; }
+.shot:active { transform: scale(0.99); }
+@media (hover: hover) { .home .shot:hover { box-shadow: 0 0 0 1px var(--home-red), 0 0 40px -6px var(--home-red-glow), 0 30px 80px -30px oklch(0% 0 0 / 0.9); } }
+.home .shot:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--home-red), 0 0 40px -6px var(--home-red-glow); }
 @supports (animation-timeline: view()) {
- .stage__zoom { animation: hm-zoom-in 1s var(--home-ease) both; animation-timeline: view(); animation-range: entry 10% entry 70%; }
- @keyframes hm-zoom-in { from { opacity: 0; transform: translateY(40px) scale(0.92); } to { opacity: 1; transform: none; } }
+ .shot img { animation: hm-tilt 1s linear both; animation-timeline: view(); animation-range: entry 0% cover 45%; transform-origin: 50% 100%; }
+ @keyframes hm-tilt { from { opacity: 0.55; transform: perspective(1400px) rotateX(16deg) scale(0.94); } to { opacity: 1; transform: none; } }
 }
 
 /* три короткие колонки на одном стекле */
@@ -206,13 +208,11 @@ html:has(.home) body { overflow-x: clip; }
 }
 
 @media (max-width: 60rem) {
- .stage { aspect-ratio: auto; padding: 24px 12px; }
- .stage__sheet { display: none; }
- .stage__zoom { width: 100%; }
  .hm-nav__act .hm-link:not(.hm-link--keep) { display: none; }
  .hm-hero { padding-top: 8px; }
 }
 @media (max-width: 40rem) {
+ .shot { width: min(100%, 420px); margin-inline: auto; padding: 5px; }
  .time { grid-template-columns: minmax(0, 1fr); }
  .time__fig { font-size: clamp(3.4rem, 17vw, 5rem); }
  .hm-hero__act .btn { width: 100%; }

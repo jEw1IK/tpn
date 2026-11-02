@@ -42,14 +42,15 @@ export default function HomePage(){
     <p className="time__where">Уже работает в ОРИТН ГКБ № 67</p>
    </section>
 
-   <section className="hm-sec hm-wrap reveal" aria-labelledby="sheet-title">
-    <div className="hm-head"><h2 id="sheet-title">Лист, который читается с одного взгляда</h2></div>
-    <div className="stage g">
-     <img className="stage__sheet" src={asset('/images/nurse-sheet-front-p.webp')} width="1684" height="1191" alt="Лицевая сторона листа интенсивной терапии" loading="lazy"/>
-     <figure className="stage__zoom g">
-      <img src={asset('/images/sheet-zoom.webp')} width="1535" height="160" alt="Строки препаратов на листе: доза, что набрать, путь, кратность и стрелки времени введения" loading="lazy"/>
-     </figure>
-    </div>
+   <section className="hm-sec hm-wrap reveal" aria-labelledby="calc-title">
+    <div className="hm-head"><h2 id="calc-title">Весь расчёт на одном экране</h2></div>
+    {/* на компьютере весь первый экран калькулятора, на телефоне только панель итога: она вытянута по высоте экрана */}
+    <a className="shot" href={href('/calculator')} aria-label="Открыть калькулятор">
+     <picture>
+      <source media="(max-width: 40rem)" srcSet={asset('/images/calc-dark-panel.webp')} width={728} height={1668}/>
+      <img src={asset('/images/calc-dark.webp')} width="2160" height="1350" alt="Калькулятор POSTNEO в тёмной теме: пациент, потребность, электролиты и итог инфузии" loading="lazy"/>
+     </picture>
+    </a>
    </section>
 
    <section className="hm-sec hm-wrap reveal" aria-labelledby="what-title">
