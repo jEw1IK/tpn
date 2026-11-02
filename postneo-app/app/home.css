@@ -187,6 +187,8 @@ html:has(.home) body { overflow-x: clip; }
 .hm-close { text-align: center; padding-top: clamp(96px, 12vw, 180px); padding-bottom: clamp(72px, 9vw, 140px); }
 .hm-big { display: inline-flex; align-items: center; gap: 0.35em; min-height: 44px; font-size: clamp(1.75rem, 6.4vw, 6.2rem); font-weight: 200; line-height: 1.05; letter-spacing: -0.015em; overflow-wrap: break-word; }
 .hm-big span { font-size: 0.6em; transition: transform var(--home-mid) var(--home-ease); }
+.hm-tg { margin-top: clamp(28px, 3vw, 44px); }
+.hm-tg .hm-cta { font-size: 1.1rem; color: var(--home-ink-2); }
 
 /* подвал */
 .hm-foot { border-top: 1px solid var(--home-line); padding: 36px 0 44px; }

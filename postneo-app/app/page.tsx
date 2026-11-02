@@ -4,7 +4,7 @@ import {formatNumber as f} from '@/lib/format';
 import {BrandMark} from '@/components/brand-mark';
 import {KartLink} from '@/components/kart-link';
 import {CountUp} from '@/components/count-up';
-import {href,asset,staticSite} from '@/lib/links';
+import {href,asset,staticSite,telegramUrl} from '@/lib/links';
 import {redirect} from 'next/navigation';
 
 const examplePdf=asset('/examples/nurse-sheet-p.pdf');
@@ -71,12 +71,13 @@ export default function HomePage(){
 
    <section className="hm-sec hm-wrap reveal hm-close" aria-label="Калькулятор">
     <a className="hm-big" href={href('/calculator')}>Открыть калькулятор<span aria-hidden="true">→</span></a>
+    {telegramUrl&&<p className="hm-tg"><a className="hm-cta" href={telegramUrl} target="_blank" rel="noopener noreferrer">Наш Telegram-канал<span aria-hidden="true">↗</span></a></p>}
    </section>
   </main>
 
   <footer className="hm-foot"><div className="hm-wrap hm-foot__row">
    <a className="hm-brand" href={href('/')} aria-label="POSTNEO, главная"><BrandMark/><span>POSTNEO</span></a>
-   <nav aria-label="Ссылки"><a href={href('/calculator')}>Калькулятор</a><KartLink path="/login">Отделение</KartLink><a href={examplePdf}>Пример листа</a></nav>
+   <nav aria-label="Ссылки"><a href={href('/calculator')}>Калькулятор</a><KartLink path="/login">Отделение</KartLink><a href={examplePdf}>Пример листа</a>{telegramUrl&&<a href={telegramUrl} target="_blank" rel="noopener noreferrer">Telegram-канал</a>}</nav>
    <small>Сергей Нехорошкин, врач-неонатолог</small>
   </div></footer>
  </div>;
