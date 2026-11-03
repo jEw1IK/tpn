@@ -23,7 +23,7 @@ SITE_ROOT="${SITE_ROOT:-/opt/postneo/site}"
 KEEP="${KEEP:-5}"
 SELF_PATH="${SELF_PATH:-/usr/local/sbin/postneo-site-update}"
 # Что публикуется. Всё остальное из репозитория в веб-корень не попадает.
-PUBLISH=(index.html postneo scales sedation enteral cheatsheets/index.html cheatsheets/pdf)
+PUBLISH=(index.html robots.txt sitemap.xml postneo scales sedation enteral cheatsheets/index.html cheatsheets/pdf)
 # Без этих файлов релиз не выкладывается.
 REQUIRED=(postneo/index.html postneo/calculator.html)
 

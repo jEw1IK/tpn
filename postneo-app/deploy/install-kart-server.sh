@@ -147,7 +147,7 @@ if [ -n "$NGX" ]; then
   curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/postneo-app/deploy/nginx-heal.py -o /tmp/postneo-nginx-heal.py && python3 /tmp/postneo-nginx-heal.py "$NGX"
   if nginx -t 2>/dev/null; then systemctl reload nginx; else echo "nginx: конфиг не принят после лечения, возвращаю копию"; cp -a "$BAKH" "$NGX"; fi
 fi
-if [ -n "$NGX" ] && ! grep -q "location /download/" "$NGX"; then
+if [ -n "$NGX" ] && ! grep -qE "location (\^~ )?/download/" "$NGX"; then
   cp -a "$NGX" "$NGX.bak-dl-$(date +%Y%m%d%H%M%S)"
   python3 - "$NGX" <<'PYNGX'
 import re,sys
@@ -174,7 +174,7 @@ fi
 if [ -n "$NGX" ] && grep -q "location = /kart { return 301 /kart/; }" "$NGX"; then
   sed -i '/location = \/kart { return 301 \/kart\/; }/d; s#location /kart/ {#location /kart {#' "$NGX" && nginx -t && systemctl reload nginx && echo "nginx: петля /kart исправлена"
 fi
-if [ -n "$NGX" ] && ! grep -q "location /kart" "$NGX"; then
+if [ -n "$NGX" ] && ! grep -qE "location (\^~ )?/kart" "$NGX"; then
   cp -a "$NGX" "$NGX.bak-kart-$(date +%Y%m%d%H%M%S)"
   python3 - "$NGX" "$PORT" <<'PY'
 import re,sys

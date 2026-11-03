@@ -150,6 +150,8 @@ export function openDb(file:string):Db{
  const db=new Db(file);
  if(file!==':memory:')db.pragma('journal_mode = WAL');
  db.pragma('foreign_keys = ON');
+ // удалённое и перезаписанное затирается нулями: после шифрования старых записей их открытый текст не остаётся в свободных страницах файла
+ db.pragma('secure_delete = ON');
  db.pragma('busy_timeout = 5000');
  migrate(db);
  return db;
