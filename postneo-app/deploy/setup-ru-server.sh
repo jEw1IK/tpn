@@ -41,6 +41,17 @@ fi
 IPCERT_SUPPORTED=0; certbot_ok && IPCERT_SUPPORTED=1
 command -v certbot >/dev/null && certbot --version 2>&1 | sed 's/^/  /' || echo "  certbot не установлен: будет только http"
 
+# подкачка: сборка отделения при обновлении берёт больше памяти, чем работа; на сервере с 1–2 ГБ без неё сборка падает
+MEM_MB=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+if [ "$MEM_MB" -lt 3500 ] && [ "$(swapon --noheadings 2>/dev/null | wc -l)" -eq 0 ]; then
+  fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none
+  chmod 600 /swapfile && mkswap -q /swapfile && swapon /swapfile
+  grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  echo "  память ${MEM_MB} МБ: включена подкачка 2 ГБ"
+else
+  echo "  память ${MEM_MB} МБ, подкачка: $(swapon --noheadings 2>/dev/null | wc -l) шт."
+fi
+
 echo "2/8 сеть: открыты только SSH, 80 и 443"
 SSHP="$(sshd -T 2>/dev/null | awk '$1=="port"{print $2}' | sort -u | tr '\n' ' ')"; [ -n "$SSHP" ] || SSHP=22
 if echo " $SSHP " | grep -q " 443 "; then
