@@ -53,7 +53,7 @@ else
 fi
 
 echo "2/8 сеть: открыты только SSH, 80 и 443"
-SSHP="$(sshd -T 2>/dev/null | awk '$1=="port"{print $2}' | sort -u | tr '\n' ' ')"; [ -n "$SSHP" ] || SSHP=22
+SSHP="$(sshd -T 2>/dev/null | awk '$1=="port"{print $2}' | sort -u | tr '\n' ' ' || true)"; [ -n "$SSHP" ] || SSHP=22
 if echo " $SSHP " | grep -q " 443 "; then
   echo "SSH слушает порт 443, nginx не сможет его занять. Перенесите SSH (deploy/README.md, раздел про порт 443) и запустите снова."; exit 1
 fi
@@ -134,7 +134,8 @@ build(){ # собрать конфиг; при ошибке nginx -t верну�
     cat /tmp/postneo-nginx-t.log; [ -n "$bak" ] && cp -a "$bak" "$NGX"; echo "nginx не принял конфиг, вернул прежний"; exit 1
   fi
   systemctl enable -q nginx; systemctl reload nginx 2>/dev/null || systemctl restart nginx
-  ls -1t "$NGX".bak-* 2>/dev/null | tail -n +6 | xargs -r rm -f
+  # старые копии конфига: оставить 5. При первом запуске копий нет, и ls вернёт ошибку — это не повод остановить скрипт
+  ls -1t "$NGX".bak-* 2>/dev/null | tail -n +6 | xargs -r rm -f || true
 }
 build
 
@@ -153,7 +154,7 @@ echo "6/8 сертификат на домен $DOMAIN"
 resolve(){ curl -fsS --max-time 10 "https://dns.google/resolve?name=$1&type=A" 2>/dev/null | python3 -c "import sys,json;print(' '.join(a['data'] for a in json.load(sys.stdin).get('Answer',[]) if a.get('type')==1))" 2>/dev/null || getent ahostsv4 "$1" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' '; }
 NAMES=()
 for n in "$DOMAIN" "www.$DOMAIN"; do
-  R="$(resolve "$n")"
+  R="$(resolve "$n" || true)"
   if echo " $R " | grep -q " $IP "; then echo "  DNS: $n → $IP"; NAMES+=("$n"); else echo "  DNS: $n → ${R:-нет записи} (не этот сервер)"; fi
 done
 if [ "${NAMES[0]:-}" = "$DOMAIN" ]; then
@@ -181,7 +182,7 @@ H=(-H "Host: $IP"); [ "$S" = https ] && H=()
 BASE="$S://$IP"; [ "$S" = https ] && [ ! -s "$IPCERT/fullchain.pem" ] && BASE="https://$DOMAIN" && H=(--resolve "$DOMAIN:443:127.0.0.1")
 ok=1
 for t in "200 /" "200 /postneo/" "200 /postneo/calculator.html" "200 /kart/api/health" "404 /.git/config" "404 /postneo-app/package.json"; do
-  want=${t%% *}; path=${t#* }; got=$(code "${H[@]}" "$BASE$path")
+  want=${t%% *}; path=${t#* }; got=$(code "${H[@]}" "$BASE$path" || true)
   [ "$got" = "$want" ] && echo "  ок   $got $path" || { echo "  СБОЙ $got $path (ждали $want)"; ok=0; }
 done
 echo
