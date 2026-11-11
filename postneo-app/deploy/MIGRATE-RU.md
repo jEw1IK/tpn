@@ -39,8 +39,7 @@ curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/postneo-app/deploy/
 
 ```bash
 sudo systemctl stop postneo-kart-update.timer postneo-kart
-sudo -u postneo node --disable-warning=ExperimentalWarning \
-  /opt/postneo/kart/current/scripts/backup.mjs /var/lib/postneo-kart/backups
+sudo systemctl start postneo-kart-backup.service   # копия через службу: она знает путь к базе из /etc/postneo-kart.env
 ls -t /var/lib/postneo-kart/backups | head -1      # имя свежей копии
 ```
 
