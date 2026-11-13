@@ -109,8 +109,9 @@ $LISTEN6
     # Какая версия сейчас выложена
     location = /version.json { add_header Cache-Control \$nocache always; try_files /version.json =404; }
 
-    # Главная с перечнем инструментов
-    location = / { add_header Cache-Control \$nocache always; try_files /index.html =404; }
+    # Главная POSTNEO; /index.html сохраняет прежний перечень инструментов.
+    # Относительные ссылки сборки требуют адреса /postneo/.
+    location = / { add_header Cache-Control \$nocache always; return 302 /postneo/\$is_args\$args; }
     location = /index.html { add_header Cache-Control \$nocache always; try_files /index.html =404; }
 
     # Всё остальное в репозитории (код бота, конфиги) наружу не отдаём
