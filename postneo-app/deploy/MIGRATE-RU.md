@@ -134,13 +134,22 @@ sudo env EXPECTED_NEW_IP=НОВЫЙ_IP bash stage-domain.sh
 Затем на новом сервере выпустить сертификат под управлением местного Certbot:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/postneo-app/deploy/enable-domain.sh -o enable-domain.sh
-sudo bash enable-domain.sh postneo.ru
+sudo certbot certonly --webroot -w /var/www/letsencrypt --cert-name postneo.ru \
+  -d postneo.ru -d www.postneo.ru --non-interactive --agree-tos \
+  --deploy-hook "nginx -t && systemctl reload nginx"
+
+curl -fsSL https://raw.githubusercontent.com/jEw1IK/tpn/main/postneo-app/deploy/activate-domain-cert.sh -o activate-domain-cert.sh
+sudo env EXPECTED_NEW_IP=НОВЫЙ_IP bash activate-domain-cert.sh
 ```
 
 Скопированный для подготовки сертификат сам по себе **не получает автоматического продления**.
-После выпуска проверить пути сертификата в nginx, таймер Certbot, deploy-hook перезагрузки nginx
-и `certbot renew --dry-run`. Полный установщик сервера ради подключения домена повторять не нужно.
+После успешного выпуска скрипт подключает управляемые файлы сертификата, проверяет
+отпечаток реально выдаваемого сертификата для обоих имён, главную, отделение и HTTPS по IP.
+При ошибке подключения восстанавливает прежний конфиг nginx. Затем проверяет активный
+таймер Certbot и запускает `certbot renew --dry-run --run-deploy-hooks` для управляемых
+сертификатов, включая IP. Ошибка проверки продления оставляет действующий сертификат
+подключённым и требует разбора; `RENEWAL_OK` выводится только после успешного теста.
+Полный установщик сервера ради подключения домена повторять не нужно.
 Проверить вход и расшифровку пациента по домену, а затем включить автообновления нового отделения.
 
 ## 7. Новые ссылки для врачей
