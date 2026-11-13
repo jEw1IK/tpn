@@ -177,17 +177,22 @@ curl -fsSL "$RAW/install-kart-server.sh" | bash
 
 echo "8/8 проверка"
 S=http; { [ -s "$IPCERT/fullchain.pem" ] || [ -s "$DOMCERT/fullchain.pem" ]; } && S=https
-code(){ curl -sk -o /dev/null -w "%{http_code}" --noproxy '*' --max-time 15 "$@"; }
+code(){ curl -sS -o /dev/null -w "%{http_code}" --noproxy '*' --max-time 15 "$@"; }
 H=(-H "Host: $IP"); [ "$S" = https ] && H=()
 BASE="$S://$IP"; [ "$S" = https ] && [ ! -s "$IPCERT/fullchain.pem" ] && BASE="https://$DOMAIN" && H=(--resolve "$DOMAIN:443:127.0.0.1")
 ok=1
-for t in "200 /" "200 /postneo/" "200 /postneo/calculator.html" "200 /kart/api/health" "404 /.git/config" "404 /postneo-app/package.json"; do
+for t in "302 /" "200 /postneo/" "200 /postneo/calculator.html" "200 /kart/api/health" "404 /.git/config" "404 /postneo-app/package.json"; do
   want=${t%% *}; path=${t#* }; got=$(code "${H[@]}" "$BASE$path" || true)
   [ "$got" = "$want" ] && echo "  ок   $got $path" || { echo "  СБОЙ $got $path (ждали $want)"; ok=0; }
 done
+# Проверяем не только код редиректа, но и его цель: главная и её ресурсы
+# должны остаться под /postneo/, а не под корнем мини-приложений.
+target=$(curl -sS -o /dev/null -w "%{redirect_url}" --noproxy '*' --max-time 15 "${H[@]}" "$BASE/?from=health" || true)
+[ "$target" = "$BASE/postneo/?from=health" ] && echo "  ок   главная → /postneo/ (параметры сохранены)" \
+  || { echo "  СБОЙ адрес главной: $target"; ok=0; }
 echo
 [ "$ok" = 1 ] && echo "Готово." || echo "Есть сбои — пришлите вывод целиком."
-echo "  Сайт:       $BASE/postneo/"
+echo "  Сайт:       $BASE/"
 echo "  Отделение:  $BASE/kart/"
-[ -s "$DOMCERT/fullchain.pem" ] && echo "  Домен:      https://$DOMAIN/postneo/"
+[ -s "$DOMCERT/fullchain.pem" ] && echo "  Домен:      https://$DOMAIN/"
 echo "Дальше: перенос базы — curl -fsSL $RAW/import-db.sh -o import-db.sh && sudo bash import-db.sh /путь/к/postneo-….sqlite"

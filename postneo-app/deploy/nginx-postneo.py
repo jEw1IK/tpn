@@ -85,8 +85,11 @@ def site():
     location ^~ /postneo/images/ {{ expires 30d; add_header Cache-Control "public"; include {H}; }}
     location ^~ /postneo/examples/ {{ expires 7d; add_header Cache-Control "public"; include {H}; }}
 
+    # Главная сборки использует относительные ссылки: открываем её по /postneo/.
+    # Временный редирект не закрепляет маршрут в браузерах на время переезда.
+    location = / {{ return 302 /postneo/$is_args$args; }}
+
     # белый список: всё, чего нет ниже, отдаёт 404
-    location = / {{ try_files /index.html =404; }}
     location = /robots.txt {{ }}
     location = /sitemap.xml {{ }}
     location = /version.json {{ add_header Cache-Control "no-cache" always; include {H}; }}
